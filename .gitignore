@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+.idea/
+.vscode/
+output/
+tmp/
+playwright-report/
+test-results/
