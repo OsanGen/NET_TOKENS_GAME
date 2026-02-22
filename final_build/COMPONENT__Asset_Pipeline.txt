@@ -1,0 +1,33 @@
+Component: Asset Pipeline
+Purpose:
+Provide deterministic sprite loading with safe fallback rendering and a CogSec-aligned generation path.
+
+Inputs:
+- Sprite manifest in `game.js` (`/assets/sprites/*.png`).
+- Batch prompt file `tmp/imagegen/astro-gauntlet-assets.jsonl`.
+- Generation script `scripts/generate-imagegen-assets.sh`.
+- Runtime setting `state.visual.useVectorFallback`.
+
+Outputs:
+- `spriteRegistry` entries with `loading|ready|missing` states.
+- `spriteStatus` counters (`total`, `loaded`, `missing`) in text payload.
+- Procedural brand-safe vector draw path when sprite assets are missing or fallback mode is forced.
+
+State:
+- `spriteRegistry` key -> image/status map.
+- `spriteStatus` aggregate counts.
+- `state.visual.useVectorFallback` currently defaults `true` for strict palette compliance pending regenerated assets.
+
+Pipeline Notes:
+- Manifest updated to CogSec prompt locks (token palette only, flat 2D, no glow/no heavy gradients/no 3D).
+- Generation script performs batch API render then 64x64 nearest-neighbor downscale sync.
+
+Edge Cases:
+- Missing `OPENAI_API_KEY` aborts generation with explicit error.
+- Missing sprite files do not impact gameplay determinism.
+- Partial sprite coverage remains playable due per-entity fallback rendering.
+
+Acceptance Checks:
+- `render_game_to_text().assets` reflects current loader status.
+- Game remains playable with zero sprites available.
+- After generation, 24 files are written to `assets/sprites` at 64x64 and can be enabled by disabling vector fallback.

@@ -1,0 +1,43 @@
+Component: Hub Flow
+Purpose:
+Provide deterministic ship-hub navigation with clear planet selection and launch-lock behavior.
+
+Inputs:
+- Player hub movement.
+- Seeded planet list from `generateHub(seed)`.
+- `Space` edge input near a planet.
+
+Outputs:
+- `planetLockId` + `planetLockTimer` update lifecycle.
+- Mission start when lock timer completes while player remains in proximity.
+- Hub render with route links, readable labels, and launch prompts.
+
+Visual Behavior:
+- Route nodes render in a board-like layout with larger mission cards, directional route arrows, and focus halos.
+- Mission preview cards include biome and target-specimen chips and deterministic route copy.
+
+State:
+- `state.hubs`: four seeded planets around centered hub anchor.
+- `state.planetLockId`: current locked planet id or `null`.
+- `state.planetLockTimer`: countdown frames before launch.
+- `state.visual`: scene-level branding and accent metadata used by post-process render effects.
+
+Layout Rules:
+- Deterministic nodes are generated from `seed()` with per-index fan angles and radii.
+- Position solver applies a fixed-pass separation pass (`relaxHubPlanets`) to avoid overlap.
+- Coordinates are clamped to `HUB_NODE_MARGIN` bounds for label-safe room.
+- Route order is computed by angle around center to produce readable looped links.
+- Planet cards are rendered near each node with mission-preview fields.
+
+Edge Cases:
+- Leaving proximity during lock cancels timer and requires re-lock.
+- Hub returns from result reset lock state cleanly.
+- Start button is hidden outside title mode to prevent accidental overlay clutter.
+- Preview text uses deterministic local seed sampling so node card hints match mission generation.
+
+Acceptance Checks:
+- Player can lock and launch every visible planet deterministically.
+- No clipped/off-canvas planet labels under normal seed runs.
+- Route path is readable and does not self-overlap heavily for default counts.
+- Node previews render deterministic mission hints without mutating global RNG.
+- Lock messages and countdown match behavior in text state.

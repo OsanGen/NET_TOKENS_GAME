@@ -1,0 +1,36 @@
+Component: Local Launch Tooling
+Purpose:
+Provide a reliable local open/start flow for the game so browser and Playwright can connect consistently.
+
+Inputs:
+- Shell runtime with `bash`, `python3`, `curl`, and `open`.
+- Optional env vars:
+  - `GAME_PORT` (default `5170`)
+  - `GAME_HOST` (default `127.0.0.1`)
+
+Outputs:
+- Running static server process for workspace root.
+- Browser open at the configured URL.
+- PID/log artifacts:
+  - `/tmp/astro_gauntlet_<port>.pid`
+  - `/tmp/astro_gauntlet_<port>.log`
+
+State:
+- `scripts/open-game.sh` checks PID file, validates that PID belongs to `python3 -m http.server` on the requested port, verifies active listener, then starts server if needed.
+- `scripts/open-game.sh` clears stale/reused PID files before launch decisions.
+- `scripts/stop-game.sh` kills tracked PID only when it is the expected http server process, otherwise it clears stale PID state.
+
+Edge Cases:
+- Stale PID file with dead process: start script restarts cleanly.
+- Stale PID file with reused live process: start script ignores stale PID and starts correct server.
+- Missing PID file: stop script exits safely without failure.
+- Slow startup: start script retries readiness checks before reporting failure.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/open-game.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/stop-game.sh`
+
+Acceptance Checks:
+- `scripts/open-game.sh` exits `0` and prints open URL.
+- `curl -I http://localhost:5170` returns `200`.
+- Playwright probe can `goto` the URL without `ERR_CONNECTION_REFUSED`.

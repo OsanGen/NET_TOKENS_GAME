@@ -1,0 +1,40 @@
+System Map — Astro Gauntlet Deep Rebuild (CogSec Pastel)
+
+Components:
+- Core Runtime (`game.js`)
+  - Owns deterministic loop, mode transitions, input, hooks (`render_game_to_text`, `advanceTime`).
+- Mission Flow + Combat (`game.js`)
+  - Enforces target-capture-plus-task win gate.
+  - Handles space-driven interactions (shoot, beacon, probe) and enemy updates.
+- Hub Flow (`game.js`)
+  - Seeded planet layout, lock timer, launch transition, safe label placement.
+- Brand Scene Engine (`game.js`)
+  - Tokenized palette (`BRAND_TOKENS`), scene recipes (`SCENE_RECIPES`), per-scene accent lead selector.
+- Controls Overlay (`game.js`)
+  - `H` toggle, first-run auto-help, mode-specific action copy, objective hinting.
+- Visual Post Process (`game.js`)
+  - Lightweight scanline/noise pass with no glow/chroma/vignette stack.
+- Asset Pipeline (`scripts/generate-imagegen-assets.sh`, `tmp/imagegen/astro-gauntlet-assets.jsonl`)
+  - Batch imagegen -> 64x64 nearest-neighbor sync into `assets/sprites`.
+- Local Launch Tooling (`scripts/open-game.sh`, `scripts/stop-game.sh`)
+  - Starts/stops local `python3 -m http.server` with PID tracking and browser open for stable local play sessions.
+- Visual Asset Content (`assets/sprites/*`)
+  - Runtime sprite surface; currently supports vector fallback until regenerated CogSec assets are produced.
+- Pages Deployment (`.github/workflows/deploy-pages.yml`)
+  - Prepares publish artifact from `index.html`, `game.js`, `styles.css`, `favicon.ico`, and `assets/`.
+  - Uses `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4` from `main`/`workflow_dispatch`.
+  - Produces GitHub Pages output URL `https://<user>.github.io/<repo>/` for public demo hosting.
+Data Flow:
+- Browser input -> `input` state -> deterministic `update(dt)`.
+- `update(dt)` mutates gameplay state by mode:
+  - `title`: start flow + onboarding help.
+  - `hub`: movement, lock timer, planet launch.
+  - `mission`: entity simulation, interactions, task progress, mission completion gate.
+  - `result`: timed transition back to hub.
+- `render()` composes scene + controls overlay + post-process onto canvas.
+- `render_game_to_text()` emits player/objective/entities/UI/brand audit payload for automation.
+
+Constraints:
+- 480x270 internal simulation with conditional nearest-neighbor/smooth upscale based on integer scale.
+- Fullscreen toggle (`F`) and exit (`Esc`) preserved.
+- Branding locks: CogSec tokens only, no glow, no heavy gradients, one accent lead per scene.

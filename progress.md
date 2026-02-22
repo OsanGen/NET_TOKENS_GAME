@@ -1,0 +1,97 @@
+Original prompt: Build and iterate a playable web game in this workspace, validating changes with a Playwright loop. [develop-web-game] ... (Astro Gauntlet 32-bit retro game plan, 15+ captures, planet hub, Doom-trippy style, imagegen sprites)
+
+## Current build notes
+- 2026-02-18: Initialized core runtime scaffold with:
+  - 320x180 internal simulation + pixelated display pipeline.
+  - Title, hub, mission, result modes.
+  - Deterministic seeded hub generation and mission generation skeleton.
+  - 18 alien profiles (15+ required, 3 legendary flagged).
+  - `window.render_game_to_text` and `window.advanceTime(ms)` implemented.
+  - Trippy scanline/vignette/noise composition pass (prototype).
+  - Single `#start-btn` entry flow.
+- 2026-02-18: Added `final_build/` living spec docs:
+  - `CURRENT_GAPS.txt`
+  - `BUILD_MAP.txt`
+  - `COMPONENT__Core_Runtime.txt`
+- 2026-02-18: Implemented and validated foundational runtime and Playwright sanity flow:
+  - Added `index.html`, `styles.css`, `game.js`, and `favicon.ico`.
+  - Added `package.json` with `"type": "module"` and Playwright dev dependency for local ESM client execution.
+  - Added fallback `web_game_playwright_client_local.js` in-workspace copy for module resolution (skill client compatibility).
+  - Fixed duplicate `#start-btn` handler and empty listener, then revalidated with 5-iteration loop.
+  - Run output now shows `NO_ERRORS` and valid state transitions in `output/web-game/state-*.json`.
+- 2026-02-18: Mission flow component updated:
+  - Enforced mission success condition as target-capture + task-completion for all mission types.
+  - Added `targetCaptured`, `targetRequired`, and `taskDone` tracking in objective payload.
+  - Preserved `render_game_to_text` stability while increasing mission state observability.
+- 2026-02-18: Combat loop tuning pass:
+  - Added deterministic mission enemy queueing with seed-based cadence spawning (`enemyQueue`, `enemySpawnCadence`, `enemySpawnTimer`).
+  - Added player damage-ramp handling on enemy contact (`damageStreak`, `damageDecay`, `knockbackX/Y`) for consistent dodge-hardening.
+  - Reset combat impulse/ramp state on mission entry and game reset.
+- 2026-02-18: Living spec updates:
+  - Added `final_build/COMPONENT__Combat_Loop.txt`.
+  - Updated `final_build/CURRENT_GAPS.txt` and `final_build/BUILD_MAP.txt` with combat-loop status and architecture impact.
+- 2026-02-18: Hub flow pass:
+  - Added deterministic planet lock state in hub (`planetLockId`, `planetLockTimer`).
+  - Added proximity lock + 18-frame launch countdown before `startMission`.
+  - Added lock cancellation if player leaves lock zone, and added route/lock visuals on hub screen.
+  - Exposed lock fields in `render_game_to_text()` for deterministic Playwright checks.
+  - Added `final_build/COMPONENT__Hub_Flow.txt` and updated `final_build/BUILD_MAP.txt`.
+- 2026-02-18: Visual post-process pass:
+  - Replaced RNG-driven render noise with deterministic `frameNoise()` derived from frame/seed/mode.
+  - Added deterministic chromatic bleed and short glitch bars while keeping scanlines and vignette.
+  - Added `final_build/COMPONENT__Visual_Post_Process.txt`.
+- 2026-02-18: Playwright smoke validation:
+  - Ran `web_game_playwright_client_local.js` against `/Users/abelsanchez/CODEX/NEWGAME` served on `http://localhost:5190`.
+  - `state-0.json` entered hub; `state-1..3.json` progressed into mission with deterministic enemy queue activation.
+  - Clean run with `--iterations 1` reports `NO_ERRORS`.
+- 2026-02-18: Combat tune follow-up:
+  - Added a centralized `combatConfig` in `game.js` and applied to spawn cadence/delay, invulnerability decay, and knockback scaling.
+  - Converted burst activation/spawn/recovery math to capped deterministic formulas for smoother feel and repeatable runs.
+
+## Open items / TODOs
+- Replace procedural alien rendering with generated 64px sprites.
+- Keep combat tuning iteration active (config-based balancing across playtest runs).
+- Add explicit mission progression tests + richer scripted actions.
+- Add HUD-less task hints once mission transitions stabilize.
+- Verify screenshot clarity in headed mode if WebKit capture artifacts appear.
+- 2026-02-18: Core Runtime follow-up pass:
+  - Added keyboard title start support (`Enter` + `Space`) in addition to `#start-btn` click.
+  - Added `startFromTitle()` reset helper so title-to-hub transition resets player state deterministically.
+  - Playwright smoke check now passes title start via `space` action, transitioning to `hub` with `state.mode="hub"` and message `Booting hub`.
+- 2026-02-18: Deep rebuild pass implemented for CogSec Pastel compliance + mission playability.
+  - Gameplay fixes in `game.js`:
+    - Replaced mission interaction checks with `input.space` for combat and beacon activation.
+    - Removed direct escort auto-win path and added extraction-zone overlap logic.
+    - Kept unified mission success gate (`targetDone && taskDone`) for all tasks.
+  - Hub fixes:
+    - Recentered seeded planet layout around ship and clamped positions/labels for on-screen readability.
+    - Removed duplicate HUD render path from post-process stage.
+  - Visual system:
+    - Added tokenized CogSec palette (`BRAND_TOKENS`) and scene recipes (`SCENE_RECIPES`).
+    - Reworked title/hub/mission/result scenes to white/FOG proof-first panels with single accent lead.
+    - Replaced heavy post-FX with subtle deterministic scanline/noise pass (no glow/chroma stack).
+  - Controls UX:
+    - Added `H` toggle help overlay with mode-specific controls and mission objective hint.
+    - Added auto-help on first boot/first mission and persistent `H: Help` HUD hint.
+    - Exposed UI/brand fields in `render_game_to_text`: `ui.helpVisible`, `ui.contextActions`, `ui.objectiveHint`, `ui.brand`, `ui.brandAudit`.
+  - Asset pipeline:
+    - Updated all 24 imagegen JSONL prompts to strict CogSec token-palette style constraints.
+    - Live generation currently blocked by missing `OPENAI_API_KEY`.
+
+## New TODOs
+- Set `OPENAI_API_KEY` and run `bash scripts/generate-imagegen-assets.sh` to regenerate all sprites in CogSec style.
+- After sprite generation, flip `state.visual.useVectorFallback` to `false` and validate readability with regenerated art.
+- If strict skill-client contract is required, fix module resolution for `/Users/abelsanchez/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js`.
+
+- 2026-02-19: Visual recovery component pass applied:
+  - Increased internal canvas to 480x270, added conditional nearest/smooth scaling, drifting starfield/parallax, hub/mission glow accents.
+  - Reworked hub HUD mission bar and dynamic HUD layout to avoid low-res artifacts with larger sim.
+  - Removed remaining hardcoded fallback rgba in mission hold ring and post border.
+  - Ran Playwright smoke via web_game_playwright_client_local.js; latest states show title->hub->mission and back with `assets.loaded=24`.
+- 2026-02-19: Open items:
+  - Regenerate/playtest all sprites in updated CogSec style if visual brand wants additional polish.
+
+- 2026-02-22: Added reliable local launch tooling:
+  - Added `scripts/open-game.sh` with PID tracking, health check, and browser open.
+  - Added `scripts/stop-game.sh` for clean shutdown.
+  - Repro `ERR_CONNECTION_REFUSED` on Playwright fixed when launching via script.

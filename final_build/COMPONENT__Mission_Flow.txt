@@ -1,0 +1,39 @@
+Component: Mission Flow
+Purpose:
+Guarantee mission completion only when both requirements are true:
+1) required target species capture
+2) task-specific objective completion
+
+Inputs:
+- Mission seed and task template from `makeMission`.
+- `input.space` for mission interactions.
+- Player/entity positions and per-frame deterministic updates.
+
+Outputs:
+- Objective progress updates:
+  - `targetCaptured`, `targetRequired`, `taskDone`, `done`.
+- Success transition through unified gate:
+  - `if (targetDone && taskDone) endMission(true)`.
+
+State:
+- `state.mission.task.id`: `collect | clear_wave | hold_sector | activate_beacon | escort_probe`.
+- `state.mission.extractionZone` for escort tasks.
+- `state.objective.current` fields for task and capture progress.
+
+Task Rules:
+- `collect`: target captured count meets target required.
+- `clear_wave`: enemy count reaches zero after neutralization plus target capture.
+- `hold_sector`: hold progress reaches target value plus target capture.
+- `activate_beacon`: beacon activated with `Space` in range plus target capture.
+- `escort_probe`: probe attached and player overlaps extraction zone plus target capture.
+
+Edge Cases:
+- No direct mission success shortcuts in probe entity update.
+- Beacon activation no longer bypasses unified completion gate.
+- Enemy neutralization uses live `input.space` and cooldown.
+
+Acceptance Checks:
+- Escort missions are reachable under player movement clamps.
+- Beacon missions can complete when in-range `Space` is used.
+- Clear-wave missions support practical enemy elimination with ion burst.
+- Objective payload remains consistent for Playwright assertions.

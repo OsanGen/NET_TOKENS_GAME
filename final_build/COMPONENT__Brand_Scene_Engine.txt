@@ -1,0 +1,29 @@
+Component: Brand Scene Engine
+Purpose:
+Enforce OSAN/CogSec pastel brand constraints consistently across all gameplay scenes.
+
+Inputs:
+- Token map (`BRAND_TOKENS`).
+- Scene recipe map (`SCENE_RECIPES`).
+- Current mode + mission task for accent selection.
+
+Outputs:
+- Scene-safe palette application for title/hub/mission/result.
+- Single accent lead per scene via `pickAccentLead()`.
+- Brand metadata in text state (`ui.brand`, `ui.brandAudit`).
+
+State:
+- `state.visual.accentLead`
+- `state.visual.contrastMode`
+- `state.visual.useVectorFallback`
+
+Rules Enforced:
+- White/FOG dominant fields.
+- INK for typography and outlines.
+- Accent discipline (single lead accent).
+- No glow and no heavy gradient effects.
+
+Acceptance Checks:
+- Rendered scenes remain legible and token-consistent.
+- `ui.brandAudit` reports compliance booleans during runtime.
+- Future scene additions can select accent by recipe without color drift.

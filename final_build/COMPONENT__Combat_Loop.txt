@@ -1,0 +1,35 @@
+Component: Combat Loop
+Purpose:
+Deliver deterministic enemy pressure with responsive player attack/interact behavior.
+
+Inputs:
+- Mission enemy template queue (`enemyQueue`, spawn cadence/timer).
+- Player input state (`input.space`, movement keys).
+- Active mission entities.
+
+Outputs:
+- Deterministic enemy spawn cadence from queued definitions.
+- Contact damage + invulnerability + knockback updates.
+- Ion burst enemy damage when `Space` is held in range.
+- Objective enemy count decrements on enemy neutralization.
+
+State:
+- Player combat flags: `hp`, `invulnFrames`, `shootCd`, `damageStreak`, `damageDecay`, `knockbackX/Y`.
+- Mission spawn flags: `enemyQueue`, `enemySpawnTimer`, `enemySpawnCadence`.
+- `combatConfig` tuning constants for pacing.
+
+Behavior:
+- Enemy spawn is deterministic and mission-seed-driven.
+- Enemy movement blends inertia + chase vector.
+- Player attack checks now rely on `input.space` (not stale player-state field).
+- Enemy removal updates score and objective enemy count.
+
+Edge Cases:
+- Empty queue means no spawn attempt.
+- Invulnerability blocks immediate repeated contact hits.
+- Cooldown (`shootCd`) prevents burst spam and keeps pacing readable.
+
+Acceptance Checks:
+- Holding `Space` near enemy reduces enemy HP and can remove enemies.
+- `clear_wave` missions can progress naturally as enemies are eliminated.
+- Same seed + same inputs preserve spawn timing and combat outcomes.

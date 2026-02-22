@@ -1,0 +1,32 @@
+Component: Controls Overlay
+Purpose:
+Make controls discoverable at all times without cluttering mission readability.
+
+Inputs:
+- Mode (`title`, `hub`, `mission`, `result`).
+- Key toggle `H`.
+- Objective state for mission-specific hint text.
+
+Outputs:
+- Context-specific controls panel on-canvas.
+- Persistent HUD hint (`H: Help`).
+- Deterministic UI fields in text state:
+  - `ui.helpVisible`
+  - `ui.contextActions`
+  - `ui.objectiveHint`
+
+State:
+- `state.ui.helpVisible`: current manual visibility.
+- `state.ui.helpPinned`: user has manually toggled help.
+- `state.ui.autoHelpUntilFrame`: first-run visibility window.
+- `state.ui.firstMissionHelpShown`: mission onboarding gate.
+
+Behavior:
+- Auto-help shows at startup and first mission.
+- `H` toggles visibility immediately and pins manual preference.
+- Overlay strings are concise and mode-appropriate.
+
+Acceptance Checks:
+- `H` changes `ui.helpVisible` immediately in `render_game_to_text()`.
+- Overlay appears on first boot and first mission without input.
+- No overlap that blocks core objective readability.

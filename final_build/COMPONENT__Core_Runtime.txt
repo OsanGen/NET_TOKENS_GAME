@@ -1,0 +1,39 @@
+Component: Core Runtime
+Purpose:
+Run deterministic gameplay and rendering with stable automation hooks while preserving responsive keyboard controls.
+
+Inputs:
+- Keyboard: `Arrow`/`WASD` move, `Space` interact/attack/start, `Enter` start, `H` help toggle, `F` fullscreen, `Esc` exit fullscreen.
+- Start button click: `#start-btn`.
+- Resize/fullscreen browser events.
+- Deterministic automation hooks:
+  - `window.advanceTime(ms)`
+  - `window.render_game_to_text()`
+
+Outputs:
+- Rendered canvas frame at internal 320x180 simulation resolution.
+- Deterministic JSON text state including gameplay and UI/brand fields.
+- Mode transitions: `title -> hub -> mission -> result -> hub`.
+
+State:
+- `state.mode`, `state.frame`, `state.seed`, `state.rng`.
+- `state.player`: movement, hp, knockback, cooldown, invulnerability.
+- `state.mission`, `state.objective`, `state.entities`, `state.hubs`.
+- `state.ui`: help visibility/pin/timer flags.
+- `state.visual`: accent lead, contrast mode, sprite fallback mode.
+
+Edge Cases:
+- Help overlay can be hidden immediately via `H` even during auto-help window.
+- Start input works from button, `Enter`, and `Space` only on title.
+- Canvas sizing uses CSS size + DPR backing pixels without transform mismatch.
+- Missing sprites do not break runtime due procedural fallback path.
+
+Dependencies:
+- Browser Canvas2D + RAF/fullscreen APIs.
+- Local Playwright validation client (`web_game_playwright_client_local.js`) and deterministic probes.
+
+Acceptance Checks:
+- Hooks exist and return deterministic values for identical step sequences.
+- `H` toggles `ui.helpVisible` in `render_game_to_text()`.
+- Fullscreen/resizing preserves centered render and input alignment.
+- No runtime exceptions during mode transitions.

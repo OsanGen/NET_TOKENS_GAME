@@ -1,0 +1,38 @@
+Component: Visual Asset Content
+Purpose:
+Deliver CogSec-compliant 64x64 sprite assets and keep gameplay readable while generation is pending.
+
+Inputs:
+- Prompt manifest: `tmp/imagegen/astro-gauntlet-assets.jsonl` (24 entries).
+- Generator: `scripts/generate-imagegen-assets.sh`.
+- Imagegen CLI: `/Users/abelsanchez/.codex/skills/imagegen/scripts/image_gen.py`.
+- Env requirement: `OPENAI_API_KEY`.
+
+Outputs:
+- Regenerated PNG assets for:
+  - 18 alien species,
+  - astronaut,
+  - enemy,
+  - beacon,
+  - probe,
+  - planet node,
+  - ship.
+- 64x64 nearest-neighbor sprite files in `assets/sprites/`.
+
+Current Status:
+- Prompt manifest updated to CogSec Pastel style locks:
+  - token palette only,
+  - thin INK outlines,
+  - flat 2D,
+  - no glow/heavy gradients,
+  - no 3D cues.
+- Live generation blocked by missing `OPENAI_API_KEY`.
+
+Runtime Fallback Strategy:
+- `state.visual.useVectorFallback` forces brand-safe vector rendering until regenerated sprites are available.
+- Existing sprite loader remains active and deterministic.
+
+Acceptance Checks:
+- After API key is set, batch generation succeeds and syncs 24 sprite files.
+- Runtime can switch from vector fallback to generated sprites without logic changes.
+- All generated assets remain readable at 64x64 scale and palette-compliant.
