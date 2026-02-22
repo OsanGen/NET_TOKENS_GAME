@@ -8,9 +8,34 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="game-shell">
-      <canvas id="game-canvas" width="1280" height="720" aria-label="NET_TOKENS_GAME canvas"></canvas>
-      <button id="start-btn" type="button">Start Mission Deck</button>
+    <div class="page-shell">
+      <header class="hero-band">
+        <p class="brand-kicker">Net Token Command Grid</p>
+        <h1>NET_TOKENS_GAME</h1>
+        <p class="hero-subtext">
+          Tactical mission loops. Mission deck startup with one mission at a time. Ready
+          to run.
+        </p>
+      </header>
+      <div id="game-shell">
+        <span class="shell-ornament shell-ornament-left"></span>
+        <span class="shell-ornament shell-ornament-right"></span>
+        <canvas
+          id="game-canvas"
+          width="1280"
+          height="720"
+          aria-label="NET_TOKENS_GAME canvas"
+        ></canvas>
+        <button id="start-btn" type="button">Start Mission Deck</button>
+        <p id="control-hint">
+          Press H to toggle help. F for fullscreen. Arrow keys and W/A/S/D move and
+          interact.
+        </p>
+      </div>
+      <footer class="status-strip">
+        <span>Session status: live</span>
+        <span>Runtime hooks: render_game_to_text, advanceTime</span>
+      </footer>
     </div>
     <script src="game.js"></script>
   </body>
