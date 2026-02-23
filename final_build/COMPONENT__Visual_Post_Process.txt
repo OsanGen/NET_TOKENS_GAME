@@ -1,14 +1,14 @@
 Component: Visual Post Process
 Purpose:
 Own the full visual pipeline for all scenes:
-- Render internal scene into the offscreen world buffer.
+- Render internal scene into an offscreen world buffer.
 - Compose that buffer into the display with deterministic scaling.
-- Apply tone-driven overlays, motion FX, and preset-specific post-process styling for premium presentation.
-Gameplay rules, collisions, and state transitions remain unchanged.
+- Apply mode-driven scanline/noise/chromatic overlays and profile-based detail budgets.
+Gameplay simulation, collision checks, and hooks remain unchanged.
 
 Inputs:
 - World scene dimensions: `SIM_W=640`, `SIM_H=360`.
-- Internal render scale: `INTERNAL_RENDER_SCALE=4` (supersampled offscreen scene buffer).
+- Internal render scale: `INTERNAL_RENDER_SCALE=4` (offscreen scene buffer).
 - Display canvas geometry (`canvas.width`, `canvas.height`, DPR-aware sizing).
 - `state.mode`
 - `state.frame`, `state.seed`
@@ -19,88 +19,94 @@ Inputs:
   - `contrastMode`
   - `fxProfile`
   - `fxFrame`
-  - `vfxPreset` (new: `cinematic`, `neon`, `minimal`)
+  - `vfxPreset` (`cinematic`, `neon`, `minimal`)
+  - `visualProfile` (`premium` | `standard` | `low`)
+  - `visualProfileAuto`
+  - `frameWarnings` / `frameWarningLimit`
+  - `modeTransition`
 - Deterministic helpers: `frameNoise`, `sceneTone`, `accentColor`, `withAlpha`, `sceneTone`.
 
 Outputs:
 - A single frame rendered into `#game-canvas` with:
   - deterministic near-integer scale policy for crisp pixels,
-  - mode-specific motion layers,
-  - tone-first palette discipline (surface/panel/lead/secondary/accentPulse),
-  - preset-driven scanline/noise/particle/bloom intensity.
+  - readable, tone-driven overlays,
+  - profile-aware scanline/noise/particle/bloom intensity,
+  - optional reduced-motion scaling for motion-heavy FX.
 - External API stability: `window.render_game_to_text()` and `window.advanceTime(ms)` continue unchanged.
 
 State model:
 - Draw-time only; no gameplay simulation mutation.
-- Scene canvas is fixed at `SIM_W * INTERNAL_RENDER_SCALE` and world draw coords remain in `SIM` space via a pre-set context transform.
-- `renderQualityMode` defaults to `nearest`.
-- `state.visual` carries presentational fields used by animation pass:
+- Scene canvas remains `SIM_W * INTERNAL_RENDER_SCALE` with transform-based world coordinate space.
+- `renderQualityMode` defaults to `nearest` when unspecified.
+- `state.visual` visual-specific fields used at compose time:
   - `fxProfile`
   - `vfxPreset`
+  - `visualProfile`
+  - `visualProfileAuto`
   - `fxFrame`
   - `routePulsePhase`
   - `hubPulseOffset`
   - `battleImpactBurst`
   - `battleImpactSide`
   - `battleHud`
+  - `modeTransition`
+  - `frameWarnings`
 - Internal post-process buffers:
   - `postFxCanvas` (`640x360`)
   - `postFxCtx`
   - `postFxImageData`
 
 Visual preset layer:
-- `VISUAL_PRESETS` defines three active post-process styles:
+- `VISUAL_PRESETS` defines three styles:
   - `cinematic`
   - `neon`
   - `minimal`
-- `resolveActiveVfxProfile()` merges the active mode profile with preset multipliers.
+- `resolveModeVfxProfile()` merges mode profile with preset + quality tiers.
+- `resolveActiveVfxProfile()` also applies transition blends from `state.visual.modeTransition`.
+- `resolveVisualQualityMode()` auto-shifts `premium`/`standard`/`low` based on frame budget when `visualProfileAuto` is enabled.
 - `resolvePostProcessSourceCanvas()` applies deterministic chromatic channel splitting when `chromaShift > 0`.
-- `cycleVisualPreset()` switches presets via `V` key.
+- `cycleVisualPreset()` (`V` key) and `cycleVisualQualityProfile()` (`P` key) mutate profile state.
 
 Render-quality policy:
 - Scene context:
   - `sceneCtx.setTransform(INTERNAL_RENDER_SCALE,0,0,INTERNAL_RENDER_SCALE,0,0)` each frame.
-  - `sceneCtx.imageSmoothingEnabled` is set by effective policy.
+  - `sceneCtx.imageSmoothingEnabled` follows policy.
 - Post compose:
   - `rawScale = min(canvasW/SIM_W, canvasH/SIM_H)`
-  - `integerScale = round(rawScale)`, used when difference <= `0.12` for high-clarity policy
-  - integer path is default for nearest mode
-  - `smooth` path is only used when requested by policy
-  - jitter is limited to smooth mode only.
+  - integer snapping in nearest mode with overflow tolerance from pipeline config.
+  - `smooth` mode only when requested.
+  - `drawPostProcess()` applies `motionEnvelope` to limit jitter/beats under reduced-motion preference.
 
 Brand + overlay contract:
-- Tone governor enforces scene tone from `sceneTone(mode)`:
-  - primary in `tone.lead`
-  - secondary in `tone.secondary`
-  - accent flash in `tone.accentPulse`
-- Palette functions are mandatory for all overlays/effects.
-- `withAlpha` supports hex/rgb/rgba normalization and deterministic tone opacity.
-- Readability-first policy: no full-scene blur stack and no color explosion.
-- Overlay text/action copy remains compact and deterministic.
-- CSS presentation layer in `styles.css` now carries the external chrome/command rail system (`.command-bar`, `.input-dock`) with deterministic text and key chips.
-- Visual preset state is included in debug output (`render_game_to_text`).
+- Tone governor enforces `sceneTone(mode)` for all overlay surfaces and accents.
+- `withAlpha` applies deterministic RGB/RGBA normalization for safe contrast.
+- `assertSingleAccent()` and `assertReadableContrast()` run in `render()`.
+- Overlay text remains compact and sparse; gameplay status/action text is primarily externalized to DOM HUD cards.
+- CSS is externalized in `styles.css` through `.hud-panel`, `.hud-chip`, `.hud-badges`, `.hud-console-list`, and state classes (`.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`).
+- Reduced-motion is dual-bound:
+  - JS envelope clamp in `drawPostProcess()`.
+  - `motion-reduced` / `prefers-reduced-motion` in CSS.
 
 Mode animation stack:
 - Mission:
   - parallax stars
-  - objective pulse ring
+  - objective halo and sector/route field motion
   - deterministic comet lanes
-  - mission sector field motion
-  - beacon sweep halo on activate-beacon missions
+  - beacon sweep cue
 - Hub:
-  - focus orbit pulse
-  - route pulse flow and node markers
+  - focus pulse
+  - route flow markers and node indicators
   - ship orbit halo
 - Battle:
   - lane streaks
-  - burst lanes and impact feedback
+  - impact bursts
   - turn pulse strip
 - Title/Result:
   - ambient pulse and minimal scanline/noise envelope
 - Post-process overlay additions:
-  - preset-aware particle cloud drift
+  - preset-aware particle drift
   - preset-aware radial bloom
-  - preset-aware chromatic channel split (`resolvePostProcessSourceCanvas`)
+  - chromatic split (`resolvePostProcessSourceCanvas`)
   - scanline and noise density scaling
 
 Dependencies:
@@ -108,9 +114,11 @@ Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
 
 Key helper surfaces:
+- `resolveModeVfxProfile()`
 - `resolveActiveVfxProfile()`
-- `resolveVisualPresetKey()`
+- `resolveVisualQualityMode()`
 - `cycleVisualPreset()`
+- `cycleVisualQualityProfile()`
 - `drawPostProcess()`
 - `drawModeEffectsEnvelope()`
 - `drawPostProcessParticleCloud()`
@@ -123,19 +131,18 @@ Key helper surfaces:
 - `drawMissionSectorField()`
 - `drawMissionBeaconSweep()`
 - `drawMissionCometLanes()`
-- `drawMissionStatusStrip()` (UI helper in `drawMission`)
+- `drawMissionStatusStrip()` (legacy helper; status now surfaced via HUD)
 - `drawBattleFocusLanes()`
 - `drawBattleImpactStreak()`
 - `drawBattleTurnPulse()`
+- `drawPostProcessChromaticBleed({ scale })` guard path
+- `prefersReducedMotion()`, `applyReducedMotionState()`, `bindReducedMotionPreference()`
 - `state.visual.battleHud` (`enemyHp`, `playerHp`) interpolation for battle HP bars
 
 Acceptance checks:
-- `node --check /Users/abelsanchez/CODEX/NEWGAME/game.js` passes.
-- `drawPostProcessChromaticBleed()` defends against undefined `scale` by defaulting to `1` so mission/hub/battle post-process render path cannot throw `ReferenceError`.
-- `scripts/open-game.sh` opens and `http://127.0.0.1:5170` responds.
-- Playwright local smoke emits fresh shots/states without schema regressions.
-- Chromatic split output remains deterministic for fixed seed and frame (cinematic/neon) and remains clean at same resolution.
-- Visual smoke should show 960x540 and 1440x810 capture variants with clean pixel edges at common window sizes.
-- Mission status strip must show partial clear-wave progress before completion.
-- Battle HP bars must use deterministic interpolation from previous value (no jittery jumps).
-- Visual presets must alter scanline density, noise density, particle density, and bloom deterministically for equal seeds/frames.
+- `drawPostProcessChromaticBleed()` defends against undefined `scale` by defaulting to `1`.
+- `render_game_to_text()` includes visual profile + frame budget metrics in `ui.metrics` and `ui.brand`.
+- Playwright smoke emits fresh shots/states without schema regressions.
+- Chromatic split remains deterministic for fixed seed and frame.
+- Visual profile transitions (`premium|standard|low`) produce observable and measurable output differences without breaking frame progress.
+- Reduced-motion user preference significantly lowers motion envelope, but does not remove readability affordances.
