@@ -172,6 +172,10 @@
   const postFxImageData = postFxCtx.createImageData(SIM_W, SIM_H);
 
   const startBtn = document.getElementById("start-btn");
+  const controlsPanel = document.getElementById("controls-panel");
+  const controlsToggle = document.getElementById("controls-toggle");
+  const controlsActions = document.getElementById("controls-actions");
+  const controlsObjective = document.getElementById("controls-objective");
   const coordNote = "Origin top-left, +x right, +y down";
 
   const input = {
@@ -845,6 +849,10 @@
     ];
   }
 
+  function externalActionsForMode(mode) {
+    return contextActionsForMode(mode).filter((action) => !/^H:\s*help$/i.test(action));
+  }
+
   function objectiveHintText() {
     if (state.mode === "battle" && state.battle) {
       const enemyName = (alienById[state.battle.enemySpeciesId] || alienSpecies[0]).name;
@@ -857,6 +865,24 @@
   function helpOverlayVisible() {
     if (state.ui.helpPinned) return state.ui.helpVisible;
     return state.ui.helpVisible || state.frame <= state.ui.autoHelpUntilFrame;
+  }
+
+  function syncExternalControlsUI() {
+    if (!controlsPanel || !controlsToggle || !controlsActions || !controlsObjective) return;
+    const visible = helpOverlayVisible();
+    controlsPanel.classList.toggle("is-collapsed", !visible);
+    controlsPanel.setAttribute("data-expanded", visible ? "true" : "false");
+    controlsToggle.setAttribute("aria-pressed", visible ? "true" : "false");
+    controlsToggle.textContent = visible ? "H: Hide Help" : "H: Show Help";
+
+    const actions = externalActionsForMode(state.mode);
+    controlsActions.textContent = "";
+    for (const action of actions) {
+      const item = document.createElement("li");
+      item.textContent = action;
+      controlsActions.appendChild(item);
+    }
+    controlsObjective.textContent = objectiveHintText();
   }
 
   function brandAuditSnapshot() {
@@ -1936,7 +1962,6 @@
     sceneCtx.fillRect(0, 0, SIM_W, SIM_H);
     sceneCtx.font = "7px Sora, sans-serif";
     drawModeScene(state.mode);
-    drawHelpOverlay();
   }
 
   function drawModeScene(mode) {
@@ -2603,7 +2628,7 @@
     const hudH = 12;
     const hudX = 6;
     const hudY = SIM_H - hudH - 4;
-    const hint = `V: ${visualPresetLabel()}   H: Help`;
+    const presetText = `Preset ${visualPresetLabel()}`;
     sceneCtx.fillStyle = tone.panelFill;
     sceneCtx.fillRect(hudX, hudY, SIM_W - hudX * 2, hudH);
     sceneCtx.strokeStyle = tone.edge;
@@ -2615,42 +2640,8 @@
     sceneCtx.fillText(text, hudX + 6, hudY + 9);
     const lastMessage = state.messages[state.messages.length - 1] || "";
     if (lastMessage) sceneCtx.fillText(lastMessage, hudX + 6, hudY + 6);
-    const helpX = SIM_W - 8 - sceneCtx.measureText(hint).width;
-    sceneCtx.fillText(hint, helpX, hudY + 9);
-  }
-
-  function drawHelpOverlay() {
-    if (!helpOverlayVisible()) return;
-    const accent = accentColor();
-    const tone = sceneTone(state.mode);
-    const actions = contextActionsForMode(state.mode);
-    const overlayW = 178;
-    const overlayH = state.mode === "mission" ? 92 : state.mode === "battle" ? 98 : 80;
-    const x = 10;
-    const y = 10;
-    sceneCtx.fillStyle = withAlpha(tone.panelFill, 0.95);
-    sceneCtx.fillRect(x, y, overlayW, overlayH);
-    sceneCtx.strokeStyle = tone.edge;
-    sceneCtx.lineWidth = 1;
-    sceneCtx.strokeRect(x, y, overlayW, overlayH);
-    sceneCtx.fillStyle = accent;
-    sceneCtx.fillRect(x, y, overlayW, 4);
-    sceneCtx.fillStyle = tone.text;
-    sceneCtx.font = "700 8px Sora, sans-serif";
-    sceneCtx.fillText("Controls", x + 8, y + 13);
-    sceneCtx.font = "7px Sora, sans-serif";
-    let ty = y + 24;
-    for (const action of actions) {
-      sceneCtx.fillStyle = accent;
-      sceneCtx.fillRect(x + 8, ty - 4, 2, 2);
-      sceneCtx.fillStyle = tone.text;
-      sceneCtx.fillText(action, x + 14, ty);
-      ty += 10;
-    }
-    if ((state.mode === "mission" && state.objective.current) || state.mode === "battle") {
-      sceneCtx.fillStyle = tone.text;
-      sceneCtx.fillText(objectiveHintText(), x + 8, y + overlayH - 8);
-    }
+    const presetX = SIM_W - 8 - sceneCtx.measureText(presetText).width;
+    sceneCtx.fillText(presetText, presetX, hudY + 9);
   }
 
   function drawPostProcess() {
@@ -3225,6 +3216,7 @@
 
     drawWorldScene();
     drawPostProcess();
+    syncExternalControlsUI();
   }
 
   function update(dt) {
@@ -3299,6 +3291,7 @@
     } else if (key === "KeyH" && isDown) {
       state.ui.helpPinned = true;
       state.ui.helpVisible = !state.ui.helpVisible;
+      syncExternalControlsUI();
     } else if (key === "KeyV" && isDown) {
       cycleVisualPreset();
     } else if (key === "KeyF" && isDown) {
@@ -3456,6 +3449,13 @@
   startBtn.addEventListener("click", () => {
     startFromTitle();
   });
+  if (controlsToggle) {
+    controlsToggle.addEventListener("click", () => {
+      state.ui.helpPinned = true;
+      state.ui.helpVisible = !state.ui.helpVisible;
+      syncExternalControlsUI();
+    });
+  }
   document.addEventListener("keydown", (e) => keyEvent(e, true));
   document.addEventListener("keyup", (e) => keyEvent(e, false));
   window.addEventListener("resize", resizeCanvas);
@@ -3470,6 +3470,7 @@
   resetGame();
   setMode("title");
   resizeCanvas();
+  syncExternalControlsUI();
   state.messages = ["NET_TOKENS_GAME", "Press start"];
   render();
 

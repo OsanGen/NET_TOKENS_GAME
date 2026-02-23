@@ -1,32 +1,49 @@
 Component: Controls Overlay
 Purpose:
-Make controls discoverable at all times without cluttering mission readability.
+Provide always-discoverable controls outside the canvas so gameplay visuals stay uncluttered.
 
 Inputs:
-- Mode (`title`, `hub`, `mission`, `result`).
-- Key toggle `H`.
-- Objective state for mission-specific hint text.
+- Mode (`title`, `hub`, `mission`, `battle`, `result`).
+- Help visibility state (`state.ui.helpVisible`, `state.ui.helpPinned`, `state.ui.autoHelpUntilFrame`).
+- Key toggle `H` and external toggle button `#controls-toggle`.
+- Objective and battle context via `objectiveHintText()`.
 
 Outputs:
-- Context-specific controls panel on-canvas.
-- Persistent HUD hint (`H: Help`).
-- Deterministic UI fields in text state:
+- External controls rail rendered in DOM:
+  - `#controls-panel`
+  - `#controls-actions`
+  - `#controls-objective`
+- In-canvas controls overlay removed.
+- Deterministic UI fields in text state remain:
   - `ui.helpVisible`
   - `ui.contextActions`
   - `ui.objectiveHint`
 
 State:
-- `state.ui.helpVisible`: current manual visibility.
-- `state.ui.helpPinned`: user has manually toggled help.
-- `state.ui.autoHelpUntilFrame`: first-run visibility window.
+- `state.ui.helpVisible`: current manual visibility state.
+- `state.ui.helpPinned`: manual override of auto-help behavior.
+- `state.ui.autoHelpUntilFrame`: initial visibility window.
 - `state.ui.firstMissionHelpShown`: mission onboarding gate.
 
 Behavior:
-- Auto-help shows at startup and first mission.
-- `H` toggles visibility immediately and pins manual preference.
-- Overlay strings are concise and mode-appropriate.
+- External panel is synchronized each render by `syncExternalControlsUI()`.
+- `H` and `#controls-toggle` both toggle the same help state.
+- External actions list uses `contextActionsForMode()` filtered to avoid duplicate `H: help` line.
+- Objective/battle hint text is shown in `#controls-objective`.
+- Panel collapses with `.is-collapsed` class when help visibility is off.
+
+Edge Cases:
+- If controls DOM nodes are missing, sync function exits safely and gameplay continues.
+- Auto-help still surfaces controls on first load/first mission unless manually pinned off.
+- Mode changes update action text and objective hint without mutating gameplay state.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
 
 Acceptance Checks:
-- `H` changes `ui.helpVisible` immediately in `render_game_to_text()`.
-- Overlay appears on first boot and first mission without input.
-- No overlap that blocks core objective readability.
+- `H` updates panel collapsed state and `ui.helpVisible` immediately.
+- No controls card is rendered inside canvas.
+- External panel updates actions/objective when mode changes.
+- Desktop layout shows right rail; mobile layout stacks controls below game shell.

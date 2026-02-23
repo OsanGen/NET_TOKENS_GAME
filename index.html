@@ -17,20 +17,33 @@
           to run.
         </p>
       </header>
-      <div id="game-shell">
-        <span class="shell-ornament shell-ornament-left"></span>
-        <span class="shell-ornament shell-ornament-right"></span>
-        <canvas
-          id="game-canvas"
-          width="1280"
-          height="720"
-          aria-label="NET_TOKENS_GAME canvas"
-        ></canvas>
-        <button id="start-btn" type="button">Start Mission Deck</button>
-        <p id="control-hint">
-          Press H to toggle help. F for fullscreen. Arrow keys and W/A/S/D move and
-          interact.
-        </p>
+      <div id="play-layout">
+        <div id="game-shell">
+          <span class="shell-ornament shell-ornament-left"></span>
+          <span class="shell-ornament shell-ornament-right"></span>
+          <canvas
+            id="game-canvas"
+            width="1280"
+            height="720"
+            aria-label="NET_TOKENS_GAME canvas"
+          ></canvas>
+          <button id="start-btn" type="button">Start Mission Deck</button>
+        </div>
+        <aside id="controls-panel" class="controls-panel" aria-label="Game controls">
+          <div class="controls-header">
+            <p class="controls-kicker">External Controls</p>
+            <button id="controls-toggle" type="button" aria-pressed="true">H: Hide Help</button>
+          </div>
+          <ul id="controls-actions" class="controls-actions">
+            <li>Move with arrows/WASD</li>
+            <li>Space: interact</li>
+            <li>Enter: confirm</li>
+          </ul>
+          <p id="controls-objective" class="controls-objective" aria-live="polite">
+            No active objective
+          </p>
+          <p class="controls-foot">F: fullscreen. V: visual preset.</p>
+        </aside>
       </div>
       <footer class="status-strip">
         <span>Session status: live</span>

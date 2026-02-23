@@ -10,8 +10,9 @@ Components:
   - Seeded planet layout, lock timer, launch transition, safe label placement.
 - Brand Scene Engine (`game.js`)
   - Tokenized palette (`BRAND_TOKENS`), scene recipes (`SCENE_RECIPES`), per-scene accent lead selector.
-- Controls Overlay (`game.js`)
-  - `H` toggle, first-run auto-help, mode-specific action copy, objective hinting.
+- Controls Overlay (`game.js`, `index.html`, `styles.css`)
+  - External DOM controls rail (`#controls-panel`) with `H` and button toggle.
+  - Mode-specific action copy + objective hint synced outside the canvas.
 - Visual Post Process (`game.js`)
   - Lightweight scanline/noise pass with no glow/chroma/vignette stack.
 - Asset Pipeline (`scripts/generate-imagegen-assets.sh`, `tmp/imagegen/astro-gauntlet-assets.jsonl`)
@@ -31,7 +32,7 @@ Data Flow:
   - `hub`: movement, lock timer, planet launch.
   - `mission`: entity simulation, interactions, task progress, mission completion gate.
   - `result`: timed transition back to hub.
-- `render()` composes scene + controls overlay + post-process onto canvas.
+- `render()` composes scene + post-process onto canvas and syncs external controls panel DOM.
 - `render_game_to_text()` emits player/objective/entities/UI/brand audit payload for automation.
 
 Constraints:

@@ -92,11 +92,19 @@ body {
   font-size: 0.95rem;
 }
 
+#play-layout {
+  width: min(100%, 1400px);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(264px, 24vw, 340px);
+  gap: clamp(12px, 1.8vw, 20px);
+  align-items: stretch;
+}
+
 #game-shell {
   position: relative;
-  width: min(100%, 1400px);
+  width: 100%;
   aspect-ratio: 16 / 9;
-  margin-inline: auto;
   display: grid;
   place-items: center;
   border-radius: var(--radius-md);
@@ -110,6 +118,122 @@ body {
     inset 0 0 0 1px rgba(124, 233, 255, 0.2);
   overflow: hidden;
   animation: shellIn 0.35s var(--timing);
+}
+
+.controls-panel {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(124, 232, 255, 0.24);
+  background:
+    radial-gradient(circle at 90% 0%, rgba(76, 224, 255, 0.14), transparent 44%),
+    linear-gradient(165deg, rgba(12, 22, 44, 0.92), rgba(8, 14, 30, 0.9));
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1px rgba(137, 228, 255, 0.12);
+  padding: 0.86rem 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.66rem;
+}
+
+.controls-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.56rem;
+}
+
+.controls-kicker {
+  margin: 0;
+  font: 700 0.68rem/1 var(--title-stack);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--neon);
+}
+
+#controls-toggle {
+  border: 1px solid rgba(126, 224, 255, 0.32);
+  border-radius: 999px;
+  padding: 0.33rem 0.62rem;
+  background: rgba(11, 22, 42, 0.78);
+  color: #d8f6ff;
+  font: 600 0.68rem/1 var(--body-stack);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition:
+    border-color 180ms var(--timing),
+    transform 180ms var(--timing),
+    background-color 180ms var(--timing);
+}
+
+#controls-toggle:hover {
+  border-color: rgba(126, 244, 180, 0.56);
+  transform: translateY(-1px);
+}
+
+#controls-toggle:active {
+  transform: translateY(1px);
+}
+
+#controls-toggle:focus-visible {
+  outline: 1px solid rgba(126, 244, 180, 0.74);
+  outline-offset: 2px;
+}
+
+.controls-actions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.controls-actions li {
+  margin: 0;
+  position: relative;
+  border-radius: 8px;
+  border: 1px solid rgba(123, 214, 255, 0.18);
+  background: rgba(10, 20, 38, 0.68);
+  padding: 0.43rem 0.52rem 0.43rem 1rem;
+  color: #d9f1ff;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.controls-actions li::before {
+  content: "";
+  position: absolute;
+  left: 0.45rem;
+  top: 0.74rem;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--neon);
+}
+
+.controls-objective {
+  margin: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(126, 224, 255, 0.22);
+  background: rgba(12, 24, 47, 0.62);
+  padding: 0.5rem 0.58rem;
+  color: #d6efff;
+  font-size: 0.76rem;
+  line-height: 1.22;
+}
+
+.controls-foot {
+  margin: 0;
+  padding-top: 0.2rem;
+  color: rgba(221, 240, 255, 0.76);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.controls-panel.is-collapsed .controls-actions,
+.controls-panel.is-collapsed .controls-objective,
+.controls-panel.is-collapsed .controls-foot {
+  display: none;
 }
 
 .shell-ornament {
@@ -213,21 +337,6 @@ body {
     0 0 12px rgba(76, 224, 255, 0.36);
 }
 
-#control-hint {
-  position: absolute;
-  left: 1rem;
-  bottom: 0.9rem;
-  margin: 0;
-  padding: 0.5rem 0.7rem;
-  max-width: min(60%, 720px);
-  border-radius: 8px;
-  font-size: 0.75rem;
-  color: #d6efff;
-  background: rgba(10, 18, 37, 0.72);
-  border: 1px solid rgba(127, 220, 255, 0.3);
-  backdrop-filter: blur(4px);
-}
-
 .status-strip {
   margin: 12px auto 0;
   width: min(100%, 1280px);
@@ -266,6 +375,20 @@ body {
     text-align: center;
   }
 
+  #play-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .controls-panel {
+    order: 2;
+    width: 100%;
+  }
+
+  .controls-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   #start-btn {
     right: 50%;
     transform: translateX(50%);
@@ -277,13 +400,6 @@ body {
 
   #start-btn:active {
     transform: translateX(50%) translateY(1px);
-  }
-
-  #control-hint {
-    max-width: calc(100% - 1.2rem);
-    left: 0.55rem;
-    right: 0.55rem;
-    bottom: 0.55rem;
   }
 }
 
