@@ -103,6 +103,11 @@ Mode animation stack:
   - turn pulse strip
 - Title/Result:
   - ambient pulse and minimal scanline/noise envelope
+ - Sprite polish pass (new this turn):
+   - subpixel sprite jitter for hostile micro-motion
+   - per-entity faint outline/ring and shadow haze before post-process layering
+   - tiny entity-side drift particles for alien units while maintaining sprite silhouette
+   - optional sprite edge tinting controlled by entity tone and active mode
 - Post-process overlay additions:
   - preset-aware particle drift
   - preset-aware radial bloom
@@ -132,6 +137,11 @@ Key helper surfaces:
 - `drawMissionBeaconSweep()`
 - `drawMissionCometLanes()`
 - `drawMissionStatusStrip()` (legacy helper; status now surfaced via HUD)
+- `drawSpriteByKey()` (supports optional sprite overlay tint + subpixel pass options)
+- `drawSpriteEntity()` (now applies micro-atmosphere effects for every rendered sprite)
+- `resolveSpriteRenderOffset()`
+- `resolveSpriteAccent()`
+- `drawSpriteMicroAtmosphere()`
 - `drawBattleFocusLanes()`
 - `drawBattleImpactStreak()`
 - `drawBattleTurnPulse()`
@@ -146,3 +156,5 @@ Acceptance checks:
 - Chromatic split remains deterministic for fixed seed and frame.
 - Visual profile transitions (`premium|standard|low`) produce observable and measurable output differences without breaking frame progress.
 - Reduced-motion user preference significantly lowers motion envelope, but does not remove readability affordances.
+- Entity render micro-atmosphere does not alter gameplay collision/logic and remains visually bounded (no alpha or sprite extent exceeds 20% of entity radius).
+- Sprite enhancement pass (`drawSpriteMicroAtmosphere`) degrades safely into fallback render path when vector mode is active.

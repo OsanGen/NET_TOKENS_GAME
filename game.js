@@ -1039,15 +1039,29 @@
     state.visual.useVectorFallback = spriteStatus.loading > 0 || spriteStatus.missing > 0;
   }
 
-  function drawSpriteByKey(key, x, y, diameter, fallbackDraw = null) {
+  function drawSpriteByKey(key, x, y, diameter, fallbackDraw = null, options = null) {
+    const opts = options || {};
     const entry = spriteRegistry[key];
     const image = entry ? entry.image : null;
+    const renderX = x + (Number.isFinite(opts.motionX) ? opts.motionX : 0);
+    const renderY = y + (Number.isFinite(opts.motionY) ? opts.motionY : 0);
     if (entry && entry.state === "ready" && image && image.complete && image.naturalWidth > 0) {
       const snappedDiameter = Math.max(1, Math.round(diameter));
       const half = snappedDiameter * 0.5;
-      const snapX = Math.round(x - half);
-      const snapY = Math.round(y - half);
+      const snapX = Math.round(renderX - half);
+      const snapY = Math.round(renderY - half);
       sceneCtx.drawImage(image, snapX, snapY, snappedDiameter, snappedDiameter);
+      if (opts.glowColor) {
+        const glowAlpha = Number.isFinite(opts.glowAlpha) ? opts.glowAlpha : 0.05;
+        const glowColor = withAlpha(opts.glowColor, Math.max(0, Math.min(0.18, glowAlpha)));
+        if (glowAlpha > 0) {
+          sceneCtx.save();
+          sceneCtx.globalCompositeOperation = "source-atop";
+          sceneCtx.fillStyle = glowColor;
+          sceneCtx.fillRect(snapX, snapY, snappedDiameter, snappedDiameter);
+          sceneCtx.restore();
+        }
+      }
       return true;
     }
     if (fallbackDraw) fallbackDraw();
@@ -1075,23 +1089,155 @@
   function drawSpriteEntity(entity, fallbackDraw) {
     const tone = sceneTone(state.mode);
     const size = spriteSizeForEntity(entity);
+    const pulses = resolveVfxPulses();
+    const spriteOffset = resolveSpriteRenderOffset(entity);
+    const spriteAccent = resolveSpriteAccent(entity, tone);
     const prevAlpha = sceneCtx.globalAlpha;
     const capturedFade = entity.kind === "alien" && entity.captured ? 0.3 : 1;
     sceneCtx.globalAlpha = capturedFade;
     if (state.visual && state.visual.useVectorFallback) {
-      if (fallbackDraw) fallbackDraw(tone);
+      if (fallbackDraw) {
+        fallbackDraw(
+          {
+            ...entity,
+            x: entity.x + spriteOffset.motionX,
+            y: entity.y + spriteOffset.motionY,
+          },
+          tone,
+          pulses,
+        );
+      }
       sceneCtx.globalAlpha = prevAlpha;
       return false;
     }
-    const drawn = drawSpriteByKey(spriteKeyForEntity(entity), entity.x, entity.y, size, fallbackDraw);
+    const drawn = drawSpriteByKey(
+      spriteKeyForEntity(entity),
+      entity.x + spriteOffset.motionX,
+      entity.y + spriteOffset.motionY,
+      size,
+      fallbackDraw && (() => {
+        fallbackDraw(
+          {
+            ...entity,
+            x: entity.x + spriteOffset.motionX,
+            y: entity.y + spriteOffset.motionY,
+          },
+          tone,
+          pulses,
+        );
+      }),
+      {
+        motionX: 0,
+        motionY: 0,
+        glowColor: spriteAccent,
+        glowAlpha: (entity.kind === "alien" ? 0.055 : 0.028) * (0.9 + pulses.ambient * 0.6 + pulses.battle * 0.3),
+      },
+    );
     if (drawn && entity.kind === "alien" && entity.captured) {
       sceneCtx.fillStyle = withAlpha(tone.lead, 0.28);
       sceneCtx.beginPath();
-      sceneCtx.arc(entity.x, entity.y, entity.r + 1, 0, Math.PI * 2);
+      sceneCtx.arc(entity.x + spriteOffset.motionX, entity.y + spriteOffset.motionY, entity.r + 1, 0, Math.PI * 2);
       sceneCtx.fill();
+    }
+    if (drawn) {
+      drawSpriteMicroAtmosphere({
+        entity: {
+          ...entity,
+          x: entity.x + spriteOffset.motionX,
+          y: entity.y + spriteOffset.motionY,
+        },
+        tone,
+        spriteAccent,
+        spriteSize: size,
+        isCaptured: entity.kind === "alien" && entity.captured,
+        pulses,
+      });
     }
     sceneCtx.globalAlpha = prevAlpha;
     return drawn;
+  }
+
+  function resolveSpriteRenderOffset(entity) {
+    if (!entity || !Number.isFinite(entity.x) || !Number.isFinite(entity.y)) {
+      return { motionX: 0, motionY: 0 };
+    }
+    const modeBoost = state.mode === "battle" ? 0.72 : state.mode === "mission" ? 0.56 : 0.42;
+    const intensity = Number.isFinite(entity.r) ? Math.max(0.22, Math.min(0.85, entity.r / 14)) : 0.42;
+    const jitterBaseX = frameNoise(Math.floor(entity.x * 13), Math.floor(entity.y * 17), 31);
+    const jitterBaseY = frameNoise(Math.floor(entity.y * 19), Math.floor(entity.x * 23), 37);
+    const jitterX = (jitterBaseX - 0.5) * modeBoost * intensity;
+    const jitterY = (jitterBaseY - 0.5) * modeBoost * intensity * 0.74;
+    return {
+      motionX: jitterX,
+      motionY: jitterY,
+    };
+  }
+
+  function resolveSpriteAccent(entity, tone) {
+    if (entity && entity.kind === "player") return tone.text;
+    if (entity && entity.kind === "alien" && entity.species && entity.species.color) return entity.species.color;
+    if (entity && entity.kind === "enemy") return tone.secondary;
+    if (entity && entity.kind === "beacon") return tone.accentPulse;
+    if (entity && entity.kind === "probe") return tone.subtle;
+    return tone.secondary;
+  }
+
+  function drawSpriteMicroAtmosphere({
+    entity,
+    tone,
+    spriteAccent,
+    spriteSize = 8,
+    isCaptured = false,
+    pulses,
+  }) {
+    if (!entity || !Number.isFinite(entity.x) || !Number.isFinite(entity.y)) return;
+    const pulse = 0.4 + pulses.ambient * 0.35 + (entity.kind === "alien" ? 0.1 : 0);
+    const glow = Math.max(0.35, Math.min(0.85, 0.18 + pulses.modeShift + pulses.ambient));
+    const ringPulse = pulse + (isCaptured ? 0.22 : 0);
+    const baseRadius = Math.max(1.8, spriteSize * 0.52);
+
+    sceneCtx.fillStyle = withAlpha(BRAND_TOKENS.INK, (0.06 + pulses.ambient * 0.03) * glow);
+    sceneCtx.beginPath();
+    sceneCtx.ellipse(
+      entity.x,
+      entity.y + (entity.r || spriteSize * 0.15),
+      baseRadius * 1.55,
+      Math.max(0.7, baseRadius * 0.42),
+      0,
+      0,
+      Math.PI * 2,
+    );
+    sceneCtx.fill();
+
+    sceneCtx.strokeStyle = withAlpha(spriteAccent, 0.13 + ringPulse * 0.11);
+    sceneCtx.lineWidth = Math.max(0.35, Math.min(1.35, baseRadius * 0.09));
+    sceneCtx.beginPath();
+    sceneCtx.arc(entity.x, entity.y, baseRadius + 1, 0, Math.PI * 2);
+    sceneCtx.stroke();
+
+    if (entity.kind === "alien" && !isCaptured) {
+      const drift = Math.sin(state.visual.fxFrame * 0.17 + entity.x * 0.04) * 1.2;
+      for (let i = 0; i < 2; i += 1) {
+        const seed = frameNoise(i * 17, entity.x + entity.r + state.visual.fxFrame, 53);
+        if (seed < 0.22) continue;
+        const angle = seed * Math.PI * 2;
+        const dist = baseRadius * (0.6 + i * 0.18);
+        const px = entity.x + Math.cos(angle + drift) * dist;
+        const py = entity.y + Math.sin(angle + drift) * (dist * 0.75);
+        sceneCtx.fillStyle = withAlpha(spriteAccent, 0.05 + seed * 0.08 + pulses.battle * 0.04);
+        sceneCtx.fillRect(px, py, Math.max(1, Math.floor(baseRadius * 0.16)), Math.max(1, Math.floor(baseRadius * 0.16)));
+      }
+    }
+
+    if (isCaptured) {
+      sceneCtx.fillStyle = withAlpha(tone.surface, 0.21);
+      sceneCtx.fillRect(
+        entity.x - baseRadius * 0.6,
+        entity.y - baseRadius * 0.8,
+        baseRadius * 1.2,
+        baseRadius * 0.18,
+      );
+    }
   }
 
   function drawAlienFallback(entity, tone = null) {
