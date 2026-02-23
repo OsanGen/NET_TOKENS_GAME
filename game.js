@@ -3282,6 +3282,7 @@
         profile: modeProfile,
         pulses,
         transitionPulse,
+        scale,
       });
     }
 
@@ -3420,7 +3421,18 @@
     }
   }
 
-  function drawPostProcessChromaticBleed({ tone, offsetX, offsetY, drawW, drawH, profile, pulses, transitionPulse }) {
+  function drawPostProcessChromaticBleed({
+    tone,
+    offsetX,
+    offsetY,
+    drawW,
+    drawH,
+    profile,
+    pulses,
+    transitionPulse,
+    scale,
+  }) {
+    const resolvedScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
     const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
     const bleed = Math.max(
       0,
@@ -3436,8 +3448,8 @@
     const riftCount = Math.round(3 + bleed * VISUAL_PIPELINE.effects.riftPulseDensity * 2);
     for (let i = 0; i < riftCount; i += 1) {
       const segmentY = Math.floor(offsetY + frameNoise(i * 17, state.visual.fxFrame, 29) * drawH);
-      const bandH = Math.max(1, Math.floor(0.8 + scale * (0.6 + (i % 4) * 0.3)));
-      const drift = Math.sin(state.visual.fxFrame * 0.16 + i * 1.5) * (scale * 1.2);
+      const bandH = Math.max(1, Math.floor(0.8 + resolvedScale * (0.6 + (i % 4) * 0.3)));
+      const drift = Math.sin(state.visual.fxFrame * 0.16 + i * 1.5) * (resolvedScale * 1.2);
       const bleedAlpha = 0.018 + bleed * 0.05;
       const jitterLen = Math.round(drawW * (0.6 + (i % 4) * 0.1));
       const start = offsetX + drift;

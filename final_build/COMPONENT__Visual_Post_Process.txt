@@ -131,6 +131,7 @@ Key helper surfaces:
 
 Acceptance checks:
 - `node --check /Users/abelsanchez/CODEX/NEWGAME/game.js` passes.
+- `drawPostProcessChromaticBleed()` defends against undefined `scale` by defaulting to `1` so mission/hub/battle post-process render path cannot throw `ReferenceError`.
 - `scripts/open-game.sh` opens and `http://127.0.0.1:5170` responds.
 - Playwright local smoke emits fresh shots/states without schema regressions.
 - Chromatic split output remains deterministic for fixed seed and frame (cinematic/neon) and remains clean at same resolution.
