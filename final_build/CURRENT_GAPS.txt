@@ -1,7 +1,7 @@
 final_build (component | status | next action)
 - Mission Flow | done | verify all task variants remain gated by target capture in longer play sessions
 - Hub Flow | in_progress | tune HUB_NODE_MIN_GAP and board spacing after one full 10-seed smoke pass
-- Controls Overlay | in_progress | run a visual smoke pass for right-rail desktop and stacked mobile layouts to confirm collapsed/expanded panel readability
+- Controls Overlay | done | confirm no control verbs remain inside hub render loop and external rail is still readable on desktop
 - Local Launch Tooling | done | stale/reused PID handling now guarded; keep using `scripts/open-game.sh` for reliable open/start on `5170`
 - Validation Loop | done | continue using `web_game_playwright_client_local.js` plus deterministic probe scripts for task-specific checks
 - Visual Asset Content | blocked | set `OPENAI_API_KEY` then run `bash scripts/generate-imagegen-assets.sh` to regenerate all 24 sprites from CogSec-compliant prompts and sync 64x64 outputs into `assets/sprites`

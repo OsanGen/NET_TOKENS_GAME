@@ -13,7 +13,7 @@ Outputs:
   - `#controls-panel`
   - `#controls-actions`
   - `#controls-objective`
-- In-canvas controls overlay removed.
+- In-canvas control/action copy removed; only contextual status reads remain inside canvas (eg. lock/route telemetry).
 - Deterministic UI fields in text state remain:
   - `ui.helpVisible`
   - `ui.contextActions`
@@ -31,6 +31,7 @@ Behavior:
 - External actions list uses `contextActionsForMode()` filtered to avoid duplicate `H: help` line.
 - Objective/battle hint text is shown in `#controls-objective`.
 - Panel collapses with `.is-collapsed` class when help visibility is off.
+- Hub informational copy in `drawHub()` intentionally avoids explicit control text to keep control interaction verbs outside canvas.
 
 Edge Cases:
 - If controls DOM nodes are missing, sync function exits safely and gameplay continues.
@@ -44,6 +45,6 @@ Dependencies:
 
 Acceptance Checks:
 - `H` updates panel collapsed state and `ui.helpVisible` immediately.
-- No controls card is rendered inside canvas.
+- No explicit controls card text is rendered inside canvas.
 - External panel updates actions/objective when mode changes.
 - Desktop layout shows right rail; mobile layout stacks controls below game shell.

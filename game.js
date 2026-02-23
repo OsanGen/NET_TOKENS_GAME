@@ -9,19 +9,106 @@
   const VIEW_MARGIN = 2;
   const SAFE_MARGIN = 12;
 
+  const EFFECT_MODES = Object.freeze({
+    title: Object.freeze({
+      budget: "premium",
+      toneStrength: 0.16,
+      particles: 28,
+      motionAmp: 0.16,
+      effectCap: 0.18,
+      noiseDensity: 1.0,
+      noiseSpeed: 1,
+      scanlineDensity: 0.88,
+      scanlineStrength: 0.62,
+      bloom: 0.1,
+      chromaticSplit: 0.011,
+      frameJitter: 0.18,
+      shakeGain: 0.32,
+      flickerChance: 0.02,
+      vignetteAmount: 0.07,
+      accentColor: "COG_BLUE",
+    }),
+    hub: Object.freeze({
+      budget: "premium",
+      toneStrength: 0.24,
+      particles: 46,
+      motionAmp: 0.22,
+      effectCap: 0.28,
+      noiseDensity: 1.12,
+      noiseSpeed: 1.06,
+      scanlineDensity: 0.93,
+      scanlineStrength: 0.7,
+      bloom: 0.14,
+      chromaticSplit: 0.015,
+      frameJitter: 0.21,
+      shakeGain: 0.26,
+      flickerChance: 0.03,
+      vignetteAmount: 0.08,
+      accentColor: "COG_MINT",
+    }),
+    mission: Object.freeze({
+      budget: "premium",
+      toneStrength: 0.22,
+      particles: 44,
+      motionAmp: 0.2,
+      effectCap: 0.32,
+      noiseDensity: 1.32,
+      noiseSpeed: 1.12,
+      scanlineDensity: 1.06,
+      scanlineStrength: 0.84,
+      bloom: 0.2,
+      chromaticSplit: 0.028,
+      frameJitter: 0.44,
+      shakeGain: 0.48,
+      flickerChance: 0.08,
+      vignetteAmount: 0.13,
+      accentColor: "COG_YELLOW",
+    }),
+    battle: Object.freeze({
+      budget: "premium",
+      toneStrength: 0.2,
+      particles: 32,
+      motionAmp: 0.18,
+      effectCap: 0.2,
+      noiseDensity: 1.04,
+      noiseSpeed: 1.08,
+      scanlineDensity: 1.1,
+      scanlineStrength: 0.66,
+      bloom: 0.11,
+      chromaticSplit: 0.008,
+      frameJitter: 0.14,
+      shakeGain: 0.34,
+      flickerChance: 0.04,
+      vignetteAmount: 0.09,
+      accentColor: "COG_PINK",
+    }),
+    result: Object.freeze({
+      budget: "premium",
+      toneStrength: 0.12,
+      particles: 18,
+      motionAmp: 0.08,
+      effectCap: 0.14,
+      noiseDensity: 0.86,
+      noiseSpeed: 0.85,
+      scanlineDensity: 0.7,
+      scanlineStrength: 0.42,
+      bloom: 0.07,
+      chromaticSplit: 0.006,
+      frameJitter: 0.08,
+      shakeGain: 0.18,
+      flickerChance: 0.015,
+      vignetteAmount: 0.05,
+      accentColor: "COG_PINK",
+    }),
+  });
+
   const VISUAL_PIPELINE = Object.freeze({
     mode: "premium",
     defaultPolicy: "nearest",
     allowSmoothFallback: false,
     sceneScaleMode: "integer",
     hudLineHeight: 8,
-    vfxProfiles: Object.freeze({
-      title: { budget: "premium", toneStrength: 0.16, particles: 26, motionAmp: 0.16, effectCap: 0.18 },
-      hub: { budget: "premium", toneStrength: 0.24, particles: 44, motionAmp: 0.22, effectCap: 0.28 },
-      mission: { budget: "premium", toneStrength: 0.22, particles: 36, motionAmp: 0.2, effectCap: 0.26 },
-      battle: { budget: "premium", toneStrength: 0.2, particles: 30, motionAmp: 0.18, effectCap: 0.2 },
-      result: { budget: "premium", toneStrength: 0.12, particles: 18, motionAmp: 0.08, effectCap: 0.14 },
-    }),
+    vfxProfiles: EFFECT_MODES,
     effects: {
       baseScanAlpha: 0.08,
       grainCount: 92,
@@ -32,6 +119,12 @@
       missionNebulaRows: 12,
       hubAtmosphereBands: 8,
       battlePulseBars: 3,
+      creepLineCount: 18,
+      riftStripeDensity: 6,
+      staticWashDensity: 52,
+      ruptureFrequencies: 3.6,
+      riftPulseDensity: 4.2,
+      veilDensity: 22,
     },
     quality: {
       snapScaleTolerance: 0.33,
@@ -48,8 +141,15 @@
       effectCap: 1.1,
       noiseDensity: 1.04,
       scanlineDensity: 1,
+      scanlineStrength: 1,
+      noiseSpeed: 1,
       bloom: 0.16,
       chromaShift: 0.02,
+      jitterShift: 1,
+      flickerShift: 1,
+      vignetteBoost: 1,
+      chromaticShift: 1,
+      shakeBoost: 1,
     }),
     neon: Object.freeze({
       label: "NEON",
@@ -59,8 +159,15 @@
       effectCap: 1.3,
       noiseDensity: 1.22,
       scanlineDensity: 1.25,
+      scanlineStrength: 1.35,
+      noiseSpeed: 1.12,
       bloom: 0.24,
       chromaShift: 0.06,
+      jitterShift: 1.22,
+      flickerShift: 1.5,
+      vignetteBoost: 1.08,
+      chromaticShift: 1.2,
+      shakeBoost: 1.08,
     }),
     minimal: Object.freeze({
       label: "MINIMAL",
@@ -70,8 +177,15 @@
       effectCap: 0.68,
       noiseDensity: 0.54,
       scanlineDensity: 0.62,
+      scanlineStrength: 0.62,
+      noiseSpeed: 0.8,
       bloom: 0.05,
       chromaShift: 0.0,
+      jitterShift: 0.7,
+      flickerShift: 0.35,
+      vignetteBoost: 0.72,
+      chromaticShift: 0.15,
+      shakeBoost: 0.6,
     }),
   });
 
@@ -303,6 +417,73 @@
     return `rgba(${r}, ${g}, ${b}, ${cleanAlpha})`;
   }
 
+  function parseHexToken(color) {
+    if (!color || typeof color !== "string") return null;
+    const normalized = color.trim().toLowerCase();
+    if (!normalized.startsWith("#")) return null;
+    const hex = normalized.slice(1);
+    const fullHex = hex.length === 3 ? hex.split("").map((char) => char + char).join("") : hex;
+    if (!/^[0-9a-f]{6}$/i.test(fullHex)) return null;
+    const value = parseInt(fullHex, 16);
+    return {
+      r: (value >> 16) & 255,
+      g: (value >> 8) & 255,
+      b: value & 255,
+    };
+  }
+
+  function parseRgbToken(color) {
+    if (!color || typeof color !== "string") return null;
+    const rgbaMatch = color.match(/^rgba?\(([^)]+)\)$/i);
+    if (!rgbaMatch) return null;
+    const parts = rgbaMatch[1].split(",").map((part) => part.trim()).filter(Boolean);
+    if (parts.length < 3) return null;
+    return {
+      r: clamp(Number(parts[0]), 0, 255),
+      g: clamp(Number(parts[1]), 0, 255),
+      b: clamp(Number(parts[2]), 0, 255),
+    };
+  }
+
+  function parseColorTokens(color) {
+    return parseHexToken(color) || parseRgbToken(color) || null;
+  }
+
+  function linearizeChannel(v) {
+    const s = clamp(v / 255, 0, 1);
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  }
+
+  function colorLuminance(color) {
+    const parsed = parseColorTokens(color);
+    if (!parsed) return 0.07;
+    const r = linearizeChannel(parsed.r);
+    const g = linearizeChannel(parsed.g);
+    const b = linearizeChannel(parsed.b);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  function colorContrastRatio(a, b) {
+    const l1 = colorLuminance(a);
+    const l2 = colorLuminance(b);
+    const hi = Math.max(l1, l2);
+    const lo = Math.min(l1, l2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  function normalizeModeTransition(profile, mode) {
+    if (!profile || !state.visual) return null;
+    return {
+      mode: mode || state.mode,
+      timer: profile.timer || 0,
+      duration: profile.duration || 0,
+      fromMode: profile.fromMode || mode || state.mode,
+      toMode: profile.toMode || mode || state.mode,
+      transitionBlend: profile.transitionBlend || 0,
+      accentColor: profile.accentColor || BRAND_TOKENS.COG_BLUE,
+    };
+  }
+
   function resolveVisualPolicy() {
     if (!state || !state.visual) return VISUAL_PIPELINE.defaultPolicy;
     if (state.visual.renderQualityMode === "smooth" || state.visual.scaleMode === "smooth") return "smooth";
@@ -324,29 +505,200 @@
     return preset && preset.label ? preset.label : "CINEMATIC";
   }
 
-  function resolveActiveVfxProfile() {
+  function resolveModeVfxProfile(mode) {
+    const selectedMode = mode || "title";
     const preset = resolveVisualPreset();
-    const baseProfile = state.visual.fxProfile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const baseProfile = VISUAL_PIPELINE.vfxProfiles[selectedMode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const accentLead = baseProfile.accentColor || pickAccentLead(selectedMode, state.mission, state.seed);
     return {
       ...baseProfile,
       toneStrength: (baseProfile.toneStrength || 0) * (preset.toneStrength || 1),
-      motionAmp: (baseProfile.motionAmp || 0) * (preset.motionAmp || 1),
+      motionAmp: (baseProfile.motionAmp || 0) * (preset.motionAmp || 1) * (preset.noiseSpeed || 1),
       particles: Math.max(1, Math.round((baseProfile.particles || 0) * (preset.particleDensity || 1))),
       particleDensity: preset.particleDensity || 1,
       effectCap: (baseProfile.effectCap || 0) * (preset.effectCap || 1),
-      noiseDensity: preset.noiseDensity || 1,
-      scanlineDensity: preset.scanlineDensity || 1,
-      bloom: preset.bloom || 0,
-      chromaShift: preset.chromaShift || 0,
+      noiseDensity: (baseProfile.noiseDensity || 1) * (preset.noiseDensity || 1),
+      scanlineDensity: (baseProfile.scanlineDensity || 1) * (preset.scanlineDensity || 1),
+      scanlineStrength: (baseProfile.scanlineStrength || 0.5) * (preset.scanlineStrength || 1),
+      noiseSpeed: (baseProfile.noiseSpeed || 1) * (preset.noiseSpeed || 1),
+      bloom: (baseProfile.bloom || 0) * (preset.bloom || 1),
+      chromaShift: (baseProfile.chromaticSplit || 0) * (preset.chromaShift || 1) * (preset.chromaticShift || 1),
+      frameJitter: (baseProfile.frameJitter || 0) * (preset.jitterShift || 1),
+      shakeGain: (baseProfile.shakeGain || 0) * (preset.shakeBoost || 1),
+      flickerChance: (baseProfile.flickerChance || 0) * (preset.flickerShift || 1),
+      vignetteAmount: Math.min(0.14, (baseProfile.vignetteAmount || 0) * (preset.vignetteBoost || 1)),
+      accentLead,
+      accentColor: BRAND_TOKENS[accentLead] || BRAND_TOKENS.COG_BLUE,
       presetKey: resolveVisualPresetKey(),
       presetLabel: preset.label || "CINEMATIC",
     };
+  }
+
+  function blendVfxProfiles(fromProfile, toProfile, t) {
+    const amount = clamp(t, 0, 1);
+    const lerpValue = (a, b) => a + (b - a) * amount;
+    return {
+      ...toProfile,
+      toneStrength: lerpValue(fromProfile.toneStrength || 0, toProfile.toneStrength || 0),
+      motionAmp: lerpValue(fromProfile.motionAmp || 0, toProfile.motionAmp || 0),
+      particles: Math.max(1, Math.round(lerpValue(fromProfile.particles || 0, toProfile.particles || 0))),
+      particleDensity: lerpValue(fromProfile.particleDensity || 1, toProfile.particleDensity || 1),
+      effectCap: lerpValue(fromProfile.effectCap || 0, toProfile.effectCap || 0),
+      noiseDensity: lerpValue(fromProfile.noiseDensity || 1, toProfile.noiseDensity || 1),
+      scanlineDensity: lerpValue(fromProfile.scanlineDensity || 1, toProfile.scanlineDensity || 1),
+      scanlineStrength: lerpValue(fromProfile.scanlineStrength || 0, toProfile.scanlineStrength || 0),
+      noiseSpeed: lerpValue(fromProfile.noiseSpeed || 1, toProfile.noiseSpeed || 1),
+      bloom: lerpValue(fromProfile.bloom || 0, toProfile.bloom || 0),
+      chromaShift: lerpValue(fromProfile.chromaShift || 0, toProfile.chromaShift || 0),
+      frameJitter: lerpValue(fromProfile.frameJitter || 0, toProfile.frameJitter || 0),
+      shakeGain: lerpValue(fromProfile.shakeGain || 0, toProfile.shakeGain || 0),
+      flickerChance: lerpValue(fromProfile.flickerChance || 0, toProfile.flickerChance || 0),
+      vignetteAmount: lerpValue(fromProfile.vignetteAmount || 0, toProfile.vignetteAmount || 0),
+      accentLead: amount < 0.55 ? fromProfile.accentLead : toProfile.accentLead,
+      accentColor: amount < 0.55 ? fromProfile.accentColor : toProfile.accentColor,
+    };
+  }
+
+  function resolveActiveVfxProfile() {
+    const currentMode = state.mode || "title";
+    const transition = (state.visual && state.visual.modeTransition) || null;
+    const transitionActive = transition && transition.duration > 0 && transition.timer > 0;
+    const currentProfile = resolveModeVfxProfile(currentMode);
+    if (!transitionActive || !transition.fromMode || !transition.toMode || transition.fromMode === transition.toMode) {
+      return currentProfile;
+    }
+
+    const fromProfile = resolveModeVfxProfile(transition.fromMode);
+    const toProfile = currentProfile;
+    const travel = 1 - transition.timer / Math.max(1, transition.duration);
+    const edgeProfile = blendVfxProfiles(fromProfile, toProfile, travel);
+    edgeProfile.transitionBlend = clamp(travel, 0, 1);
+    return edgeProfile;
+  }
+
+  function normalizeTransitionFrames(frames) {
+    const value = Number(frames);
+    if (!Number.isFinite(value)) return Math.round(TARGET_FPS * 0.25);
+    return clamp(Math.round(value), 1, TARGET_FPS * 2);
+  }
+
+  function startModeTransition(nextMode, options = {}) {
+    if (!state.visual) return;
+    const target = nextMode || "title";
+    const currentMode = state.mode || "title";
+    const frames = normalizeTransitionFrames(
+      Number.isFinite(options.durationFrames) ? options.durationFrames : TARGET_FPS * 0.22,
+    );
+    if (currentMode === target) {
+      state.visual.modeTransition = {
+        timer: 0,
+        duration: 0,
+        fromMode: target,
+        toMode: target,
+      };
+      return;
+    }
+    state.visual.modeTransition = {
+      timer: frames,
+      duration: frames,
+      fromMode: currentMode,
+      toMode: target,
+    };
+  }
+
+  const VFX_AUDIT = Object.freeze({
+    ONE_ACCENT_WARNING_KEY: "visual_one_accent_logged",
+    READABILITY_WARNING_KEY: "visual_readability_logged",
+  });
+  const vfxComplianceState = {
+    oneAccentWarned: false,
+    readabilityWarnedModes: {},
+    lastTransitionProfileMode: null,
+  };
+
+  function assertSingleAccent(profile) {
+    if (!profile || vfxComplianceState.oneAccentWarned) return;
+    const tone = sceneTone(state.mode);
+    const lead = parseColorTokens(profile.accentColor || tone.lead || tone.text || BRAND_TOKENS.INK);
+    const secondary = parseColorTokens(tone.secondary || tone.lead || tone.accentPulse || tone.text);
+    const accent = parseColorTokens(tone.accentPulse || tone.lead || tone.text);
+    const profileColor = parseColorTokens(profile.accentColor || tone.lead || tone.text);
+    const compare = (a, b) =>
+      !a && !b ? true : !!a && !!b && a.r === b.r && a.g === b.g && a.b === b.b;
+    if (!compare(lead, secondary) || !compare(lead, accent) || !compare(lead, profileColor)) {
+      console.warn(`OSAN Compliance: scene "${state.mode}" has ${VFX_AUDIT.ONE_ACCENT_WARNING_KEY}`);
+      vfxComplianceState.oneAccentWarned = true;
+    }
+  }
+
+  function assertReadableContrast(profile, tone) {
+    if (!profile || !tone) return;
+    const modeKey = String(state.mode || "title");
+    if (vfxComplianceState.readabilityWarnedModes[modeKey]) return;
+    const headlineContrast = colorContrastRatio(tone.text, tone.surface || tone.panelFill || "#ffffff");
+    if (headlineContrast < 4.2) {
+      console.warn(
+        `OSAN Compliance: scene "${modeKey}" dropped contrast floor. ratio ${headlineContrast.toFixed(2)} < 4.2 (${VFX_AUDIT.READABILITY_WARNING_KEY})`,
+      );
+      vfxComplianceState.readabilityWarnedModes[modeKey] = true;
+      return;
+    }
+    const panelContrast = colorContrastRatio(tone.text, tone.panelFill || tone.surface || "#ffffff");
+    if (panelContrast < 3.4) {
+      console.warn(
+        `OSAN Compliance: scene "${modeKey}" has weak panel contrast ${panelContrast.toFixed(2)} < 3.4 (${VFX_AUDIT.READABILITY_WARNING_KEY})`,
+      );
+      vfxComplianceState.readabilityWarnedModes[modeKey] = true;
+    }
   }
 
   function cycleVisualPreset() {
     const current = VISUAL_PRESET_ORDER.indexOf(resolveVisualPresetKey());
     const next = VISUAL_PRESET_ORDER[(current + 1) % VISUAL_PRESET_ORDER.length];
     state.visual.vfxPreset = next;
+  }
+
+  function queueVfxPulse(type, amount = 0.22, options = {}) {
+    if (!state.visual || !state.visual.vfxPulse) return;
+    if (!(type in state.visual.vfxPulse)) return;
+    const clampAmount = clamp(Number.isFinite(amount) ? amount : 0, 0, 1.2);
+    const pulseScale = clamp(Number.isFinite(options.scale) ? options.scale : 1, 0, 3);
+    const pulseCap = clamp(Number.isFinite(options.max) ? options.max : 1, 0, 1.2);
+    state.visual.vfxPulse[type] = Math.min(
+      pulseCap,
+      (Number(state.visual.vfxPulse[type]) || 0) + clampAmount * pulseScale,
+    );
+  }
+
+  function decayVfxPulse(name, amountPerFrame) {
+    if (!state.visual || !state.visual.vfxPulse || !(name in state.visual.vfxPulse)) return;
+    const value = Number(state.visual.vfxPulse[name]);
+    if (!Number.isFinite(value) || value <= 0) {
+      state.visual.vfxPulse[name] = 0;
+      return;
+    }
+    state.visual.vfxPulse[name] = Math.max(0, value - amountPerFrame);
+  }
+
+  function resolveVfxPulses() {
+    const pulses = state.visual && state.visual.vfxPulse ? state.visual.vfxPulse : null;
+    return pulses
+      ? {
+          transition: clamp(pulses.transition || 0, 0, 1),
+          modeShift: clamp(pulses.modeShift || 0, 0, 1),
+          battle: clamp(pulses.battle || 0, 0, 1),
+          ambient: clamp(pulses.ambient || 0, 0, 1),
+          split: clamp(pulses.split || 0, 0, 1),
+          camera: clamp(pulses.camera || 0, 0, 1),
+        }
+      : {
+          transition: 0,
+          modeShift: 0,
+          battle: 0,
+          ambient: 0,
+          split: 0,
+          camera: 0,
+        };
   }
 
   function resolvePostProcessSourceCanvas(profile) {
@@ -676,11 +1028,25 @@
       hubPulseOffset: 0,
       battleImpactBurst: 0,
       battleImpactSide: "neutral",
+      vfxPulse: {
+        transition: 0,
+        modeShift: 0,
+        battle: 0,
+        ambient: 0,
+        split: 0,
+        camera: 0,
+      },
       useVectorFallback: true,
       scaleMode: "nearest",
       battleHud: {
         enemyHp: 0,
         playerHp: 0,
+      },
+      modeTransition: {
+        timer: 0,
+        duration: 0,
+        fromMode: "title",
+        toMode: "title",
       },
     },
     rng: 0x2abf34c1,
@@ -768,7 +1134,8 @@
   function sceneTone(mode) {
     const tone = sceneStyle(mode);
     const governor = colorGovernor(mode, state.mission, state.seed);
-    return {
+    const profileLead = BRAND_TOKENS[governor.primary] || BRAND_TOKENS.COG_BLUE;
+    const toneProfile = {
       primary: BRAND_TOKENS[governor.primary] || BRAND_TOKENS.COG_BLUE,
       secondary: governor.missionTint || BRAND_TOKENS[governor.secondary] || BRAND_TOKENS.COG_YELLOW,
       lead: BRAND_TOKENS[governor.primary] || BRAND_TOKENS.COG_BLUE,
@@ -779,6 +1146,11 @@
       text: BRAND_TOKENS[tone.textToken] || BRAND_TOKENS.INK,
       subtle: BRAND_TOKENS[tone.subtleToken] || withAlpha(BRAND_TOKENS.INK, 0.2),
     };
+    toneProfile.primary = profileLead;
+    toneProfile.lead = profileLead;
+    toneProfile.secondary = profileLead;
+    toneProfile.accentPulse = profileLead;
+    return toneProfile;
   }
 
   function speciesByToken(tokenOrSpeciesId) {
@@ -1322,6 +1694,9 @@
     state.visual.battleImpactBurst = Math.min(14, Math.max(0, damage + 2));
     const attackerSpecies = activePlayerPet() && attacker.id === activePlayerPet().id;
     state.visual.battleImpactSide = attackerSpecies ? "player" : "enemy";
+    queueVfxPulse("battle", 0.38, { scale: 1 + Math.min(0.9, damage / 16) });
+    queueVfxPulse("camera", 0.18, { scale: 1 + Math.min(0.5, damage / 20) });
+    if (damage >= 5) queueVfxPulse("split", 0.2);
     appendBattleLog(`${attackerName} used ${move.name}`);
     if (typeMult > 1) appendBattleLog("It is super effective");
     if (typeMult < 1) appendBattleLog("It is resisted");
@@ -1368,6 +1743,8 @@
     };
     state.mission.encounter.pendingEnemyId = enemyEntity.enemyId || null;
     setMode("battle");
+    queueVfxPulse("battle", 0.42, { max: 1 });
+    queueVfxPulse("camera", 0.26);
   }
 
   function enemyTurn() {
@@ -1584,12 +1961,30 @@
     state.visual.hubPulseOffset = 0;
     state.visual.battleImpactBurst = 0;
     state.visual.battleImpactSide = "neutral";
+    if (state.visual.vfxPulse) {
+      state.visual.vfxPulse.transition = 0;
+      state.visual.vfxPulse.modeShift = 0;
+      state.visual.vfxPulse.battle = 0;
+      state.visual.vfxPulse.ambient = 0;
+      state.visual.vfxPulse.split = 0;
+      state.visual.vfxPulse.camera = 0;
+    }
     resetObjective();
     ensureStarterParty();
   }
 
-  function setMode(nextMode) {
-    state.mode = nextMode;
+  function setMode(nextMode, options = {}) {
+    const mode = nextMode || "title";
+    if (options.transition !== false) {
+      startModeTransition(mode, {
+        durationFrames: Number.isFinite(options.transitionDurationFrames)
+          ? options.transitionDurationFrames
+          : TARGET_FPS * 0.22,
+      });
+      queueVfxPulse("modeShift", 0.36);
+      queueVfxPulse("transition", 0.45);
+    }
+    state.mode = mode;
     state.visual.accentLead = pickAccentLead(nextMode, state.mission, state.seed);
     state.visual.fxProfile = VISUAL_PIPELINE.vfxProfiles[nextMode] || VISUAL_PIPELINE.vfxProfiles.title;
     state.visual.contrastMode = (SCENE_RECIPES[nextMode] && SCENE_RECIPES[nextMode].contrastMode) || "light";
@@ -1600,7 +1995,7 @@
     transition.targetMode = null;
     startBtn.style.display = nextMode === "title" ? "block" : "none";
     if (nextMode === "title") {
-      state.messages = ["NET_TOKENS_GAME", "Press Start"];
+      state.messages = ["NET_TOKENS_GAME", "Awaiting launch"];
       state.ui.helpVisible = true;
       state.ui.autoHelpUntilFrame = state.frame + TARGET_FPS * 5;
     }
@@ -1638,7 +2033,9 @@
     state.objective.capturedCount = 0;
     state.objective.holdProgress = 0;
     state.battle = null;
-    state.mode = "mission";
+    setMode("mission", {
+      transitionDurationFrames: TARGET_FPS * 0.2,
+    });
     state.player.x = SIM_W / 2;
     state.player.y = SIM_H - 38;
     state.player.vx = 0;
@@ -1660,6 +2057,9 @@
       state.ui.helpVisible = true;
       state.ui.autoHelpUntilFrame = state.frame + TARGET_FPS * 5;
     }
+    queueVfxPulse("ambient", 0.45, { max: 0.9 });
+    queueVfxPulse("split", 0.2);
+    queueVfxPulse("modeShift", 0.22);
   }
 
   function endMission(success) {
@@ -1676,8 +2076,12 @@
     } else {
       state.messages = ["Mission failed", "Return to ship"];
     }
-    state.mode = "result";
+    setMode("result", {
+      transitionDurationFrames: TARGET_FPS * 0.16,
+    });
     state.flash = 2;
+    queueVfxPulse("ambient", 0.32, { max: 0.8 });
+    queueVfxPulse("split", 0.22);
     transition.timer = TARGET_FPS * 2;
     transition.duration = TARGET_FPS * 2;
     transition.targetMode = "hub";
@@ -1902,14 +2306,16 @@
       return;
     }
     if (transition.targetMode) {
-      state.mode = transition.targetMode;
+      const targetMode = transition.targetMode;
       transition.targetMode = null;
-      if (state.mode === "hub") {
+      if (targetMode === "hub") {
+        setMode(targetMode, {
+          transitionDurationFrames: TARGET_FPS * 0.24,
+        });
         resetObjective();
         state.entities = [];
         state.mission = null;
         state.battle = null;
-        state.mode = "hub";
         state.player.x = SIM_W / 2;
         state.player.y = SIM_H / 2;
         state.planetLockId = null;
@@ -1988,16 +2394,10 @@
     sceneCtx.fillText("Proof-first mission deck", 100, 64);
     sceneCtx.fillStyle = tone.lead;
     sceneCtx.fillText("Capture a target species and complete the objective.", 54, 88);
-    sceneCtx.fillStyle = tone.text;
-    sceneCtx.font = "9px Sora, sans-serif";
-    sceneCtx.fillText("Enter, Space, or Start Mission Deck to begin.", 57, 101);
     sceneCtx.font = "8px Sora, sans-serif";
     sceneCtx.fillText(`Seed ${state.seed}`, 24, 160);
     sceneCtx.fillStyle = tone.lead;
     sceneCtx.fillRect(26, 158, Math.max(8, (state.frame % 180) / 9), 2);
-    const helpHint = "H: Help";
-    const helpX = SIM_W - 8 - sceneCtx.measureText(helpHint).width;
-    sceneCtx.fillText(helpHint, helpX, SIM_H - 16);
   }
 
   function drawHubRouteMesh({ tone, boardX, boardY, boardW, boardH, orderedPlanets }) {
@@ -2244,8 +2644,8 @@
         sceneCtx.fillStyle = palette.lead;
         sceneCtx.fillText(`Lock ${state.planetLockTimer}`, leftPad, cardY + 28);
       } else if (isFocused) {
-        sceneCtx.fillStyle = palette.edge;
-        sceneCtx.fillText("Space to lock", leftPad, cardY + 28);
+        sceneCtx.fillStyle = palette.accentPulse;
+        sceneCtx.fillText("Docked", leftPad, cardY + 28);
       }
     }
 
@@ -2285,12 +2685,11 @@
       sceneCtx.fillStyle = palette.lead;
       sceneCtx.fillText(`${state.planetLockId ? "Ready to launch" : "Hold for lock"}`, 20, 70);
     } else {
-      sceneCtx.fillText("Move to a planet node", 20, 37);
-      sceneCtx.fillText("for mission preview", 20, 45);
-      sceneCtx.fillText("Hold Space", 20, 53);
-      sceneCtx.fillText("to begin launch", 20, 61);
-      sceneCtx.fillStyle = palette.edge;
-      sceneCtx.fillText("Arrows/WASD to move", 20, 70);
+      sceneCtx.fillStyle = palette.text;
+      sceneCtx.fillText("Docking rails active", 20, 37);
+      sceneCtx.fillText("Scanline field holding steady", 20, 50);
+      sceneCtx.fillText("Crew deck sync: active", 20, 61);
+      sceneCtx.fillText("Awaiting alignment lock", 20, 70);
     }
 
     drawPanel(SIM_W - 126, 14, 112, 82, { fill: withAlpha(palette.panelFill, 0.92), edge: palette.panelEdge, radius: 1 });
@@ -2303,8 +2702,6 @@
     sceneCtx.fillText(`Ready: ${state.party.length}`, SIM_W - 120, 52);
     sceneCtx.fillStyle = toneTextShade(palette.text);
     sceneCtx.fillText(`Seed ${state.seed}`, SIM_W - 120, 60);
-    sceneCtx.fillStyle = toneTextShade(palette.secondary);
-    sceneCtx.fillText("Press H for controls", SIM_W - 120, 70);
 
     drawSpriteByKey(
       "ship",
@@ -2644,7 +3041,7 @@
     sceneCtx.fillText(presetText, presetX, hudY + 9);
   }
 
-  function drawPostProcess() {
+  function drawPostProcess(profileOverride = null) {
     const tone = paletteForMode(state.mode);
     const displayW = canvas.width;
     const displayH = canvas.height;
@@ -2655,13 +3052,32 @@
     const drawH = SIM_H * scale;
     const offsetX = Math.floor((displayW - drawW) / 2);
     const offsetY = Math.floor((displayH - drawH) / 2);
-    const jitter = renderPolicy === "smooth" ? (frameNoise(97, state.frame, 13) - 0.5) * 0.2 : 0;
-    const modeProfile = resolveActiveVfxProfile();
-    const frameSource = resolvePostProcessSourceCanvas(modeProfile);
+    const modeProfile = profileOverride || resolveActiveVfxProfile();
+    const vfxPulses = resolveVfxPulses();
+    const transitionBlend = clamp(modeProfile.transitionBlend || 0, 0, 1);
+    const transitionPulse = Math.sin(transitionBlend * Math.PI * 0.5);
+    const sourceProfile = {
+      ...modeProfile,
+      chromaShift: (modeProfile.chromaShift || 0) * (0.62 + vfxPulses.split * 1.2 + vfxPulses.battle * 0.4),
+      frameJitter:
+        (modeProfile.frameJitter || 0) * (0.72 + vfxPulses.camera * 1.4 + vfxPulses.modeShift * 0.4 + vfxPulses.transition * 0.6),
+      flickerChance:
+        (modeProfile.flickerChance || 0) * (1 + vfxPulses.battle * 1.2 + vfxPulses.ambient * 0.45 + vfxPulses.modeShift * 0.3),
+    };
+    const jitter = renderPolicy === "smooth"
+      ? (frameNoise(97, state.frame, 13) - 0.5) * 0.5 * (sourceProfile.frameJitter || 0)
+      : 0;
+    const frameSource = resolvePostProcessSourceCanvas(sourceProfile);
+    const flickerChance = clamp((modeProfile.flickerChance || 0) * (0.85 + vfxPulses.battle * 1.1), 0, 0.22);
+    const activeFlicker = frameNoise(11, state.visual.fxFrame, 17) < flickerChance
+      ? withAlpha(BRAND_TOKENS.INK, 0.07 + vfxPulses.battle * 0.03)
+      : null;
     const baseNoiseAlpha =
-      (state.mode === "hub" ? 0.15 : state.mode === "mission" ? 0.12 : 0.1) * modeProfile.noiseDensity;
+      (state.mode === "hub" ? 0.15 : state.mode === "mission" ? 0.12 : 0.1) *
+      modeProfile.noiseDensity *
+      (0.85 + vfxPulses.ambient * 0.45 + transitionPulse * 0.25);
     const driftPulse = (state.frame * 0.015 + state.seed * 0.0000001) % 1;
-    const orbitKick = (Math.sin(state.visual.fxFrame * 0.09) + 1) * 0.15;
+    const orbitKick = (Math.sin(state.visual.fxFrame * 0.09) + 1) * (0.12 + vfxPulses.camera * 0.16 + transitionPulse * 0.06);
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = withAlpha(tone.surface, 1);
@@ -2672,6 +3088,10 @@
     const worldX = offsetX + Math.round(jitter + Math.sin(driftPulse * Math.PI * 2) * orbitKick * scale);
     const worldY = offsetY + Math.round(jitter * 0.55 + Math.cos(driftPulse * Math.PI * 2) * orbitKick * scale);
     ctx.drawImage(frameSource, worldX, worldY, drawW, drawH);
+    if (activeFlicker) {
+      ctx.fillStyle = activeFlicker;
+      ctx.fillRect(offsetX, offsetY, drawW, drawH);
+    }
 
     drawModeEffectsEnvelope({
       tone,
@@ -2683,6 +3103,7 @@
       baseNoiseAlpha,
       orbitPulse: orbitKick,
       profile: modeProfile,
+      transitionPulse,
     });
 
     drawModeFrameChrome({
@@ -2693,13 +3114,14 @@
       drawH,
       scale,
       profile: modeProfile,
+      transitionPulse,
       orbitPulse: orbitKick,
     });
 
     const vignette = ctx.createLinearGradient(offsetX, offsetY, offsetX, offsetY + drawH);
-    vignette.addColorStop(0, withAlpha(tone.text, 0.05 + (modeProfile.bloom || 0) * 0.08));
-    vignette.addColorStop(0.5, withAlpha(tone.text, 0.01));
-    vignette.addColorStop(1, withAlpha(tone.text, 0.05 + (modeProfile.bloom || 0) * 0.08));
+    vignette.addColorStop(0, withAlpha(tone.text, 0.03 + transitionPulse * 0.02 + (modeProfile.bloom || 0) * 0.04 + vfxPulses.ambient * 0.02));
+    vignette.addColorStop(0.5, withAlpha(tone.text, 0.008));
+    vignette.addColorStop(1, withAlpha(tone.text, 0.03 + transitionPulse * 0.02 + (modeProfile.bloom || 0) * 0.04 + vfxPulses.ambient * 0.02));
     ctx.fillStyle = vignette;
     ctx.fillRect(offsetX, offsetY, drawW, drawH);
     ctx.strokeStyle = withAlpha(tone.text, 0.24);
@@ -2707,15 +3129,28 @@
     ctx.strokeRect(offsetX, offsetY, drawW, drawH);
   }
 
-  function drawModeEffectsEnvelope({ tone, offsetX, offsetY, drawW, drawH, scale, baseNoiseAlpha, orbitPulse = 0.2, profile }) {
+  function drawModeEffectsEnvelope({
+    tone,
+    offsetX,
+    offsetY,
+    drawW,
+    drawH,
+    scale,
+    baseNoiseAlpha,
+    orbitPulse = 0.2,
+    profile,
+    transitionPulse = 0,
+  }) {
     const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
     const frame = state.frame;
+    const pulses = resolveVfxPulses();
     const starMotion = modeProfile.motionAmp !== undefined ? modeProfile.motionAmp : 0.16;
     const starCount = Math.max(
       14,
       Math.round(
         (state.mode === "hub" ? 66 : state.mode === "mission" ? 46 : 34) *
           (modeProfile.effectCap || 1) *
+          (1 + 0.18 * pulses.ambient + 0.1 * transitionPulse) *
           (
             modeProfile.particles /
               (VISUAL_PIPELINE.vfxProfiles[state.mode] && VISUAL_PIPELINE.vfxProfiles[state.mode].particles
@@ -2736,7 +3171,7 @@
       const starX = offsetX + ((x + SIM_W) % SIM_W) * scale;
       const starY = offsetY + ((y + SIM_H) % SIM_H) * scale;
       const flicker = ((frame * 0.17 + i) % 11) < 4 ? 1 : 0.35;
-      const alpha = (0.05 + depth * 0.13) * flicker * (state.mode === "result" ? 0.5 : 1);
+      const alpha = (0.05 + depth * 0.13) * flicker * (state.mode === "result" ? 0.5 : 1) * (1 + pulses.ambient * 0.24 + pulses.battle * 0.1);
       const starColor = i % 2 === 0 ? tone.secondary : tone.accentPulse;
       ctx.fillStyle = withAlpha(starColor, alpha);
       const dot = Math.max(1, Math.round(scale * (0.5 + depth * 0.7)));
@@ -2744,6 +3179,39 @@
     }
 
     drawPalettePulseBands({ tone, offsetX, offsetY, drawW, drawH, scale, toneStrength });
+    drawPostProcessDeadspaceVeins({
+      tone,
+      offsetX,
+      offsetY,
+      drawW,
+      drawH,
+      scale,
+      profile: modeProfile,
+      transitionPulse,
+      pulses,
+    });
+    drawCreepInterferenceBars({
+      tone,
+      offsetX,
+      offsetY,
+      drawW,
+      drawH,
+      scale,
+      transitionPulse,
+      pulses,
+    });
+    if (transitionPulse > 0.02) {
+      drawDoorwayRiftPulse({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        transitionPulse,
+        pulses,
+      });
+    }
 
     if (state.mode === "hub") {
       drawHubRouteFlow({ tone, offsetX, offsetY, drawW, drawH, scale });
@@ -2757,6 +3225,14 @@
       drawMissionOrbitPulse({ tone, offsetX, offsetY, drawW, drawH, scale });
       drawMissionSectorField({ tone, offsetX, offsetY, drawW, drawH, scale, t: toneStrength });
       drawMissionBeaconSweep({ tone, offsetX, offsetY, drawW, drawH, scale });
+      drawMissionHazardCorners({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+      });
     }
 
     if (state.mode === "battle") {
@@ -2764,6 +3240,49 @@
       drawBattleFocusLanes({ tone, offsetX, offsetY, drawW, drawH, scale });
       drawBattleTurnPulse({ tone, offsetX, offsetY, drawW, drawH, scale });
       drawBattleCommandGrid({ tone, offsetX, offsetY, drawW, drawH, scale, toneStrength });
+      drawEntityCreepOutlines({
+        entities: state.entities,
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+      });
+    }
+
+    if (state.mode === "mission") {
+      drawEntityCreepOutlines({
+        entities: state.entities,
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+      });
+    }
+
+    if (state.mode === "mission" || state.mode === "battle" || state.mode === "hub") {
+      drawPostProcessStaticWash({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        pulses,
+        transitionPulse,
+      });
+      drawPostProcessChromaticBleed({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        profile: modeProfile,
+        pulses,
+        transitionPulse,
+      });
     }
 
     if (state.mode === "title" || state.mode === "result") {
@@ -2783,11 +3302,16 @@
       1,
       Math.round((scale * 0.8) / Math.max(0.35, modeProfile.scanlineDensity || 1)),
     );
-    const scanAlpha = (state.mode === "battle" ? 0.065 : 0.055) * toneStrength * (modeProfile.scanlineDensity || 1);
+    const scanAlpha =
+      (state.mode === "battle" ? 0.065 : 0.055) *
+      toneStrength *
+      (modeProfile.scanlineDensity || 1) *
+      (1 + pulses.battle * 0.28 + pulses.modeShift * 0.18 + transitionPulse * 0.12);
     for (let y = 0; y < drawH; y += scanStep) {
+      if (pulses.ambient > 0.6 && frame % 97 < 1) continue;
       const sine = Math.sin((frame + y * 0.2) / 11);
       const dy = offsetY + y + (state.mode === "battle" ? 0.8 : 0.4) * sine;
-      const stripe = Math.max(0.5, 0.25 + ((frame + y) % 4) * 0.08);
+      const stripe = Math.max(0.5, 0.25 + (((frame + y + Math.floor(pulses.ambient * 3)) % 4) * 0.08));
       ctx.fillStyle = withAlpha(tone.subtle, scanAlpha * stripe);
       ctx.fillRect(offsetX, dy, drawW, 1);
     }
@@ -2798,7 +3322,10 @@
       const ny = frameNoise(i * 17, frame, 23);
       const wobble = ((i % 3) - 1) * 0.4;
       const drift = (state.mode === "mission" ? 1 : 0.2) * Math.sin(frame * 0.11 + i);
-      const noiseBlend = withAlpha(tone.subtle, baseNoiseAlpha * (state.mode === "mission" ? 0.92 : 0.74));
+      const noiseBlend = withAlpha(
+        tone.subtle,
+        baseNoiseAlpha * (state.mode === "mission" ? 0.92 : 0.74) * (0.82 + pulses.ambient * 0.24 + pulses.battle * 0.12),
+      );
       ctx.fillStyle = noiseBlend;
       const dot = 1 + Math.floor(scale * 0.5);
       ctx.fillRect(offsetX + Math.floor(nx * drawW) + wobble + drift, offsetY + Math.floor(ny * drawH), dot, dot);
@@ -2826,9 +3353,13 @@
   }
 
   function drawPostProcessParticleCloud({ tone, offsetX, offsetY, drawW, drawH, scale, profile }) {
-    const count = Math.max(6, Math.round((profile.particles || 18) * 0.55));
+    const pulses = resolveVfxPulses();
+    const count = Math.max(
+      6,
+      Math.round((profile.particles || 18) * 0.55 * (1 + pulses.ambient * 0.18 + pulses.modeShift * 0.16)),
+    );
     const cloudPulse = state.visual.fxFrame * 0.13;
-    const density = 1 + (profile.particleDensity || 1) * 0.5;
+    const density = 1 + (profile.particleDensity || 1) * 0.5 + pulses.battle * 0.08;
     for (let i = 0; i < count; i += 1) {
       const base = frameNoise(i * 29, state.seed, 97);
       const life = frameNoise(i * 41, state.seed + 13, 43);
@@ -2839,7 +3370,7 @@
       const pulse = (Math.sin(cloudPulse + i * 0.4) + 1) * 0.5;
       const isNode = life < 0.1;
       const size = Math.max(1, Math.floor((0.5 + life * 0.9) * scale));
-      const alpha = isNode ? 0.19 : 0.09;
+      const alpha = (isNode ? 0.21 : 0.09) * (1 + pulses.ambient * 0.25);
       ctx.fillStyle = withAlpha(isNode ? tone.secondary : tone.accentPulse, alpha * pulse * density);
       if (isNode) {
         ctx.beginPath();
@@ -2852,7 +3383,8 @@
   }
 
   function drawPostProcessBloom({ tone, offsetX, offsetY, drawW, drawH, profile, orbitPulse }) {
-    const bloomStrength = (profile.bloom || 0) * (0.5 + orbitPulse);
+    const pulses = resolveVfxPulses();
+    const bloomStrength = (profile.bloom || 0) * (0.5 + orbitPulse) * (1 + pulses.battle * 0.12 + pulses.modeShift * 0.2);
     if (bloomStrength <= 0) return;
     const glow = ctx.createRadialGradient(
       offsetX + drawW / 2,
@@ -2869,8 +3401,135 @@
     ctx.fillRect(offsetX, offsetY, drawW, drawH);
   }
 
-  function drawModeFrameChrome({ tone, offsetX, offsetY, drawW, drawH, scale, orbitPulse, profile }) {
+  function drawDoorwayRiftPulse({ tone, offsetX, offsetY, drawW, drawH, scale, transitionPulse, pulses }) {
+    const pulse = clamp(transitionPulse + pulses.modeShift * 0.3, 0, 1);
+    const riftDensity = Math.max(2, VISUAL_PIPELINE.effects.ruptureFrequencies || 4);
+    const layerCount = Math.max(2, Math.round(2 + pulse * riftDensity));
+    const stripHeight = Math.max(1, Math.round(scale * 0.8));
+    const drift = (state.visual.fxFrame * 0.4) % drawH;
+    const pulseShift = (state.frame * 0.12) % Math.max(1, drawW / 3);
+    for (let i = 0; i < layerCount; i += 1) {
+      const wave = Math.sin(i * 0.9 + state.visual.fxFrame * 0.09) * 2 * scale;
+      const y = ((drift + (i / layerCount) * drawH + wave) % drawH) + offsetY;
+      const x = offsetX + (i % 2 === 0 ? Math.floor(pulseShift * 0.12 * scale) : -Math.floor(pulseShift * 0.09 * scale));
+      const width = Math.max(8, drawW * (0.38 + i * 0.09));
+      ctx.fillStyle = withAlpha(tone.text, 0.03 + pulse * 0.05 + pulses.split * 0.02);
+      ctx.fillRect(x, y, width, stripHeight);
+      ctx.fillStyle = withAlpha(tone.secondary, 0.02 + pulse * 0.04);
+      ctx.fillRect(offsetX + drawW - x, y + stripHeight * (i % 2 ? 1 : -1), Math.max(4, width * 0.75), stripHeight);
+    }
+  }
+
+  function drawPostProcessChromaticBleed({ tone, offsetX, offsetY, drawW, drawH, profile, pulses, transitionPulse }) {
+    const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const bleed = Math.max(
+      0,
+      Math.min(
+        0.35,
+        (modeProfile.chromaShift || 0) +
+          (pulses.split || 0) * 0.26 +
+          transitionPulse * 0.17 +
+          (pulses.ambient || 0) * 0.08,
+      ),
+    );
+    if (bleed <= 0) return;
+    const riftCount = Math.round(3 + bleed * VISUAL_PIPELINE.effects.riftPulseDensity * 2);
+    for (let i = 0; i < riftCount; i += 1) {
+      const segmentY = Math.floor(offsetY + frameNoise(i * 17, state.visual.fxFrame, 29) * drawH);
+      const bandH = Math.max(1, Math.floor(0.8 + scale * (0.6 + (i % 4) * 0.3)));
+      const drift = Math.sin(state.visual.fxFrame * 0.16 + i * 1.5) * (scale * 1.2);
+      const bleedAlpha = 0.018 + bleed * 0.05;
+      const jitterLen = Math.round(drawW * (0.6 + (i % 4) * 0.1));
+      const start = offsetX + drift;
+      const end = offsetX + Math.min(drawW - 1, jitterLen);
+      ctx.fillStyle = withAlpha(tone.accentPulse, bleedAlpha * 0.75);
+      ctx.fillRect(start, segmentY, end - start, bandH);
+      ctx.fillStyle = withAlpha(tone.secondary, bleedAlpha * 0.55);
+      ctx.fillRect(start + Math.max(0, Math.floor(bandH * 0.6)), segmentY + bandH, end - start, bandH);
+    }
+  }
+
+  function drawPostProcessDeadspaceVeins({
+    tone,
+    offsetX,
+    offsetY,
+    drawW,
+    drawH,
+    scale,
+    profile,
+    transitionPulse,
+    pulses,
+  }) {
+    const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const menace = clamp(
+      0.2 + (modeProfile.effectCap || 0) * 0.45 + (pulses.ambient || 0) * 0.5 + transitionPulse * 0.4,
+      0,
+      1.2,
+    );
+    const density = Math.round((VISUAL_PIPELINE.effects.veilDensity || 20) * menace);
+    const stripeGap = Math.max(4, Math.round(16 / Math.max(1, scale)));
+    for (let i = 0; i < density; i += 1) {
+      const n1 = frameNoise(i * 13, state.visual.fxFrame, 77);
+      const n2 = frameNoise(i * 23, state.visual.fxFrame + i, 61);
+      const x = offsetX + n1 * drawW;
+      const y = offsetY + n2 * drawH;
+      const segmentLen = Math.max(2, (Math.sin(i * 0.8 + state.visual.fxFrame * 0.22) * 0.5 + 0.8) * drawW * 0.33);
+      const width = Math.max(1, Math.round(scale * (0.45 + (i % 4) * 0.12)));
+      const alpha = Math.max(0.01, 0.01 + (0.016 * menace) * (0.55 + Math.sin(i + state.visual.fxFrame * 0.2)));
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + segmentLen, y + (i % 2 ? -width : width));
+      ctx.strokeStyle = withAlpha(tone.subtle, alpha);
+      ctx.lineWidth = width;
+      ctx.stroke();
+      if (i % stripeGap === 0) {
+        const dotCount = Math.max(2, Math.round(scale * 3));
+        for (let j = 0; j < dotCount; j += 1) {
+          const sparkX = x + ((segmentLen / dotCount) * j) % drawW;
+          const sparkY = y + ((j % 2) * width) - 0.5;
+          ctx.fillStyle = withAlpha(tone.text, alpha * 0.7);
+          ctx.fillRect(sparkX, sparkY, width * 0.6, width * 0.6);
+        }
+      }
+    }
+  }
+
+  function drawCreepInterferenceBars({ tone, offsetX, offsetY, drawW, drawH, scale, transitionPulse, pulses }) {
+    const intensity = clamp(0.28 + pulses.ambient + pulses.split * 1.2 + transitionPulse * 1.1, 0, 1.6);
+    const lineCount = Math.max(3, Math.round(VISUAL_PIPELINE.effects.creepLineCount * intensity * 0.5));
+    for (let i = 0; i < lineCount; i += 1) {
+      const base = (state.frame * 0.62 + i * 17 + transitionPulse * 19) % drawH;
+      const y = Math.floor(offsetY + base * 0.55 + Math.sin(state.frame * 0.06 + i) * scale * 2);
+      const jitter = Math.sin(state.frame * 0.15 + i * 0.9) * (1.5 * scale);
+      const len = Math.round(drawW * (0.4 + (i % 3) * 0.16));
+      const alpha = 0.012 + (0.015 * intensity) * (0.75 + (i % 4) * 0.08) * (1 + Math.sin(state.visual.fxFrame * 0.25));
+      ctx.fillStyle = withAlpha(tone.subtle, alpha);
+      ctx.fillRect(offsetX + jitter, y % (offsetY + drawH), len, Math.max(0.6, scale * 0.75));
+    }
+  }
+
+  function drawPostProcessStaticWash({ tone, offsetX, offsetY, drawW, drawH, pulses, transitionPulse }) {
+    const density = clamp(
+      VISUAL_PIPELINE.effects.staticWashDensity *
+        (0.4 + pulses.battle * 0.5 + pulses.ambient * 0.4 + transitionPulse * 0.2),
+      0,
+      140,
+    );
+    const noiseDensity = Math.round(density / 4);
+    const salt = 17 + Math.round(state.visual.fxFrame * 0.6);
+    for (let i = 0; i < noiseDensity; i += 1) {
+      const nx = frameNoise(i * 37, state.visual.fxFrame, salt);
+      const ny = frameNoise(i * 41, state.visual.fxFrame, salt + 11);
+      const noiseAlpha = 0.02 + pulses.battle * 0.04 + transitionPulse * 0.03;
+      const dot = 1 + Math.floor(Math.max(1, drawW / 640));
+      ctx.fillStyle = withAlpha(tone.subtle, noiseAlpha);
+      ctx.fillRect(offsetX + Math.floor(nx * drawW), offsetY + Math.floor(ny * drawH), dot, dot);
+    }
+  }
+
+  function drawModeFrameChrome({ tone, offsetX, offsetY, drawW, drawH, scale, orbitPulse, profile, transitionPulse = 0 }) {
     const budget = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const pulses = resolveVfxPulses();
     const edgePulse = 0.5 + Math.sin(state.visual.fxFrame * 0.11) * 0.28;
     const accentPulse = Math.min(1, edgePulse + (budget.toneStrength || 0));
     const lineStep = Math.max(2, Math.floor(scale * 1.8));
@@ -2893,6 +3552,64 @@
       const cornerX = offsetX + (i % 2 === 0 ? 4 : drawW - 4);
       const cornerY = offsetY + (i < 2 ? 4 : (i === 2 ? drawH / 2 : drawH - 4));
       ctx.fillRect(cornerX, cornerY, lineStep * 0.8, lineStep * 0.8);
+    }
+    const edgeVignette = Math.max(0.01, 0.03 + budget.vignetteAmount * 0.2 + transitionPulse * 0.03 + pulses.ambient * 0.02);
+    ctx.fillStyle = withAlpha(tone.text, edgeVignette);
+    ctx.fillRect(offsetX, offsetY, drawW, 1.1 * scale);
+    ctx.fillRect(offsetX, offsetY + drawH - 1.1 * scale, drawW, 1.1 * scale);
+    ctx.fillRect(offsetX, offsetY, 1.1 * scale, drawH);
+    ctx.fillRect(offsetX + drawW - 1.1 * scale, offsetY, 1.1 * scale, drawH);
+
+    const riftPulse = clamp(pulses.ambient + transitionPulse + pulses.modeShift * 0.3, 0, 1.3);
+    if (riftPulse > 0.2) {
+      const crackCount = Math.round(3 + riftPulse * 4);
+      for (let i = 0; i < crackCount; i += 1) {
+        const axisY = offsetY + ((i + 1) / (crackCount + 1)) * drawH;
+        const axisX = offsetX + ((i + 1) / (crackCount + 1)) * drawW;
+        const drift = Math.sin(i * 1.5 + state.frame * 0.3) * scale * 2.5;
+        const slash = Math.max(1, Math.round(scale * 0.45));
+        ctx.fillStyle = withAlpha(tone.text, 0.02 + riftPulse * 0.04);
+        ctx.fillRect(axisX + drift, axisY, scale * 2, slash);
+        ctx.fillRect(axisX, axisY + Math.floor(drift * 0.4), slash, scale * 2);
+      }
+    }
+  }
+
+  function drawMissionHazardCorners({ tone, offsetX, offsetY, drawW, drawH }) {
+    const pulse = 0.24 + Math.sin(state.visual.fxFrame * 0.18) * 0.12;
+    const cornerSize = 10;
+    const edgeGlow = withAlpha(tone.accentPulse, pulse);
+    const corners = [
+      [offsetX + 2, offsetY + 2],
+      [offsetX + drawW - 2 - cornerSize, offsetY + 2],
+      [offsetX + 2, offsetY + drawH - 2 - cornerSize],
+      [offsetX + drawW - 2 - cornerSize, offsetY + drawH - 2 - cornerSize],
+    ];
+    for (const [x, y] of corners) {
+      ctx.fillStyle = edgeGlow;
+      ctx.fillRect(x, y, 2, cornerSize);
+      ctx.fillRect(x, y, cornerSize, 2);
+      ctx.fillRect(x + cornerSize - 2, y, 2, cornerSize);
+      ctx.fillRect(x, y + cornerSize - 2, cornerSize, 2);
+    }
+  }
+
+  function drawEntityCreepOutlines({ entities, tone, offsetX, offsetY, drawW, drawH, scale }) {
+    if (!Array.isArray(entities) || entities.length === 0) return;
+    const profilePulse = resolveVfxPulses();
+    const outlineAlpha = 0.12 + profilePulse.battle * 0.1 + profilePulse.ambient * 0.08;
+    for (const entity of entities) {
+      if (!entity || typeof entity.x !== "number" || typeof entity.y !== "number" || typeof entity.r !== "number") {
+        continue;
+      }
+      const x = offsetX + entity.x * scale;
+      const y = offsetY + entity.y * scale;
+      const r = Math.max(1, entity.r * scale * (1.55 + profilePulse.modeShift * 0.15));
+      ctx.strokeStyle = withAlpha(tone.secondary, outlineAlpha);
+      ctx.lineWidth = Math.max(0.45, 0.45 * scale * 0.6);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
     }
   }
 
@@ -3213,9 +3930,12 @@
     state.visual.accentLead = pickAccentLead(state.mode, state.mission, state.seed);
     state.visual.contrastMode = (SCENE_RECIPES[state.mode] && SCENE_RECIPES[state.mode].contrastMode) || "light";
     state.visual.fxProfile = VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const activeProfile = resolveActiveVfxProfile();
+    assertSingleAccent(activeProfile);
+    assertReadableContrast(activeProfile, sceneTone(state.mode));
 
     drawWorldScene();
-    drawPostProcess();
+    drawPostProcess(activeProfile);
     syncExternalControlsUI();
   }
 
@@ -3225,6 +3945,17 @@
     state.visual.routePulsePhase = (state.visual.routePulsePhase + 0.022) % 1;
     state.visual.hubPulseOffset = (state.visual.hubPulseOffset + 0.008) % 1;
     state.visual.battleImpactBurst = Math.max(0, state.visual.battleImpactBurst - 1);
+    const transition = state.visual && state.visual.modeTransition;
+    if (transition && transition.duration > 0 && transition.timer > 0) {
+      transition.timer = Math.max(0, transition.timer - Math.max(1, Math.round(dt * TARGET_FPS)));
+    }
+    const decayScale = Math.max(0, (dt || 1 / TARGET_FPS) * TARGET_FPS);
+    decayVfxPulse("transition", 0.018 * decayScale);
+    decayVfxPulse("modeShift", 0.022 * decayScale);
+    decayVfxPulse("battle", 0.028 * decayScale);
+    decayVfxPulse("ambient", 0.014 * decayScale);
+    decayVfxPulse("split", 0.01 * decayScale);
+    decayVfxPulse("camera", 0.02 * decayScale);
     if (state.mode === "title") {
       state.flash = Math.max(0, state.flash - dt);
       if (state.mode === "title" && state.messages.length === 0) state.messages = ["NET_TOKENS_GAME"];
@@ -3443,7 +4174,7 @@
     state.player.vx = 0;
     state.player.vy = 0;
     setMode("hub");
-    state.messages = ["Booting hub", "Move with arrows; Space to enter planet"];
+    state.messages = ["Booting hub", "Mission board online"];
   }
 
   startBtn.addEventListener("click", () => {
@@ -3471,7 +4202,7 @@
   setMode("title");
   resizeCanvas();
   syncExternalControlsUI();
-  state.messages = ["NET_TOKENS_GAME", "Press start"];
+  state.messages = ["NET_TOKENS_GAME", "System ready"];
   render();
 
   let accumulator = 0;
