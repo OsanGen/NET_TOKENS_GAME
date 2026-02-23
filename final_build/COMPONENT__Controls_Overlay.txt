@@ -1,42 +1,72 @@
 Component: Controls Overlay
 Purpose:
-Provide always-discoverable controls outside the canvas so gameplay visuals stay uncluttered.
+Keep gameplay controls, mode status, and mission telemetry on an external HUD rail to keep canvas visuals uncluttered.
+The overlay must remain readable at a glance and remain synchronized every frame without mutating gameplay state.
 
 Inputs:
 - Mode (`title`, `hub`, `mission`, `battle`, `result`).
-- Help visibility state (`state.ui.helpVisible`, `state.ui.helpPinned`, `state.ui.autoHelpUntilFrame`).
-- Key toggle `H` and external toggle button `#controls-toggle`.
-- Objective and battle context via `objectiveHintText()`.
+- HUD state from:
+  - `state.ui.helpVisible`
+  - `state.ui.helpPinned`
+  - `state.ui.autoHelpUntilFrame`
+  - `state.ui.firstMissionHelpShown`
+- Mode context from:
+  - `contextActionsForMode()`
+  - `objectiveHintText()`
+- Action context from:
+  - `externalActionsForMode()`
+  - `resolveBattleActionsForMode()`
+- Metrics contract from `syncModeMetricsPayload()`.
 
 Outputs:
-- External controls rail rendered in DOM:
-  - `#controls-panel`
-  - `#controls-actions`
-  - `#controls-objective`
-- In-canvas control/action copy removed; only contextual status reads remain inside canvas (eg. lock/route telemetry).
-- Deterministic UI fields in text state remain:
-  - `ui.helpVisible`
-  - `ui.contextActions`
-  - `ui.objectiveHint`
+- External controls panel in DOM:
+- `#controls-panel`
+- `#controls-actions`
+- `#controls-objective`
+- Structured HUD panels in DOM:
+  - `#hud-intro`
+  - `#hud-objective`
+  - `#hud-threat`
+  - `#hud-missions`
+- `#hud-console`
+- Render contract in `render_game_to_text().ui.metrics`:
+  - `phase`
+  - `threatScore`
+  - `objectiveProgress`
+  - `enemyCount`
+  - `comboHint`
+  - `cooldownState`
+  - `frameBudget`
 
 State:
 - `state.ui.helpVisible`: current manual visibility state.
-- `state.ui.helpPinned`: manual override of auto-help behavior.
+- `state.ui.helpPinned`: manual override for auto-help behavior.
 - `state.ui.autoHelpUntilFrame`: initial visibility window.
 - `state.ui.firstMissionHelpShown`: mission onboarding gate.
+- DOM refs:
+  - `#controls-toggle`
+  - `#controls-actions`
+  - `#controls-objective`
+  - `hudNodes` map for all `#hud-*` metrics.
 
 Behavior:
-- External panel is synchronized each render by `syncExternalControlsUI()`.
-- `H` and `#controls-toggle` both toggle the same help state.
-- External actions list uses `contextActionsForMode()` filtered to avoid duplicate `H: help` line.
-- Objective/battle hint text is shown in `#controls-objective`.
-- Panel collapses with `.is-collapsed` class when help visibility is off.
-- Hub informational copy in `drawHub()` intentionally avoids explicit control text to keep control interaction verbs outside canvas.
+- `syncExternalControlsUI()` is the single source of truth for overlay state.
+- `H` key and `#controls-toggle` route through the same visibility path and sync panel class `.is-collapsed`.
+- `externalActionsForMode()` filters out redundant `H: help` action from in-panel action list.
+- `resolveBattleActionsForMode()` reads move options from active player pet and marks selected entry.
+- `syncModeMetricsPayload()` produces a stable UI snapshot and scene-aware label strings.
+- `syncHudTextNode()` + `updateHudNodeClass()` apply class states (`.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`) to threat and action chips.
+- `hudNodes.consoleLines` keeps the last 2–3 console messages and stays fixed-height.
+
+Behavior in-game:
+- Drawn HUD inside canvas is minimal (compact emergency strip only) while full mission/action/completion context is external.
+- In-mission and battle objective detail remains visible in `#hud-objective`, `#hud-missions`, and `#hud-console`.
+- `drawMissionStatusStrip()` remains inactive so objective/status copy is not duplicated on the canvas.
 
 Edge Cases:
-- If controls DOM nodes are missing, sync function exits safely and gameplay continues.
-- Auto-help still surfaces controls on first load/first mission unless manually pinned off.
-- Mode changes update action text and objective hint without mutating gameplay state.
+- If expected DOM nodes are missing, synchronization fails open with no gameplay mutation.
+- Mobile layouts collapse and stack as the right rail below the canvas.
+- Reduced-motion preference applies to animation-heavy UI classes via CSS class hook.
 
 Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/game.js`
@@ -44,7 +74,9 @@ Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
 
 Acceptance Checks:
-- `H` updates panel collapsed state and `ui.helpVisible` immediately.
-- No explicit controls card text is rendered inside canvas.
-- External panel updates actions/objective when mode changes.
-- Desktop layout shows right rail; mobile layout stacks controls below game shell.
+- `H` and `#controls-toggle` immediately update visibility and panel collapse state.
+- Mode transitions (title→hub→mission→result) update action/objective/console text deterministically without gameplay changes.
+- At least 70% of control/status context is in DOM HUD (not canvas overlays).
+- Threat/mission chips render state classes for instant readability.
+- Keyboard and objective HUD remain visible during gameplay while keeping gameplay canvas visually uncluttered.
+- Battle action list uses active player pet move options and visibly indicates selected move.

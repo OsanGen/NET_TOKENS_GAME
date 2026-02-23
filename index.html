@@ -34,15 +34,82 @@
             <p class="controls-kicker">External Controls</p>
             <button id="controls-toggle" type="button" aria-pressed="true">H: Hide Help</button>
           </div>
-          <ul id="controls-actions" class="controls-actions">
-            <li>Move with arrows/WASD</li>
-            <li>Space: interact</li>
-            <li>Enter: confirm</li>
-          </ul>
-          <p id="controls-objective" class="controls-objective" aria-live="polite">
-            No active objective
-          </p>
-          <p class="controls-foot">F: fullscreen. V: visual preset.</p>
+          <section class="hud-panel hud-intro" aria-live="polite">
+            <p class="hud-kicker">Command Context</p>
+            <h2 id="hud-mode-title" class="hud-title" data-bind="hud.mode.title">Boot Sequence</h2>
+            <p id="hud-mode-subtitle" class="hud-subtitle" data-bind="hud.mode.subtitle">
+              Load game to begin
+            </p>
+            <div class="hud-chip-row">
+              <span id="hud-mode-phase" class="hud-chip is-muted" data-bind="hud.mode.phase">IDLE</span>
+              <span id="hud-visual-preset" class="hud-chip is-digital" data-bind="hud.mode.preset">Preset: CINEMATIC</span>
+              <span id="hud-visual-profile" class="hud-chip is-digital" data-bind="hud.mode.profile">Profile: STANDARD</span>
+            </div>
+          </section>
+
+          <section class="hud-panel hud-objective" aria-live="polite">
+            <p class="hud-kicker">Objective Feed</p>
+            <div class="hud-kv">
+              <span class="hud-key">Current</span>
+              <span id="hud-objective-title" class="hud-val" data-bind="hud.objective.title">No objective</span>
+            </div>
+            <div class="hud-kv">
+              <span class="hud-key">Progress</span>
+              <span id="hud-objective-progress" class="hud-val" data-bind="hud.objective.progress">0 / 0</span>
+            </div>
+            <div class="hud-kv">
+              <span class="hud-key">Hint</span>
+              <span id="hud-objective-hint" class="hud-val is-ready" data-bind="hud.objective.hint">
+                No active objective
+              </span>
+            </div>
+          </section>
+
+          <section class="hud-panel hud-threat">
+            <p class="hud-kicker">Threat Readout</p>
+            <ul class="hud-badges">
+              <li>
+                <span class="hud-key">HP</span>
+                <span id="hud-threat-hp" class="hud-badge" data-bind="hud.threat.hp">5 / 5</span>
+              </li>
+              <li>
+                <span class="hud-key">Score</span>
+                <span id="hud-threat-score" class="hud-badge is-ready" data-bind="hud.threat.score">0</span>
+              </li>
+              <li>
+                <span class="hud-key">Threat</span>
+                <span id="hud-threat-level" class="hud-badge" data-bind="hud.threat.level">0</span>
+              </li>
+              <li>
+                <span class="hud-key">Enemies</span>
+                <span id="hud-threat-enemies" class="hud-badge" data-bind="hud.threat.enemies">0</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="hud-panel hud-missions">
+            <p class="hud-kicker">Mission Stack</p>
+            <p id="hud-mission-state" class="hud-subtitle" data-bind="hud.mission.state">Awaiting launch</p>
+            <p id="hud-mission-combo" class="hud-subtitle is-muted" data-bind="hud.mission.combo">Combo ready</p>
+            <p id="hud-mission-cooldown" class="hud-subtitle is-warning" data-bind="hud.mission.cooldown">Cooldown</p>
+          </section>
+
+          <section id="hud-console" class="hud-panel">
+            <p class="hud-kicker">Console</p>
+            <ul id="hud-console-lines" class="hud-console-list">
+              <li>System ready</li>
+              <li>Awaiting input...</li>
+            </ul>
+          </section>
+
+          <section class="hud-panel hud-actions">
+            <p class="hud-kicker">Mode Actions</p>
+            <ul id="controls-actions" class="controls-actions"></ul>
+            <p id="controls-objective" class="controls-objective" data-bind="hud.legacy.objective">
+              No active objective
+            </p>
+          </section>
+          <p id="controls-foot" class="controls-foot">F: fullscreen. V: visual preset. P: profile.</p>
         </aside>
       </div>
       <footer class="status-strip">

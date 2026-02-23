@@ -265,6 +265,85 @@
     },
   });
 
+  const MODE_VISUAL_STATE = Object.freeze({
+    title: Object.freeze({
+      accent: "COG_BLUE",
+      panelTone: "FOG",
+      threatColor: "COG_BLUE",
+      envPulse: 0.18,
+      focusIntensity: 0.55,
+      fxBudget: "standard",
+    }),
+    hub: Object.freeze({
+      accent: "COG_MINT",
+      panelTone: "FOG",
+      threatColor: "COG_MINT",
+      envPulse: 0.22,
+      focusIntensity: 0.74,
+      fxBudget: "premium",
+    }),
+    mission: Object.freeze({
+      accent: "COG_YELLOW",
+      panelTone: "FOG",
+      threatColor: "COG_PINK",
+      envPulse: 0.24,
+      focusIntensity: 0.84,
+      fxBudget: "premium",
+    }),
+    result: Object.freeze({
+      accent: "COG_PINK",
+      panelTone: "FOG",
+      threatColor: "COG_BLUE",
+      envPulse: 0.16,
+      focusIntensity: 0.46,
+      fxBudget: "standard",
+    }),
+    battle: Object.freeze({
+      accent: "COG_PINK",
+      panelTone: "FOG",
+      threatColor: "COG_YELLOW",
+      envPulse: 0.2,
+      focusIntensity: 0.72,
+      fxBudget: "premium",
+    }),
+  });
+
+  const VISUAL_QUALITY_PROFILES = Object.freeze({
+    premium: Object.freeze({
+      label: "PREMIUM",
+      toneScale: 1,
+      particlesScale: 1,
+      ambientScale: 1,
+      noiseScale: 1,
+      scanlineScale: 1,
+      motionScale: 1,
+      vignetteScale: 1,
+      bloomScale: 1,
+    }),
+    standard: Object.freeze({
+      label: "STANDARD",
+      toneScale: 0.82,
+      particlesScale: 0.68,
+      ambientScale: 0.78,
+      noiseScale: 0.88,
+      scanlineScale: 0.9,
+      motionScale: 0.68,
+      vignetteScale: 0.78,
+      bloomScale: 0.75,
+    }),
+    low: Object.freeze({
+      label: "LOW",
+      toneScale: 0.66,
+      particlesScale: 0.4,
+      ambientScale: 0.6,
+      noiseScale: 0.65,
+      scanlineScale: 0.72,
+      motionScale: 0.35,
+      vignetteScale: 0.54,
+      bloomScale: 0.38,
+    }),
+  });
+
   const ACCENT_ORDER = ["COG_YELLOW", "COG_BLUE", "COG_MINT", "COG_PINK"];
   const HUB_BIOMES = ["Nix", "Gloom", "Core", "Ash", "Void"];
   const HUB_NODE_MIN_GAP = 18;
@@ -290,6 +369,25 @@
   const controlsToggle = document.getElementById("controls-toggle");
   const controlsActions = document.getElementById("controls-actions");
   const controlsObjective = document.getElementById("controls-objective");
+  const hudNodes = {
+    modeTitle: document.getElementById("hud-mode-title"),
+    modeSubtitle: document.getElementById("hud-mode-subtitle"),
+    modePhase: document.getElementById("hud-mode-phase"),
+    visualPreset: document.getElementById("hud-visual-preset"),
+    visualProfile: document.getElementById("hud-visual-profile"),
+    objectiveTitle: document.getElementById("hud-objective-title"),
+    objectiveProgress: document.getElementById("hud-objective-progress"),
+    objectiveHint: document.getElementById("hud-objective-hint"),
+    threatHp: document.getElementById("hud-threat-hp"),
+    threatScore: document.getElementById("hud-threat-score"),
+    threatLevel: document.getElementById("hud-threat-level"),
+    threatEnemies: document.getElementById("hud-threat-enemies"),
+    missionState: document.getElementById("hud-mission-state"),
+    missionCombo: document.getElementById("hud-mission-combo"),
+    missionCooldown: document.getElementById("hud-mission-cooldown"),
+    consoleLines: document.getElementById("hud-console-lines"),
+  };
+  const HUD_STATE_CLASS = ["is-critical", "is-warning", "is-ready", "is-muted", "is-digital"];
   const coordNote = "Origin top-left, +x right, +y down";
 
   const input = {
@@ -505,32 +603,96 @@
     return preset && preset.label ? preset.label : "CINEMATIC";
   }
 
+  function resolveSceneVisualState(mode = "title", phaseProgress = 0) {
+    const activeMode = mode || "title";
+    const base = MODE_VISUAL_STATE[activeMode] || MODE_VISUAL_STATE.title;
+    const requested = Math.max(0, Math.min(1, Number.isFinite(phaseProgress) ? phaseProgress : 0));
+    return {
+      ...base,
+      mode: activeMode,
+      phaseProgress: requested,
+      accent: base.accent || "COG_BLUE",
+      threatColor: base.threatColor || "COG_BLUE",
+      panelTone: base.panelTone || "FOG",
+      envPulse: (base.envPulse || 0) * (1 - requested * 0.2),
+      focusIntensity: base.focusIntensity || 0.6,
+      fxBudget: base.fxBudget || "standard",
+      accentToken: base.accent || "COG_BLUE",
+    };
+  }
+
+  function resolveVisualQualityMode() {
+    const requested = state && state.visual && VISUAL_QUALITY_PROFILES[state.visual.visualProfile]
+      ? state.visual.visualProfile
+      : "standard";
+    if (!state || !state.visual || state.visual.visualProfileAuto === false) {
+      return requested;
+    }
+    const frameMs = Number.isFinite(state.visual.lastFrameMs) ? state.visual.lastFrameMs : FRAME_MS;
+    if (frameMs >= 40) return "low";
+    if (frameMs >= 28 && requested === "premium") return "standard";
+    if (frameMs >= 28 && requested === "standard") return "low";
+    return requested;
+  }
+
+  function resolveVisualProfileLabel() {
+    const selected = resolveVisualQualityMode();
+    const profile = VISUAL_QUALITY_PROFILES[selected];
+    return profile && profile.label ? profile.label : "STANDARD";
+  }
+
+  function cycleVisualQualityProfile() {
+    if (!state.visual) return;
+    const order = ["premium", "standard", "low"];
+    const current = order.indexOf(resolveVisualQualityMode());
+    const next = order[(current + 1) % order.length];
+    state.visual.visualProfile = next;
+    state.visual.visualProfileAuto = false;
+    queueVfxPulse("ambient", 0.12, { max: 0.24 });
+    state.messages = [
+      `Visual profile: ${VISUAL_QUALITY_PROFILES[next]?.label || next.toUpperCase()}`,
+      "Visual density set for low-poly mode",
+    ];
+  }
+
   function resolveModeVfxProfile(mode) {
     const selectedMode = mode || "title";
     const preset = resolveVisualPreset();
+    const qualityMode = VISUAL_QUALITY_PROFILES[resolveVisualQualityMode()] || VISUAL_QUALITY_PROFILES.standard;
     const baseProfile = VISUAL_PIPELINE.vfxProfiles[selectedMode] || VISUAL_PIPELINE.vfxProfiles.title;
     const accentLead = baseProfile.accentColor || pickAccentLead(selectedMode, state.mission, state.seed);
     return {
       ...baseProfile,
-      toneStrength: (baseProfile.toneStrength || 0) * (preset.toneStrength || 1),
-      motionAmp: (baseProfile.motionAmp || 0) * (preset.motionAmp || 1) * (preset.noiseSpeed || 1),
-      particles: Math.max(1, Math.round((baseProfile.particles || 0) * (preset.particleDensity || 1))),
+      toneStrength: (baseProfile.toneStrength || 0) * (preset.toneStrength || 1) * (qualityMode.toneScale || 1),
+      motionAmp: (baseProfile.motionAmp || 0) * (preset.motionAmp || 1) * (preset.noiseSpeed || 1) * (qualityMode.motionScale || 1),
+      particles: Math.max(
+        1,
+        Math.round((baseProfile.particles || 0) * (preset.particleDensity || 1) * (qualityMode.particlesScale || 1)),
+      ),
       particleDensity: preset.particleDensity || 1,
-      effectCap: (baseProfile.effectCap || 0) * (preset.effectCap || 1),
-      noiseDensity: (baseProfile.noiseDensity || 1) * (preset.noiseDensity || 1),
-      scanlineDensity: (baseProfile.scanlineDensity || 1) * (preset.scanlineDensity || 1),
-      scanlineStrength: (baseProfile.scanlineStrength || 0.5) * (preset.scanlineStrength || 1),
-      noiseSpeed: (baseProfile.noiseSpeed || 1) * (preset.noiseSpeed || 1),
-      bloom: (baseProfile.bloom || 0) * (preset.bloom || 1),
-      chromaShift: (baseProfile.chromaticSplit || 0) * (preset.chromaShift || 1) * (preset.chromaticShift || 1),
-      frameJitter: (baseProfile.frameJitter || 0) * (preset.jitterShift || 1),
-      shakeGain: (baseProfile.shakeGain || 0) * (preset.shakeBoost || 1),
-      flickerChance: (baseProfile.flickerChance || 0) * (preset.flickerShift || 1),
-      vignetteAmount: Math.min(0.14, (baseProfile.vignetteAmount || 0) * (preset.vignetteBoost || 1)),
+      effectCap: (baseProfile.effectCap || 0) * (preset.effectCap || 1) * (qualityMode.motionScale || 1),
+      noiseDensity: (baseProfile.noiseDensity || 1) * (preset.noiseDensity || 1) * (qualityMode.noiseScale || 1),
+      scanlineDensity: (baseProfile.scanlineDensity || 1) * (preset.scanlineDensity || 1) * (qualityMode.scanlineScale || 1),
+      scanlineStrength: (baseProfile.scanlineStrength || 0.5) * (preset.scanlineStrength || 1) * (qualityMode.ambientScale || 1),
+      noiseSpeed: (baseProfile.noiseSpeed || 1) * (preset.noiseSpeed || 1) * (qualityMode.motionScale || 1),
+      bloom: (baseProfile.bloom || 0) * (preset.bloom || 1) * (qualityMode.bloomScale || 1),
+      chromaShift:
+        (baseProfile.chromaticSplit || 0) *
+        (preset.chromaShift || 1) *
+        (preset.chromaticShift || 1) *
+        (qualityMode.toneScale || 1),
+      frameJitter: (baseProfile.frameJitter || 0) * (preset.jitterShift || 1) * (qualityMode.motionScale || 1),
+      shakeGain: (baseProfile.shakeGain || 0) * (preset.shakeBoost || 1) * (qualityMode.motionScale || 1),
+      flickerChance: (baseProfile.flickerChance || 0) * (preset.flickerShift || 1) * (qualityMode.ambientScale || 1),
+      vignetteAmount: Math.min(
+        0.14,
+        (baseProfile.vignetteAmount || 0) * (preset.vignetteBoost || 1) * (qualityMode.vignetteScale || 1),
+      ),
       accentLead,
       accentColor: BRAND_TOKENS[accentLead] || BRAND_TOKENS.COG_BLUE,
       presetKey: resolveVisualPresetKey(),
       presetLabel: preset.label || "CINEMATIC",
+      qualityTier: qualityMode.label || "STANDARD",
     };
   }
 
@@ -771,6 +933,28 @@
     if (floorFits) return floorScale;
     if (floorScale === 1 && ceilFits) return ceilScale;
     return rawScale;
+  }
+
+  function prefersReducedMotion() {
+    if (!window.matchMedia) return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function applyReducedMotionState() {
+    if (!document || !document.body) return;
+    document.body.classList.toggle("motion-reduced", prefersReducedMotion());
+  }
+
+  function bindReducedMotionPreference() {
+    if (!window.matchMedia) return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (!media) return;
+    const onChange = () => applyReducedMotionState();
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", onChange);
+    } else if (typeof media.addListener === "function") {
+      media.addListener(onChange);
+    }
   }
 
   function paletteForMode(mode) {
@@ -1023,7 +1207,10 @@
       renderQualityMode: "nearest",
       fxProfile: VISUAL_PIPELINE.vfxProfiles.title,
       vfxPreset: "cinematic",
+      visualProfile: "standard",
+      visualProfileAuto: true,
       fxFrame: 0,
+      lastFrameMs: FRAME_MS * 1000,
       routePulsePhase: 0,
       hubPulseOffset: 0,
       battleImpactBurst: 0,
@@ -1048,6 +1235,8 @@
         fromMode: "title",
         toMode: "title",
       },
+      frameWarnings: [],
+      frameWarningLimit: 6,
     },
     rng: 0x2abf34c1,
   };
@@ -1218,11 +1407,191 @@
       "Space or Enter: confirm",
       "H: help",
       visualAction,
-    ];
+      ];
+  }
+
+  function formatBattleMenuItem(label, selected) {
+    return `${selected ? "▶ " : "  "}${label}`;
+  }
+
+  function resolveBattleActionsForMode() {
+    if (!state.battle) return [];
+    const battle = state.battle;
+    const visualAction = `V: Visual preset (${visualPresetLabel()})`;
+    const items = [];
+    if (battle.menu.layer === "root") {
+      items.push(
+        formatBattleMenuItem(BATTLE_ROOT_ACTIONS[0] || "Fight", battle.menu.rootIndex === 0),
+        formatBattleMenuItem(BATTLE_ROOT_ACTIONS[1] || "Switch", battle.menu.rootIndex === 1),
+        formatBattleMenuItem(BATTLE_ROOT_ACTIONS[2] || "Capture", battle.menu.rootIndex === 2),
+      );
+      items.push("Arrows: choose menu");
+    } else if (battle.menu.layer === "fight") {
+      const playerPet = activePlayerPet();
+      const moves = playerPet && Array.isArray(playerPet.moves) ? playerPet.moves : [];
+      if (moves.length === 0) {
+        items.push("No battle moves available");
+      } else {
+        const visibleMoves = moves.slice(0, Math.min(4, moves.length));
+        for (let i = 0; i < visibleMoves.length; i += 1) {
+          const move = MOVE_DB[visibleMoves[i]];
+          const label = move ? `${move.name} (PWR ${move.power || 0})` : visibleMoves[i];
+          items.push(formatBattleMenuItem(label, battle.menu.moveIndex === i));
+        }
+      }
+      items.push("Arrows: choose move");
+      items.push("Backspace: return");
+    } else if (battle.menu.layer === "switch") {
+      const candidates = alivePartyIds();
+      for (let i = 0; i < candidates.length; i += 1) {
+        const pet = petById(candidates[i]);
+        if (!pet) continue;
+        const petLabel = `${speciesForId(pet.speciesId).name} HP ${pet.hp}/${pet.maxHp}`;
+        items.push(formatBattleMenuItem(petLabel, battle.menu.switchIndex === i));
+      }
+      items.push("Arrows: choose pet");
+      items.push("Backspace: return");
+    }
+    items.push("Enter/Space: confirm", "P: profile cycle", visualAction);
+    return items;
   }
 
   function externalActionsForMode(mode) {
+    if (mode === "battle") {
+      return resolveBattleActionsForMode();
+    }
     return contextActionsForMode(mode).filter((action) => !/^H:\s*help$/i.test(action));
+  }
+
+  function collectConsoleLines() {
+    const hudMessages = Array.isArray(state.messages) ? state.messages.slice(-2) : [];
+    const battleMessages =
+      state.battle && Array.isArray(state.battle.log) ? state.battle.log.slice(-3) : [];
+    return [...hudMessages, ...battleMessages].slice(-3);
+  }
+
+  function resolveScenePhaseProgress(mode) {
+    const transition = state.visual && state.visual.modeTransition;
+    if (!transition || transition.duration <= 0 || transition.timer <= 0) return 0;
+    const maxT = Math.max(1, transition.duration);
+    return clamp(1 - transition.timer / maxT, 0, 1);
+  }
+
+  function resolveHUDThreatLevel() {
+    const mode = state.mode || "title";
+    if (mode === "mission") {
+      const objective = state.objective.current;
+      if (!objective) return 0;
+      if (objective.task === "clear_wave") {
+        const remaining = Math.max(0, (objective.enemyCount || 0));
+        return clamp(1 - remaining / Math.max(1, state.mission ? state.mission.enemyTarget : 1), 0, 1);
+      }
+      return 1 - ((objective.targetCaptured || 0) / Math.max(1, objective.targetRequired || 1));
+    }
+    if (state.visual && Array.isArray(state.visual.frameWarnings) && state.visual.frameWarnings.length) {
+      const limit = state.visual.frameWarningLimit || 6;
+      return clamp(state.visual.frameWarnings.length / Math.max(1, limit), 0, 1);
+    }
+    return 0;
+  }
+
+  function updateHudNodeClass(node, nextClass) {
+    if (!node) return;
+    for (const cls of HUD_STATE_CLASS) node.classList.remove(cls);
+    if (nextClass) node.classList.add(nextClass);
+  }
+
+  function syncHudTextNode(node, rawValue, fallback = "") {
+    if (!node) return;
+    if (rawValue === undefined || rawValue === null || rawValue === "") {
+      node.textContent = String(fallback);
+    } else {
+      node.textContent = String(rawValue);
+    }
+  }
+
+  function syncHUDConsole() {
+    if (!hudNodes.consoleLines) return;
+    const messages = collectConsoleLines();
+    const list = hudNodes.consoleLines;
+    while (list.children.length < messages.length) {
+      list.appendChild(document.createElement("li"));
+    }
+    while (list.children.length > messages.length) {
+      list.removeChild(list.lastElementChild);
+    }
+    for (let i = 0; i < list.children.length; i += 1) {
+      list.children[i].textContent = messages[i] || "";
+    }
+  }
+
+  function syncModeMetricsPayload() {
+    const scene = resolveSceneVisualState(state.mode, resolveScenePhaseProgress(state.mode));
+    const objective = state.objective.current;
+    const objectiveTitle = objective ? `${objective.taskText || "Objective"}: ${objective.targetName || "unknown"}` : "No objective";
+    const objectiveProgress = objective
+      ? `${objective.targetCaptured || 0}/${objective.targetRequired || 1}`
+      : "0 / 0";
+    const threatLevel = Math.round(resolveHUDThreatLevel() * 100);
+    const enemyCount = objective ? Math.max(0, objective.enemyCount || 0) : 0;
+    const comboHint = state.battle ? `${state.battle.menu?.layer || "root"} / turn ${state.battle.turn || 0}` : "No battle";
+    const cooldownState =
+      state.mode === "mission"
+        ? `lock: ${state.planetLockTimer || 0}`
+        : state.player.shootCd > 0
+          ? `cooldown: ${state.player.shootCd.toFixed(1)}`
+          : "ready";
+    const threatColor = scene.threatColor || "COG_BLUE";
+
+    return {
+      modeTitle:
+        scene.mode === "title"
+          ? "Boot Sequence"
+          : scene.mode === "hub"
+            ? "Hub Command"
+            : scene.mode === "mission"
+              ? "Mission Control"
+              : scene.mode === "battle"
+                ? "Battle Deck"
+                : "Result Deck",
+      modeSubtitle:
+        scene.mode === "hub"
+          ? "Select planet node and hold for mission lock"
+          : scene.mode === "mission"
+            ? "Complete target objective"
+            : scene.mode === "battle"
+              ? "Resolve encounter"
+              : scene.mode === "result"
+                ? "Mission resolved"
+                : "Press start to deploy",
+      modePhase: scene.mode.toUpperCase(),
+      objectiveTitle,
+      objectiveProgress,
+      objectiveHint: objectiveHintText(),
+      threatScore: Math.max(0, state.score),
+      threatLevel: `${threatLevel}%`,
+      threatLevelClass: threatLevel >= 75 ? "is-critical" : threatLevel >= 55 ? "is-warning" : threatLevel >= 0 ? "is-ready" : "is-muted",
+      enemyCount,
+      missionState:
+        state.mode === "mission" && objective
+          ? `${state.mode.toUpperCase()} • ${objective.task}`
+          : state.mode === "hub"
+            ? `PLANETS: ${state.completedPlanets}`
+            : state.mode === "battle"
+              ? `BATTLE ${state.battle && state.battle.turn ? `T${state.battle.turn}` : "..." }`
+              : state.mode === "result"
+                ? "RETURNING"
+                : "READY",
+      missionCombo: comboHint,
+      missionCooldown: cooldownState,
+      hpText: `${state.player.hp}/${state.player.maxHp}`,
+      visualPresetText: `Preset: ${visualPresetLabel()}`,
+      visualProfileText: `Profile: ${resolveVisualProfileLabel()}`,
+      threatClassColor: threatColor,
+      objectiveReady:
+        objective && (objective.taskDone || objective.targetCaptured >= (objective.targetRequired || 1)) ? "is-ready" : "is-muted",
+      frameBudget: Number.isFinite(state.visual.lastFrameMs) ? Math.round(state.visual.lastFrameMs) : null,
+    };
   }
 
   function objectiveHintText() {
@@ -1247,14 +1616,39 @@
     controlsToggle.setAttribute("aria-pressed", visible ? "true" : "false");
     controlsToggle.textContent = visible ? "H: Hide Help" : "H: Show Help";
 
+    const metrics = syncModeMetricsPayload();
     const actions = externalActionsForMode(state.mode);
     controlsActions.textContent = "";
     for (const action of actions) {
       const item = document.createElement("li");
-      item.textContent = action;
+      const label = typeof action === "string" ? action : String(action || "");
+      const isSelected = label.startsWith("▶ ");
+      item.textContent = isSelected ? label.slice(2) : label;
+      item.classList.toggle("is-selected", isSelected);
+      item.setAttribute("aria-selected", isSelected ? "true" : "false");
       controlsActions.appendChild(item);
     }
+
     controlsObjective.textContent = objectiveHintText();
+    syncHudTextNode(hudNodes.modeTitle, metrics.modeTitle, "Boot Sequence");
+    syncHudTextNode(hudNodes.modeSubtitle, metrics.modeSubtitle, "No active mode");
+    syncHudTextNode(hudNodes.modePhase, metrics.modePhase, "IDLE");
+    syncHudTextNode(hudNodes.visualPreset, metrics.visualPresetText, "Preset: CINEMATIC");
+    syncHudTextNode(hudNodes.visualProfile, metrics.visualProfileText, "Profile: STANDARD");
+    syncHudTextNode(hudNodes.objectiveTitle, metrics.objectiveTitle, "No objective");
+    syncHudTextNode(hudNodes.objectiveProgress, metrics.objectiveProgress, "0 / 0");
+    syncHudTextNode(hudNodes.objectiveHint, metrics.objectiveHint, "No active objective");
+    syncHudTextNode(hudNodes.threatHp, metrics.hpText, `${state.player.hp}/${state.player.maxHp}`);
+    syncHudTextNode(hudNodes.threatScore, metrics.threatScore, "0");
+    syncHudTextNode(hudNodes.threatLevel, metrics.threatLevel, "0%");
+    syncHudTextNode(hudNodes.threatEnemies, metrics.enemyCount, "0");
+    syncHudTextNode(hudNodes.missionState, metrics.missionState, "Awaiting launch");
+    syncHudTextNode(hudNodes.missionCombo, metrics.missionCombo, "Combo ready");
+    syncHudTextNode(hudNodes.missionCooldown, metrics.missionCooldown, "Ready");
+    updateHudNodeClass(hudNodes.threatHp, state.player.hp <= 1 ? "is-critical" : "is-ready");
+    updateHudNodeClass(hudNodes.threatLevel, metrics.threatLevelClass);
+    updateHudNodeClass(hudNodes.missionCombo, metrics.objectiveReady);
+    syncHUDConsole();
   }
 
   function brandAuditSnapshot() {
@@ -1264,9 +1658,12 @@
       secondaryTone: "active",
       toneDepth: "twoTone",
       glowEffects: state.visual.vfxPreset !== "minimal",
+      visualProfile: state.visual.visualProfile,
+      visualProfileAuto: state.visual.visualProfileAuto,
       heavyGradients: false,
       overlayWordCap: true,
       contrastMode: state.visual.contrastMode,
+      frameBudget: state.visual.lastFrameMs,
     };
   }
 
@@ -2788,7 +3185,7 @@
     drawPlayer();
 
     if (state.mission && state.objective.current) {
-      drawMissionStatusStrip({ tone });
+      // Mission status is now surfaced in the external HUD panel.
     }
 
     drawHud();
@@ -2920,50 +3317,11 @@
     sceneCtx.strokeRect(22, 50, 108, 6);
     sceneCtx.strokeRect(184, 122, 108, 6);
 
-    drawPanel(8, 138, 182, 34);
+    drawPanel(8, 138, SIM_W - 16, 30);
     sceneCtx.fillStyle = tone.text;
     sceneCtx.font = "7px Sora, sans-serif";
-    const logs = battle.log.slice(-3);
-    for (let i = 0; i < logs.length; i += 1) {
-      sceneCtx.fillText(logs[i], 14, 150 + i * 8);
-    }
-
-    drawPanel(196, 138, 116, 34);
-    sceneCtx.fillStyle = tone.text;
-    sceneCtx.font = "700 7px Sora, sans-serif";
-    if (battle.menu.layer === "root") {
-      for (let i = 0; i < BATTLE_ROOT_ACTIONS.length; i += 1) {
-      if (i === battle.menu.rootIndex) {
-          sceneCtx.fillStyle = playerAccent;
-          sceneCtx.fillRect(200, 145 + i * 8 - 5, 3, 3);
-        }
-        sceneCtx.fillStyle = tone.text;
-        sceneCtx.fillText(BATTLE_ROOT_ACTIONS[i], 206, 145 + i * 8);
-      }
-    } else if (battle.menu.layer === "fight") {
-      const moves = player.moves;
-      for (let i = 0; i < moves.length; i += 1) {
-        const move = MOVE_DB[moves[i]];
-        if (i === battle.menu.moveIndex) {
-          sceneCtx.fillStyle = playerAccent;
-          sceneCtx.fillRect(200, 145 + i * 7 - 5, 3, 3);
-        }
-        sceneCtx.fillStyle = tone.text;
-        sceneCtx.fillText(move ? move.name : moves[i], 206, 145 + i * 7);
-      }
-    } else if (battle.menu.layer === "switch") {
-      const candidates = alivePartyIds();
-      for (let i = 0; i < candidates.length; i += 1) {
-        const pet = petById(candidates[i]);
-        if (!pet) continue;
-        if (i === battle.menu.switchIndex) {
-          sceneCtx.fillStyle = playerAccent;
-          sceneCtx.fillRect(200, 145 + i * 8 - 5, 3, 3);
-        }
-        sceneCtx.fillStyle = tone.text;
-        sceneCtx.fillText(speciesForId(pet.speciesId).name, 206, 145 + i * 8);
-      }
-    }
+    sceneCtx.fillText("Battle controls moved to side rail.", 16, 150);
+    sceneCtx.fillText("Combat logs stream in console panel.", 16, 160);
   }
 
   function drawResult() {
@@ -3022,23 +3380,33 @@
 
   function drawHud() {
     const tone = sceneTone(state.mode);
-    const hudH = 12;
-    const hudX = 6;
-    const hudY = SIM_H - hudH - 4;
-    const presetText = `Preset ${visualPresetLabel()}`;
-    sceneCtx.fillStyle = tone.panelFill;
+    const hudH = 10;
+    const hudX = 8;
+    const hudY = SIM_H - hudH - 6;
+    const presetText = `${visualPresetLabel()} / ${resolveVisualProfileLabel()}`;
+    const statusText = `HP ${state.player.hp}/${state.player.maxHp}  SCORE ${state.score}`;
+    const lastMessage = state.messages[state.messages.length - 1] || "";
+    const warning =
+      state.player.hp <= 1 || state.mode === "result"
+        ? " ! "
+        : state.mode === "battle" && state.player.invulnFrames > 0
+          ? " ⚠ "
+          : " ";
+    sceneCtx.fillStyle = withAlpha(tone.panelFill, 0.9);
     sceneCtx.fillRect(hudX, hudY, SIM_W - hudX * 2, hudH);
-    sceneCtx.strokeStyle = tone.edge;
-    sceneCtx.lineWidth = 1;
+    sceneCtx.strokeStyle = withAlpha(tone.edge, 0.38);
+    sceneCtx.lineWidth = 0.8;
     sceneCtx.strokeRect(hudX, hudY, SIM_W - hudX * 2, hudH);
     sceneCtx.fillStyle = tone.text;
-    sceneCtx.font = "7px Sora, sans-serif";
-    const text = `HP ${state.player.hp}/${state.player.maxHp}  Score ${state.score}  Planets ${state.completedPlanets}`;
-    sceneCtx.fillText(text, hudX + 6, hudY + 9);
-    const lastMessage = state.messages[state.messages.length - 1] || "";
-    if (lastMessage) sceneCtx.fillText(lastMessage, hudX + 6, hudY + 6);
-    const presetX = SIM_W - 8 - sceneCtx.measureText(presetText).width;
-    sceneCtx.fillText(presetText, presetX, hudY + 9);
+    sceneCtx.font = "6px Sora, sans-serif";
+    sceneCtx.fillText(`${warning}${statusText}`, hudX + 4, hudY + 7);
+    if (lastMessage) {
+      sceneCtx.fillStyle = tone.secondary;
+      sceneCtx.fillText(lastMessage, hudX + 112, hudY + 7);
+    }
+    const presetX = SIM_W - hudX - 4 - sceneCtx.measureText(presetText).width;
+    sceneCtx.fillStyle = tone.text;
+    sceneCtx.fillText(presetText, presetX, hudY + 7);
   }
 
   function drawPostProcess(profileOverride = null) {
@@ -3064,9 +3432,14 @@
       flickerChance:
         (modeProfile.flickerChance || 0) * (1 + vfxPulses.battle * 1.2 + vfxPulses.ambient * 0.45 + vfxPulses.modeShift * 0.3),
     };
-    const jitter = renderPolicy === "smooth"
-      ? (frameNoise(97, state.frame, 13) - 0.5) * 0.5 * (sourceProfile.frameJitter || 0)
-      : 0;
+    const motionEnvelope = prefersReducedMotion() ? 0.28 : 1;
+    const jitter =
+      renderPolicy === "smooth"
+        ? (frameNoise(97, state.frame, 13) - 0.5) *
+          0.5 *
+          (sourceProfile.frameJitter || 0) *
+          motionEnvelope
+        : 0;
     const frameSource = resolvePostProcessSourceCanvas(sourceProfile);
     const flickerChance = clamp((modeProfile.flickerChance || 0) * (0.85 + vfxPulses.battle * 1.1), 0, 0.22);
     const activeFlicker = frameNoise(11, state.visual.fxFrame, 17) < flickerChance
@@ -3075,9 +3448,13 @@
     const baseNoiseAlpha =
       (state.mode === "hub" ? 0.15 : state.mode === "mission" ? 0.12 : 0.1) *
       modeProfile.noiseDensity *
-      (0.85 + vfxPulses.ambient * 0.45 + transitionPulse * 0.25);
+      (0.85 + vfxPulses.ambient * 0.45 + transitionPulse * 0.25) *
+      motionEnvelope;
     const driftPulse = (state.frame * 0.015 + state.seed * 0.0000001) % 1;
-    const orbitKick = (Math.sin(state.visual.fxFrame * 0.09) + 1) * (0.12 + vfxPulses.camera * 0.16 + transitionPulse * 0.06);
+    const orbitKick =
+      (Math.sin(state.visual.fxFrame * 0.09) + 1) *
+      (0.12 + vfxPulses.camera * 0.16 + transitionPulse * 0.06) *
+      motionEnvelope;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = withAlpha(tone.surface, 1);
@@ -3104,6 +3481,7 @@
       orbitPulse: orbitKick,
       profile: modeProfile,
       transitionPulse,
+      motionEnvelope,
     });
 
     drawModeFrameChrome({
@@ -3140,11 +3518,13 @@
     orbitPulse = 0.2,
     profile,
     transitionPulse = 0,
+    motionEnvelope = 1,
   }) {
     const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const envelopeStrength = clamp(motionEnvelope, 0, 1);
     const frame = state.frame;
     const pulses = resolveVfxPulses();
-    const starMotion = modeProfile.motionAmp !== undefined ? modeProfile.motionAmp : 0.16;
+    const starMotion = (modeProfile.motionAmp !== undefined ? modeProfile.motionAmp : 0.16) * envelopeStrength;
     const starCount = Math.max(
       14,
       Math.round(
@@ -3156,10 +3536,11 @@
               (VISUAL_PIPELINE.vfxProfiles[state.mode] && VISUAL_PIPELINE.vfxProfiles[state.mode].particles
                 ? VISUAL_PIPELINE.vfxProfiles[state.mode].particles
                 : 1) || 1
-          )
+          ) *
+          envelopeStrength
       )
     );
-    const toneStrength = modeProfile.toneStrength !== undefined ? modeProfile.toneStrength : 0.16;
+    const toneStrength = (modeProfile.toneStrength !== undefined ? modeProfile.toneStrength : 0.16) * envelopeStrength;
 
     for (let i = 0; i < starCount; i++) {
       const depth = frameNoise(i * 13, state.seed, 91);
@@ -3957,6 +4338,17 @@
     state.visual.routePulsePhase = (state.visual.routePulsePhase + 0.022) % 1;
     state.visual.hubPulseOffset = (state.visual.hubPulseOffset + 0.008) % 1;
     state.visual.battleImpactBurst = Math.max(0, state.visual.battleImpactBurst - 1);
+    const frameMs = Number.isFinite(state.visual.lastFrameMs) ? state.visual.lastFrameMs : FRAME_MS * 1000;
+    if (!state.visual.frameWarnings) state.visual.frameWarnings = [];
+    if (frameMs >= 40) {
+      state.visual.frameWarnings.push(frameMs);
+      const maxFrameWarnings = Math.max(1, state.visual.frameWarningLimit || 6);
+      while (state.visual.frameWarnings.length > maxFrameWarnings) {
+        state.visual.frameWarnings.shift();
+      }
+    } else if (state.visual.frameWarnings.length > 0) {
+      state.visual.frameWarnings.shift();
+    }
     const transition = state.visual && state.visual.modeTransition;
     if (transition && transition.duration > 0 && transition.timer > 0) {
       transition.timer = Math.max(0, transition.timer - Math.max(1, Math.round(dt * TARGET_FPS)));
@@ -4037,6 +4429,8 @@
       syncExternalControlsUI();
     } else if (key === "KeyV" && isDown) {
       cycleVisualPreset();
+    } else if (key === "KeyP" && isDown) {
+      cycleVisualQualityProfile();
     } else if (key === "KeyF" && isDown) {
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
@@ -4056,13 +4450,15 @@
         key === "Space" ||
         key === "Enter" ||
         key === "Backspace" ||
-        key === "KeyV")
+        key === "KeyV" ||
+        key === "KeyP")
     ) {
       e.preventDefault();
     }
   }
 
   function renderGameToText() {
+    const hudMetrics = syncModeMetricsPayload();
     const visible = state.entities
       .filter((entity) => entity.x >= -20 && entity.x <= SIM_W + 20 && entity.y >= -20 && entity.y <= SIM_H + 20)
       .slice(0, 18)
@@ -4149,13 +4545,24 @@
       },
       ui: {
         helpVisible: helpOverlayVisible(),
-        contextActions: contextActionsForMode(state.mode),
+        contextActions: externalActionsForMode(state.mode),
         objectiveHint: objectiveHintText(),
+        metrics: {
+          phase: hudMetrics.modePhase,
+          threatScore: hudMetrics.threatScore,
+          objectiveProgress: hudMetrics.objectiveProgress,
+          enemyCount: hudMetrics.enemyCount,
+          comboHint: hudMetrics.missionCombo,
+          cooldownState: hudMetrics.missionCooldown,
+          frameBudget: hudMetrics.frameBudget,
+        },
         brand: {
           accentLead: state.visual.accentLead,
           contrastMode: state.visual.contrastMode,
           visualPreset: state.visual.vfxPreset,
           visualPresetLabel: visualPresetLabel(),
+          visualProfile: resolveVisualQualityMode(),
+          visualProfileLabel: resolveVisualProfileLabel(),
         },
         brandAudit: brandAuditSnapshot(),
       },
@@ -4206,6 +4613,8 @@
     input.left = input.right = input.up = input.down = input.space = false;
     input.spaceEdge = input.upEdge = input.downEdge = input.confirmEdge = input.cancelEdge = false;
   });
+  applyReducedMotionState();
+  bindReducedMotionPreference();
 
   initializeSpriteRegistry();
   seed(state.seed);
@@ -4222,6 +4631,7 @@
   function loop(now) {
     const dt = (now - last) / 1000;
     last = now;
+    state.visual.lastFrameMs = Number.isFinite(dt) ? Math.max(1, dt * 1000) : FRAME_MS * 1000;
     accumulator += dt;
     const clamped = Math.min(accumulator, 0.25);
     while (accumulator >= FRAME_MS / 1000) {

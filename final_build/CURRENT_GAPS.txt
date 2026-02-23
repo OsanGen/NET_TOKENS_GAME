@@ -1,11 +1,11 @@
 final_build (component | status | next action)
 - Mission Flow | done | verify all task variants remain gated by target capture in longer play sessions
 - Hub Flow | in_progress | tune HUB_NODE_MIN_GAP and board spacing after one full 10-seed smoke pass
-- Controls Overlay | done | confirm no control verbs remain inside hub render loop and external rail is still readable on desktop
+- Controls Overlay | in_progress | verify battle action list always pulls from active player pet moves and selected state remains synchronized on mode transitions
 - Local Launch Tooling | done | stale/reused PID handling now guarded; keep using `scripts/open-game.sh` for reliable open/start on `5170`
-- Validation Loop | done | continue using `web_game_playwright_client_local.js` plus deterministic probe scripts for task-specific checks
+- Validation Loop | in_progress | run a local smoke pass through key flows (title→hub→mission→result) at normal and reduced-motion settings
 - Visual Asset Content | blocked | set `OPENAI_API_KEY` then run `bash scripts/generate-imagegen-assets.sh` to regenerate all 24 sprites from CogSec-compliant prompts and sync 64x64 outputs into `assets/sprites`
 - Skill Client Tooling | blocked | align module resolution for `/Users/abelsanchez/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` if strict skill-client execution is required
 - Core Runtime | done | node-check passed + Playwright smoke runs and returns frames in output/web-game
-- Visual Post Process | in_progress | verify post-process chrome no longer throws `ReferenceError: scale is not defined` by running local smoke before next visual polish pass
+- Visual Post Process | in_progress | run desktop/mobile smoke to confirm reduced-motion body class and post-process envelope still reads stable
 - Pages Deployment | done | new repo `NET_TOKENS_GAME` is deployed at `https://osangen.github.io/NET_TOKENS_GAME/`; old repo `ai-power-users-codex53-demo` rollback commits are on `main` and no longer serve NET_TOKENS_GAME branding
