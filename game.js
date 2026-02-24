@@ -110,9 +110,9 @@
     hudLineHeight: 8,
     vfxProfiles: EFFECT_MODES,
     effects: {
-      baseScanAlpha: 0.08,
-      grainCount: 92,
-      noiseCount: 84,
+      baseScanAlpha: 0.035,
+      grainCount: 0,
+      noiseCount: 0,
       routeGlowAlpha: 0.16,
       routePulseAlpha: 0.28,
       missionCometCount: 6,
@@ -121,7 +121,7 @@
       battlePulseBars: 3,
       creepLineCount: 18,
       riftStripeDensity: 6,
-      staticWashDensity: 52,
+      staticWashDensity: 0,
       ruptureFrequencies: 3.6,
       riftPulseDensity: 4.2,
       veilDensity: 22,
@@ -3797,6 +3797,8 @@
         offsetY,
         drawW,
         drawH,
+        scale,
+        profile: modeProfile,
         pulses,
         transitionPulse,
       });
@@ -3844,21 +3846,6 @@
       ctx.fillRect(offsetX, dy, drawW, 1);
     }
 
-    const noiseCount = Math.round(VISUAL_PIPELINE.effects.noiseCount * (modeProfile.noiseDensity || 1));
-    for (let i = 0; i < noiseCount; i++) {
-      const nx = frameNoise(i * 13, frame, 19);
-      const ny = frameNoise(i * 17, frame, 23);
-      const wobble = ((i % 3) - 1) * 0.4;
-      const drift = (state.mode === "mission" ? 1 : 0.2) * Math.sin(frame * 0.11 + i);
-      const noiseBlend = withAlpha(
-        tone.subtle,
-        baseNoiseAlpha * (state.mode === "mission" ? 0.92 : 0.74) * (0.82 + pulses.ambient * 0.24 + pulses.battle * 0.12),
-      );
-      ctx.fillStyle = noiseBlend;
-      const dot = 1 + Math.floor(scale * 0.5);
-      ctx.fillRect(offsetX + Math.floor(nx * drawW) + wobble + drift, offsetY + Math.floor(ny * drawH), dot, dot);
-    }
-
     drawPostProcessParticleCloud({
       tone,
       offsetX,
@@ -3875,6 +3862,7 @@
       offsetY,
       drawW,
       drawH,
+      scale,
       profile: modeProfile,
       orbitPulse,
     });
@@ -3910,23 +3898,42 @@
     }
   }
 
-  function drawPostProcessBloom({ tone, offsetX, offsetY, drawW, drawH, profile, orbitPulse }) {
+  function drawPostProcessBloom({ tone, offsetX, offsetY, drawW, drawH, scale, profile, orbitPulse }) {
     const pulses = resolveVfxPulses();
-    const bloomStrength = (profile.bloom || 0) * (0.5 + orbitPulse) * (1 + pulses.battle * 0.12 + pulses.modeShift * 0.2);
+    const ringScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const bloomStrength = (profile.bloom || 0) * (0.42 + orbitPulse) * (1 + pulses.battle * 0.12 + pulses.modeShift * 0.2);
     if (bloomStrength <= 0) return;
-    const glow = ctx.createRadialGradient(
-      offsetX + drawW / 2,
-      offsetY + drawH / 2,
-      Math.max(6, Math.min(drawW, drawH) * 0.08),
-      offsetX + drawW / 2,
-      offsetY + drawH / 2,
-      Math.max(drawW, drawH) * 0.7,
-    );
-    glow.addColorStop(0, withAlpha(tone.accentPulse, 0.0));
-    glow.addColorStop(0.42, withAlpha(tone.secondary, 0.09 * bloomStrength));
-    glow.addColorStop(1, withAlpha(tone.secondary, 0));
-    ctx.fillStyle = glow;
-    ctx.fillRect(offsetX, offsetY, drawW, drawH);
+    const orbitPulseNorm = clamp(orbitPulse, 0, 1);
+    const centerX = offsetX + drawW / 2;
+    const centerY = offsetY + drawH / 2;
+    const arcCount = Math.max(1, Math.round(1.2 + (profile.effectCap || 1) * 2.2));
+    const baseRadius = Math.min(drawW, drawH) * 0.16;
+    const radiusStep = Math.max(9, Math.min(drawW, drawH) * 0.12);
+    const baseAlpha = 0.008 + 0.028 * bloomStrength;
+    for (let i = 0; i < arcCount; i += 1) {
+      const pulse = i / Math.max(1, arcCount - 1);
+      const radius = baseRadius + radiusStep * pulse;
+      const alpha = baseAlpha * (1 - pulse * 0.46) * (0.6 + pulses.ambient * 0.35);
+      const arcDrift = Math.sin(state.visual.fxFrame * 0.12 + i * 1.3) * ringScale * 1.5;
+      const arcDash = Math.max(2, Math.round(ringScale * (3 + i)));
+      const arcGap = Math.max(1, Math.round(ringScale * 3));
+      ctx.setLineDash([arcDash, arcGap]);
+      ctx.lineWidth = Math.max(0.45, 1.35 - pulse * 0.35);
+      ctx.strokeStyle = withAlpha(tone.text, alpha);
+      ctx.beginPath();
+      ctx.arc(centerX + arcDrift, centerY - arcDrift * 0.55, radius * (1 + orbitPulseNorm * 0.06), 0, Math.PI * 2);
+      ctx.stroke();
+      if (i === 0 || i === arcCount - 1) {
+        ctx.setLineDash([]);
+        ctx.fillStyle = withAlpha(tone.subtle, alpha * 0.4);
+        const pulseY = centerY + ((i + 1) % 2 === 0 ? 1 : -1) * (radius + 6);
+        const pulseX = centerX + arcDrift * 0.35;
+        ctx.beginPath();
+        ctx.arc(pulseX, pulseY, ringScale * (1.9 + i * 0.2), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.setLineDash([]);
   }
 
   function drawDoorwayRiftPulse({ tone, offsetX, offsetY, drawW, drawH, scale, transitionPulse, pulses }) {
@@ -4047,22 +4054,50 @@
     }
   }
 
-  function drawPostProcessStaticWash({ tone, offsetX, offsetY, drawW, drawH, pulses, transitionPulse }) {
-    const density = clamp(
-      VISUAL_PIPELINE.effects.staticWashDensity *
-        (0.4 + pulses.battle * 0.5 + pulses.ambient * 0.4 + transitionPulse * 0.2),
+  function drawPostProcessStaticWash({
+    tone,
+    offsetX,
+    offsetY,
+    drawW,
+    drawH,
+    scale,
+    profile,
+    pulses,
+    transitionPulse,
+  }) {
+    const resolvedScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const menace = clamp(
+      0.25 + (modeProfile.effectCap || 0) * 0.45 + (pulses.ambient || 0) * 0.42 + transitionPulse * 0.32 + (pulses.modeShift || 0) * 0.22,
       0,
-      140,
+      1.2,
     );
-    const noiseDensity = Math.round(density / 4);
-    const salt = 17 + Math.round(state.visual.fxFrame * 0.6);
-    for (let i = 0; i < noiseDensity; i += 1) {
-      const nx = frameNoise(i * 37, state.visual.fxFrame, salt);
-      const ny = frameNoise(i * 41, state.visual.fxFrame, salt + 11);
-      const noiseAlpha = 0.02 + pulses.battle * 0.04 + transitionPulse * 0.03;
-      const dot = 1 + Math.floor(Math.max(1, drawW / 640));
-      ctx.fillStyle = withAlpha(tone.subtle, noiseAlpha);
-      ctx.fillRect(offsetX + Math.floor(nx * drawW), offsetY + Math.floor(ny * drawH), dot, dot);
+    const majorLayer = Math.max(2, Math.round(3 + menace * 4));
+    const seedPulse = state.visual.fxFrame * 0.09 + (state.seed || 0);
+    for (let i = 0; i < majorLayer; i += 1) {
+      const pulse = i / Math.max(1, majorLayer);
+      const y = offsetY + ((seedPulse * 12 + i * (drawH / majorLayer)) % drawH);
+      const xJitter = Math.sin(seedPulse * 0.7 + i * 0.9) * resolvedScale * 1.5;
+      const bandH = Math.max(1, Math.round(0.85 + (i % 3) * 0.35 + resolvedScale * 0.2));
+      const bandAlpha = (0.012 + menace * 0.016 + transitionPulse * 0.006) * (1 + Math.sin(seedPulse + i) * 0.15 + pulses.ambient * 0.14);
+      ctx.fillStyle = withAlpha(tone.subtle, bandAlpha);
+      ctx.fillRect(offsetX + Math.floor(xJitter), Math.floor(y), drawW, bandH);
+      ctx.fillStyle = withAlpha(tone.text, bandAlpha * 0.42);
+      const span = drawW * (0.38 + pulse * 0.2);
+      ctx.fillRect(offsetX + Math.max(0, drawW - span), Math.floor(y + bandH + resolvedScale * 0.5), span, bandH * 0.55);
+    }
+
+    const fractureCount = Math.max(3, Math.round((VISUAL_PIPELINE.effects.veilDensity || 20) * 0.36 * (0.6 + menace)));
+    for (let i = 0; i < fractureCount; i += 1) {
+      const lineY = offsetY + ((i / Math.max(1, fractureCount)) * drawH + Math.cos(seedPulse + i * 0.45) * resolvedScale * 2.2) % drawH;
+      const lineX = offsetX + ((i * 17 + Math.sin(seedPulse * 0.2) * 9) % drawW);
+      const width = Math.max(1, Math.round((modeProfile.motionAmp || 1) * (1 + (i % 2)) * resolvedScale * 0.45));
+      const dash = Math.max(1, Math.round(drawW * (0.12 + (i % 3) * 0.02)));
+      const alpha = 0.006 + menace * 0.018;
+      ctx.fillStyle = withAlpha(tone.secondary, alpha);
+      ctx.fillRect(lineX, Math.floor(lineY), dash, width);
+      ctx.fillStyle = withAlpha(tone.accentPulse, alpha * 0.45);
+      ctx.fillRect(lineX + Math.floor(resolvedScale), Math.floor(lineY + width), Math.max(1, Math.round(dash * 0.36)), Math.max(1, width - 0.2));
     }
   }
 

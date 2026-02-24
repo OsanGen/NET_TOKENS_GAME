@@ -3,7 +3,8 @@ Purpose:
 Own the full visual pipeline for all scenes:
 - Render internal scene into an offscreen world buffer.
 - Compose that buffer into the display with deterministic scaling.
-- Apply mode-driven scanline/noise/chromatic overlays and profile-based detail budgets.
+- Apply mode-driven scanline/chromatic overlays and profile-based detail budgets.
+- Replace grain/noise texture with deterministic, structured veil/vein/ring passes for cleaner creep polish.
 Gameplay simulation, collision checks, and hooks remain unchanged.
 
 Inputs:
@@ -30,7 +31,7 @@ Outputs:
 - A single frame rendered into `#game-canvas` with:
   - deterministic near-integer scale policy for crisp pixels,
   - readable, tone-driven overlays,
-  - profile-aware scanline/noise/particle/bloom intensity,
+  - profile-aware scanline/particle/ring intensity,
   - optional reduced-motion scaling for motion-heavy FX.
 - External API stability: `window.render_game_to_text()` and `window.advanceTime(ms)` continue unchanged.
 
@@ -102,7 +103,7 @@ Mode animation stack:
   - impact bursts
   - turn pulse strip
 - Title/Result:
-  - ambient pulse and minimal scanline/noise envelope
+  - ambient pulse and structured scanline veil envelope
  - Sprite polish pass (new this turn):
    - subpixel sprite jitter for hostile micro-motion
    - per-entity faint outline/ring and shadow haze before post-process layering
@@ -110,9 +111,10 @@ Mode animation stack:
    - optional sprite edge tinting controlled by entity tone and active mode
 - Post-process overlay additions:
   - preset-aware particle drift
-  - preset-aware radial bloom
+  - deterministic pressure rings (`drawPostProcessBloom` now ink-styled)
+  - zero-grain structured fracture pass (`drawPostProcessStaticWash`)
   - chromatic split (`resolvePostProcessSourceCanvas`)
-  - scanline and noise density scaling
+  - scanline density scaling
 
 Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/game.js`
@@ -151,6 +153,9 @@ Key helper surfaces:
 
 Acceptance checks:
 - `drawPostProcessChromaticBleed()` defends against undefined `scale` by defaulting to `1`.
+- `VISUAL_PIPELINE.effects.grainCount/noiseCount/staticWashDensity` are intentionally set to zero/noise-free defaults.
+- `drawPostProcessStaticWash()` now uses deterministic fracture/veil bands (no speckled noise).
+- `drawPostProcessBloom()` now emits segmented ink-ring pressure strokes, not radial glow wash.
 - `render_game_to_text()` includes visual profile + frame budget metrics in `ui.metrics` and `ui.brand`.
 - Playwright smoke emits fresh shots/states without schema regressions.
 - Chromatic split remains deterministic for fixed seed and frame.
