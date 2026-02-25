@@ -17,6 +17,8 @@ Visual Behavior:
 - Per-node mission cards are removed to avoid overlap clutter.
 - Only focused or lock-active planets show compact mini-tags near the node (`<planet name> · <lock timer>`).
 - Mission/task details remain in the dedicated route board panel and external HUD, not on every node.
+- Planet nodes are now rendered with in-canvas spherical shading/ring detail rather than flat card-driven presentation.
+- Hub ship marker is rendered with a dedicated vector glyph (hull gradient, cockpit, and thruster highlights) to read as an actual spacecraft.
 
 State:
 - `state.hubs`: four seeded planets around centered hub anchor.
@@ -30,6 +32,7 @@ Layout Rules:
 - Coordinates are clamped to `HUB_NODE_MARGIN` bounds for label-safe room.
 - Route order is computed by angle around center to produce readable looped links.
 - Focus/lock tags are clamped to board bounds and rendered as short chips only when needed.
+- Planet and ship glyphs are always visible regardless of sprite readiness; hub readability does not depend on sprite files loading.
 
 Edge Cases:
 - Leaving proximity during lock cancels timer and requires re-lock.
@@ -44,3 +47,4 @@ Acceptance Checks:
 - Route path is readable and does not self-overlap heavily for default counts.
 - Focused mission hints remain deterministic via route board panel and HUD without mutating global RNG.
 - Lock messages and countdown match behavior in text state.
+- Planet nodes and ship marker remain readable at a glance as physical objects (not abstract dots/triangles) on both desktop and mobile viewport captures.

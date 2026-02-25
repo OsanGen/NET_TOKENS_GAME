@@ -92,6 +92,14 @@ Brand + overlay contract:
 - Reduced-motion is dual-bound:
   - JS envelope clamp in `drawPostProcess()`.
   - `motion-reduced` / `prefers-reduced-motion` in CSS.
+- Modern hub cleanup pass:
+  - For `state.mode === "hub"` with modern preset, heavy legacy FX layers are suppressed:
+    - no deadspace veins
+    - no interference bars
+    - no static wash
+    - no chromatic bleed
+    - no extra hub atmosphere bands
+  - Scanline and particle intensity are reduced to avoid grain/CRT artifacts.
 - New visual-identity layer:
   - Introduced tokenized color depth variables for chrome, edge glow, grid opacity, sheen, and pulse speed in `styles.css`.
   - Added richer shell motion variables (`--game-shell-grid-opacity`, `--game-shell-sheen-opacity`, `--shell-sweep-speed`) so modes can retune animation and intensity without DOM logic changes.
@@ -177,6 +185,7 @@ Acceptance checks:
 - `drawPostProcessStaticWash()` now uses deterministic fracture/veil bands (no speckled noise).
 - `drawPostProcessBloom()` now emits segmented ink-ring pressure strokes, not radial glow wash.
 - Title and hub scenes no longer render as near-white flats; baseline canvas tone should read dark command UI at first glance.
+- Modern hub view should not present visible chromatic ghosting or film-grain style noise under default settings.
 - `render_game_to_text()` includes visual profile + frame budget metrics in `ui.metrics` and `ui.brand`.
 - Playwright smoke emits fresh shots/states without schema regressions.
 - Chromatic split remains deterministic for fixed seed and frame.

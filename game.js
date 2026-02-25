@@ -3066,6 +3066,81 @@
     sceneCtx.strokeRect(cardX + 1, cardY + 1, cardW, cardH);
   }
 
+  function drawHubPlanetNode({ planet, palette, isFocused, isLocked, pulse }) {
+    const glowRadius = planet.r + (isFocused ? 6 : 4);
+    sceneCtx.fillStyle = withAlpha(palette.lead, isLocked ? 0.18 : 0.1);
+    sceneCtx.beginPath();
+    sceneCtx.arc(planet.x, planet.y, glowRadius * (0.9 + pulse * 0.2), 0, Math.PI * 2);
+    sceneCtx.fill();
+
+    const sphere = sceneCtx.createRadialGradient(
+      planet.x - planet.r * 0.45,
+      planet.y - planet.r * 0.55,
+      1,
+      planet.x,
+      planet.y,
+      planet.r + 1.6,
+    );
+    sphere.addColorStop(0, withAlpha(palette.surface, 0.98));
+    sphere.addColorStop(0.5, withAlpha(palette.secondary, 0.84));
+    sphere.addColorStop(1, withAlpha(palette.panelFill, 0.96));
+    sceneCtx.fillStyle = sphere;
+    sceneCtx.beginPath();
+    sceneCtx.arc(planet.x, planet.y, planet.r + 0.8, 0, Math.PI * 2);
+    sceneCtx.fill();
+
+    sceneCtx.strokeStyle = withAlpha(palette.panelEdge, 0.55);
+    sceneCtx.lineWidth = 0.9;
+    sceneCtx.beginPath();
+    sceneCtx.arc(planet.x, planet.y, planet.r + 0.8, Math.PI * 0.12, Math.PI * 1.9);
+    sceneCtx.stroke();
+
+    sceneCtx.strokeStyle = withAlpha(palette.surface, 0.36);
+    sceneCtx.lineWidth = 0.65;
+    sceneCtx.beginPath();
+    sceneCtx.arc(planet.x + 0.3, planet.y - 0.1, planet.r * 0.62, Math.PI * 0.2, Math.PI * 1.7);
+    sceneCtx.stroke();
+
+    const ringRadius = planet.r + (isFocused || isLocked ? 4.8 : 3.8);
+    sceneCtx.strokeStyle = isLocked ? withAlpha(palette.accentPulse, 0.72) : withAlpha(palette.edge, 0.42);
+    sceneCtx.lineWidth = isLocked ? 1.8 : 1.2;
+    sceneCtx.beginPath();
+    sceneCtx.arc(planet.x, planet.y, ringRadius, 0, Math.PI * 2);
+    sceneCtx.stroke();
+  }
+
+  function drawHubShipGlyph({ shipX, shipY, palette, pulse }) {
+    const hullGradient = sceneCtx.createLinearGradient(shipX - 6, shipY - 8, shipX + 6, shipY + 6);
+    hullGradient.addColorStop(0, withAlpha(palette.surface, 0.98));
+    hullGradient.addColorStop(0.5, withAlpha(palette.secondary, 0.9));
+    hullGradient.addColorStop(1, withAlpha(palette.panelFill, 0.95));
+
+    sceneCtx.fillStyle = withAlpha(palette.lead, 0.22);
+    sceneCtx.beginPath();
+    sceneCtx.arc(shipX, shipY + 0.7, 8.6 * (0.9 + pulse * 0.14), 0, Math.PI * 2);
+    sceneCtx.fill();
+
+    sceneCtx.beginPath();
+    sceneCtx.moveTo(shipX, shipY - 7.6);
+    sceneCtx.lineTo(shipX + 6.3, shipY + 2.3);
+    sceneCtx.lineTo(shipX + 3.5, shipY + 6.2);
+    sceneCtx.lineTo(shipX - 3.5, shipY + 6.2);
+    sceneCtx.lineTo(shipX - 6.3, shipY + 2.3);
+    sceneCtx.closePath();
+    sceneCtx.fillStyle = hullGradient;
+    sceneCtx.fill();
+
+    sceneCtx.strokeStyle = withAlpha(palette.edge, 0.74);
+    sceneCtx.lineWidth = 1;
+    sceneCtx.stroke();
+
+    sceneCtx.fillStyle = withAlpha(palette.accentPulse, 0.76);
+    sceneCtx.fillRect(shipX - 1.2, shipY - 1.9, 2.4, 2.5);
+    sceneCtx.fillStyle = withAlpha(palette.secondary, 0.74);
+    sceneCtx.fillRect(shipX - 3.5, shipY + 5.3, 2, 1.5);
+    sceneCtx.fillRect(shipX + 1.5, shipY + 5.3, 2, 1.5);
+  }
+
   function drawHub() {
     const tone = sceneTone("hub");
     const palette = paletteForMode("hub");
@@ -3188,21 +3263,13 @@
       const isLocked = state.planetLockId === planet.id;
       const isFocused = focused && focused.id === planet.id;
 
-      drawSpriteByKey(
-        "planet",
-        planet.x,
-        planet.y,
-        Math.max(planet.r * 4.6, 18),
-        () => {
-          sceneCtx.fillStyle = withAlpha(palette.surface, 0.55);
-          sceneCtx.beginPath();
-          sceneCtx.arc(planet.x, planet.y, planet.r + 1.6, 0, Math.PI * 2);
-          sceneCtx.fill();
-          sceneCtx.strokeStyle = palette.panelEdge;
-          sceneCtx.lineWidth = 1;
-          sceneCtx.stroke();
-        }
-      );
+      drawHubPlanetNode({
+        planet,
+        palette,
+        isFocused,
+        isLocked,
+        pulse,
+      });
 
       sceneCtx.fillStyle = withAlpha(palette.lead, isFocused || isLocked ? 0.28 : 0.16);
       sceneCtx.beginPath();
@@ -3265,25 +3332,7 @@
     sceneCtx.fillStyle = toneTextShade(palette.text);
     sceneCtx.fillText(`Seed ${state.seed}`, SIM_W - 120, 60);
 
-    drawSpriteByKey(
-      "ship",
-      shipX,
-      shipY,
-      24,
-      () => {
-        sceneCtx.fillStyle = toneTextShade(palette.panelEdge);
-        sceneCtx.beginPath();
-        sceneCtx.moveTo(shipX - 6, shipY - 2);
-        sceneCtx.lineTo(shipX + 6, shipY - 2);
-        sceneCtx.lineTo(shipX + 10, shipY + 7);
-        sceneCtx.lineTo(shipX - 10, shipY + 7);
-        sceneCtx.closePath();
-        sceneCtx.fill();
-        sceneCtx.strokeStyle = palette.edge;
-        sceneCtx.lineWidth = 1;
-        sceneCtx.stroke();
-      }
-    );
+    drawHubShipGlyph({ shipX, shipY, palette, pulse });
     sceneCtx.fillStyle = withAlpha(palette.panelFill, 0.2);
     sceneCtx.fillRect(shipX - 9, shipY - 12, 18, 3);
 
@@ -3758,14 +3807,17 @@
     motionEnvelope = 1,
   }) {
     const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
+    const cleanHubMode = state.mode === "hub" && isModernVisualPreset();
     const envelopeStrength = clamp(motionEnvelope, 0, 1);
     const frame = state.frame;
     const pulses = resolveVfxPulses();
     const starMotion = (modeProfile.motionAmp !== undefined ? modeProfile.motionAmp : 0.16) * envelopeStrength;
+    const starBudget = cleanHubMode ? 0.45 : 1;
     const starCount = Math.max(
       14,
       Math.round(
         (state.mode === "hub" ? 66 : state.mode === "mission" ? 46 : 34) *
+          starBudget *
           (modeProfile.effectCap || 1) *
           (1 + 0.18 * pulses.ambient + 0.1 * transitionPulse) *
           (
@@ -3796,30 +3848,20 @@
       ctx.fillRect(starX, starY, dot, dot);
     }
 
-    drawPalettePulseBands({ tone, offsetX, offsetY, drawW, drawH, scale, toneStrength });
-    drawPostProcessDeadspaceVeins({
-      tone,
-      offsetX,
-      offsetY,
-      drawW,
-      drawH,
-      scale,
-      profile: modeProfile,
-      transitionPulse,
-      pulses,
-    });
-    drawCreepInterferenceBars({
-      tone,
-      offsetX,
-      offsetY,
-      drawW,
-      drawH,
-      scale,
-      transitionPulse,
-      pulses,
-    });
-    if (transitionPulse > 0.02) {
-      drawDoorwayRiftPulse({
+    if (!cleanHubMode) {
+      drawPalettePulseBands({ tone, offsetX, offsetY, drawW, drawH, scale, toneStrength });
+      drawPostProcessDeadspaceVeins({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        profile: modeProfile,
+        transitionPulse,
+        pulses,
+      });
+      drawCreepInterferenceBars({
         tone,
         offsetX,
         offsetY,
@@ -3829,11 +3871,25 @@
         transitionPulse,
         pulses,
       });
+      if (transitionPulse > 0.02) {
+        drawDoorwayRiftPulse({
+          tone,
+          offsetX,
+          offsetY,
+          drawW,
+          drawH,
+          scale,
+          transitionPulse,
+          pulses,
+        });
+      }
     }
 
     if (state.mode === "hub") {
       drawHubRouteFlow({ tone, offsetX, offsetY, drawW, drawH, scale });
-      drawHubDeckAtmosphere({ tone, offsetX, offsetY, drawW, drawH, scale });
+      if (!cleanHubMode) {
+        drawHubDeckAtmosphere({ tone, offsetX, offsetY, drawW, drawH, scale });
+      }
     }
 
     if (state.mode === "mission") {
@@ -3881,7 +3937,7 @@
       });
     }
 
-    if (state.mode === "mission" || state.mode === "battle" || state.mode === "hub") {
+    if (state.mode === "mission" || state.mode === "battle" || (state.mode === "hub" && !cleanHubMode)) {
       drawPostProcessStaticWash({
         tone,
         offsetX,
@@ -3923,10 +3979,12 @@
       1,
       Math.round((scale * 0.8) / Math.max(0.35, modeProfile.scanlineDensity || 1)),
     );
+    const scanlineStrength = (modeProfile.scanlineStrength || 1) * (cleanHubMode ? 0.22 : 1);
     const scanAlpha =
       (state.mode === "battle" ? 0.065 : 0.055) *
       toneStrength *
       (modeProfile.scanlineDensity || 1) *
+      scanlineStrength *
       (1 + pulses.battle * 0.28 + pulses.modeShift * 0.18 + transitionPulse * 0.12);
     for (let y = 0; y < drawH; y += scanStep) {
       if (pulses.ambient > 0.6 && frame % 97 < 1) continue;
@@ -3937,26 +3995,28 @@
       ctx.fillRect(offsetX, dy, drawW, 1);
     }
 
-    drawPostProcessParticleCloud({
-      tone,
-      offsetX,
-      offsetY,
-      drawW,
-      drawH,
-      scale,
-      profile: modeProfile,
-    });
+    if (!cleanHubMode) {
+      drawPostProcessParticleCloud({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        profile: modeProfile,
+      });
 
-    drawPostProcessBloom({
-      tone,
-      offsetX,
-      offsetY,
-      drawW,
-      drawH,
-      scale,
-      profile: modeProfile,
-      orbitPulse,
-    });
+      drawPostProcessBloom({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        profile: modeProfile,
+        orbitPulse,
+      });
+    }
   }
 
   function drawPostProcessParticleCloud({ tone, offsetX, offsetY, drawW, drawH, scale, profile }) {
@@ -4195,6 +4255,7 @@
   function drawModeFrameChrome({ tone, offsetX, offsetY, drawW, drawH, scale, orbitPulse, profile, transitionPulse = 0 }) {
     const budget = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
     const pulses = resolveVfxPulses();
+    const cleanHubMode = state.mode === "hub" && isModernVisualPreset();
     const edgePulse = 0.5 + Math.sin(state.visual.fxFrame * 0.11) * 0.28;
     const accentPulse = Math.min(1, edgePulse + (budget.toneStrength || 0));
     const lineStep = Math.max(2, Math.floor(scale * 1.8));
@@ -4203,20 +4264,22 @@
     ctx.strokeStyle = withAlpha(tone.edge, Math.min(0.42, framePulse));
     ctx.lineWidth = frameW;
     ctx.strokeRect(offsetX + 1.2, offsetY + 1.2, drawW - 2.4, drawH - 2.4);
-    ctx.setLineDash([lineStep, lineStep * 2]);
-    ctx.strokeStyle = withAlpha(tone.secondary, 0.16 + orbitPulse * 0.12);
-    ctx.lineWidth = Math.max(0.5, scale * 0.7);
-    ctx.beginPath();
-    ctx.moveTo(offsetX + 6, offsetY + drawH - 6);
-    ctx.lineTo(offsetX + drawW - 6, offsetY + 6);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (!cleanHubMode) {
+      ctx.setLineDash([lineStep, lineStep * 2]);
+      ctx.strokeStyle = withAlpha(tone.secondary, 0.16 + orbitPulse * 0.12);
+      ctx.lineWidth = Math.max(0.5, scale * 0.7);
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 6, offsetY + drawH - 6);
+      ctx.lineTo(offsetX + drawW - 6, offsetY + 6);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-    ctx.fillStyle = withAlpha(tone.accentPulse, 0.2 + orbitPulse * 0.14);
-    for (let i = 0; i < 5; i += 1) {
-      const cornerX = offsetX + (i % 2 === 0 ? 4 : drawW - 4);
-      const cornerY = offsetY + (i < 2 ? 4 : (i === 2 ? drawH / 2 : drawH - 4));
-      ctx.fillRect(cornerX, cornerY, lineStep * 0.8, lineStep * 0.8);
+      ctx.fillStyle = withAlpha(tone.accentPulse, 0.2 + orbitPulse * 0.14);
+      for (let i = 0; i < 5; i += 1) {
+        const cornerX = offsetX + (i % 2 === 0 ? 4 : drawW - 4);
+        const cornerY = offsetY + (i < 2 ? 4 : (i === 2 ? drawH / 2 : drawH - 4));
+        ctx.fillRect(cornerX, cornerY, lineStep * 0.8, lineStep * 0.8);
+      }
     }
     const edgeVignette = Math.max(0.01, 0.03 + budget.vignetteAmount * 0.2 + transitionPulse * 0.03 + pulses.ambient * 0.02);
     ctx.fillStyle = withAlpha(tone.text, edgeVignette);
@@ -4226,7 +4289,7 @@
     ctx.fillRect(offsetX + drawW - 1.1 * scale, offsetY, 1.1 * scale, drawH);
 
     const riftPulse = clamp(pulses.ambient + transitionPulse + pulses.modeShift * 0.3, 0, 1.3);
-    if (riftPulse > 0.2) {
+    if (!cleanHubMode && riftPulse > 0.2) {
       const crackCount = Math.round(3 + riftPulse * 4);
       for (let i = 0; i < crackCount; i += 1) {
         const axisY = offsetY + ((i + 1) / (crackCount + 1)) * drawH;

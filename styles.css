@@ -37,7 +37,7 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   --ambient-speed: 24s;
-  --rail-sweep-speed: 7.5s;
+  --rail-sweep-speed: 18s;
   --chip-sweep-speed: 6s;
   --btn-sheen-speed: 5.2s;
   --btn-pulse-speed: 2.3s;
@@ -134,7 +134,7 @@ body::after {
       rgba(93, 224, 191, 0.03) 14px,
       rgba(93, 224, 191, 0.03) 15px
     );
-  opacity: 0.45;
+  opacity: 0.18;
 }
 
 body[data-motion-state="reduced"] *,
@@ -276,10 +276,11 @@ body.motion-reduced * {
     95deg,
     transparent 0%,
     transparent 38%,
-    rgba(184, 239, 255, 0.11) 50%,
+    rgba(184, 239, 255, 0.045) 50%,
     transparent 62%
   );
-  background-size: 260px 100%;
+  background-size: 420px 100%;
+  opacity: 0.35;
   animation: frameSweep var(--rail-sweep-speed) linear infinite;
 }
 
