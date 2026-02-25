@@ -170,26 +170,44 @@
       shakeBoost: 1.08,
     }),
     minimal: Object.freeze({
-      label: "MINIMAL",
-      particleDensity: 0.55,
-      toneStrength: 0.75,
+      label: "MINIMAL (CLEAN)",
+      particleDensity: 0.2,
+      toneStrength: 0.34,
+      motionAmp: 0.24,
+      effectCap: 0.16,
+      noiseDensity: 0,
+      scanlineDensity: 0.1,
+      scanlineStrength: 0.12,
+      noiseSpeed: 0.6,
+      bloom: 0,
+      chromaShift: 0,
+      jitterShift: 0.22,
+      flickerShift: 0.04,
+      vignetteBoost: 0.45,
+      chromaticShift: 0,
+      shakeBoost: 0.22,
+    }),
+    modern: Object.freeze({
+      label: "MODERN FLUX",
+      particleDensity: 0.95,
+      toneStrength: 0.96,
       motionAmp: 0.68,
-      effectCap: 0.68,
-      noiseDensity: 0.54,
-      scanlineDensity: 0.62,
-      scanlineStrength: 0.62,
-      noiseSpeed: 0.8,
-      bloom: 0.05,
-      chromaShift: 0.0,
-      jitterShift: 0.7,
-      flickerShift: 0.35,
-      vignetteBoost: 0.72,
-      chromaticShift: 0.15,
-      shakeBoost: 0.6,
+      effectCap: 0.72,
+      noiseDensity: 0.15,
+      scanlineDensity: 0.2,
+      scanlineStrength: 0.25,
+      noiseSpeed: 1.02,
+      bloom: 0.08,
+      chromaShift: 0.004,
+      jitterShift: 0.82,
+      flickerShift: 0.08,
+      vignetteBoost: 0.78,
+      chromaticShift: 0.22,
+      shakeBoost: 0.55,
     }),
   });
 
-  const VISUAL_PRESET_ORDER = Object.freeze(["cinematic", "neon", "minimal"]);
+  const VISUAL_PRESET_ORDER = Object.freeze(["modern", "minimal", "cinematic", "neon"]);
 
   const BRAND_TOKENS = Object.freeze({
     COG_YELLOW: "#FCDC70",
@@ -594,6 +612,14 @@
     return VISUAL_PRESETS[configuredPreset] ? configuredPreset : VISUAL_PRESET_ORDER[0];
   }
 
+  function resolveVisualTierKey() {
+    const preset = resolveVisualPresetKey();
+    const mode = state && state.mode ? state.mode : "title";
+    const visualProfileAuto = state && state.visual ? !!state.visual.visualProfileAuto : true;
+    const motionHint = visualProfileAuto ? "auto" : "manual";
+    return `${preset}--${mode}--${motionHint}`;
+  }
+
   function resolveVisualPreset() {
     return VISUAL_PRESETS[resolveVisualPresetKey()];
   }
@@ -818,6 +844,14 @@
     const current = VISUAL_PRESET_ORDER.indexOf(resolveVisualPresetKey());
     const next = VISUAL_PRESET_ORDER[(current + 1) % VISUAL_PRESET_ORDER.length];
     state.visual.vfxPreset = next;
+  }
+
+  function isMinimalVisualPreset() {
+    return resolveVisualPresetKey() === "minimal";
+  }
+
+  function isModernVisualPreset() {
+    return resolveVisualPresetKey() === "modern";
   }
 
   function queueVfxPulse(type, amount = 0.22, options = {}) {
@@ -1352,7 +1386,7 @@
       contrastMode: SCENE_RECIPES.title.contrastMode,
       renderQualityMode: "nearest",
       fxProfile: VISUAL_PIPELINE.vfxProfiles.title,
-      vfxPreset: "cinematic",
+      vfxPreset: "modern",
       visualProfile: "standard",
       visualProfileAuto: true,
       fxFrame: 0,
@@ -1756,11 +1790,19 @@
 
   function syncExternalControlsUI() {
     if (!controlsPanel || !controlsToggle || !controlsActions || !controlsObjective) return;
+    const body = document.body;
     const visible = helpOverlayVisible();
     controlsPanel.classList.toggle("is-collapsed", !visible);
     controlsPanel.setAttribute("data-expanded", visible ? "true" : "false");
     controlsToggle.setAttribute("aria-pressed", visible ? "true" : "false");
     controlsToggle.textContent = visible ? "H: Hide Help" : "H: Show Help";
+    if (body) {
+      body.setAttribute("data-game-mode", state.mode);
+      body.setAttribute("data-visual-preset", resolveVisualPresetKey());
+      body.setAttribute("data-visual-tier", resolveVisualTierKey());
+      body.setAttribute("data-ui-tier", state.visual && state.visual.visualProfileAuto === false ? "manual" : "auto");
+      body.setAttribute("data-motion-state", prefersReducedMotion() ? "reduced" : "normal");
+    }
 
     const metrics = syncModeMetricsPayload();
     const actions = externalActionsForMode(state.mode);
@@ -3561,6 +3603,8 @@
     const displayH = canvas.height;
     const rawScale = Math.min(displayW / SIM_W, displayH / SIM_H);
     const renderPolicy = resolveVisualPolicy();
+    const isMinimal = isMinimalVisualPreset();
+    const isModern = isModernVisualPreset();
     const scale = resolveRenderScale(rawScale, displayW, displayH);
     const drawW = SIM_W * scale;
     const drawH = SIM_H * scale;
@@ -3578,29 +3622,37 @@
       flickerChance:
         (modeProfile.flickerChance || 0) * (1 + vfxPulses.battle * 1.2 + vfxPulses.ambient * 0.45 + vfxPulses.modeShift * 0.3),
     };
-    const motionEnvelope = prefersReducedMotion() ? 0.28 : 1;
+    const motionEnvelope = prefersReducedMotion() ? 0.28 : isMinimal ? 0 : 1;
     const jitter =
-      renderPolicy === "smooth"
+      isMinimal
+      ? 0
+      : renderPolicy === "smooth"
         ? (frameNoise(97, state.frame, 13) - 0.5) *
           0.5 *
           (sourceProfile.frameJitter || 0) *
           motionEnvelope
         : 0;
     const frameSource = resolvePostProcessSourceCanvas(sourceProfile);
-    const flickerChance = clamp((modeProfile.flickerChance || 0) * (0.85 + vfxPulses.battle * 1.1), 0, 0.22);
+    const flickerChance = isMinimal
+      ? 0
+      : clamp((modeProfile.flickerChance || 0) * (0.85 + vfxPulses.battle * 1.1), 0, 0.22);
     const activeFlicker = frameNoise(11, state.visual.fxFrame, 17) < flickerChance
       ? withAlpha(BRAND_TOKENS.INK, 0.07 + vfxPulses.battle * 0.03)
       : null;
     const baseNoiseAlpha =
-      (state.mode === "hub" ? 0.15 : state.mode === "mission" ? 0.12 : 0.1) *
-      modeProfile.noiseDensity *
-      (0.85 + vfxPulses.ambient * 0.45 + transitionPulse * 0.25) *
-      motionEnvelope;
+      isMinimal
+      ? 0
+      : (state.mode === "hub" ? 0.15 : state.mode === "mission" ? 0.12 : 0.1) *
+        modeProfile.noiseDensity *
+        (0.85 + vfxPulses.ambient * 0.45 + transitionPulse * 0.25) *
+        motionEnvelope;
     const driftPulse = (state.frame * 0.015 + state.seed * 0.0000001) % 1;
     const orbitKick =
-      (Math.sin(state.visual.fxFrame * 0.09) + 1) *
-      (0.12 + vfxPulses.camera * 0.16 + transitionPulse * 0.06) *
-      motionEnvelope;
+      isMinimal
+      ? 0
+      : (Math.sin(state.visual.fxFrame * 0.09) + 1) *
+          (0.12 + vfxPulses.camera * 0.16 + transitionPulse * 0.06) *
+          motionEnvelope;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = withAlpha(tone.surface, 1);
@@ -3616,41 +3668,103 @@
       ctx.fillRect(offsetX, offsetY, drawW, drawH);
     }
 
-    drawModeEffectsEnvelope({
-      tone,
-      offsetX,
-      offsetY,
-      drawW,
-      drawH,
-      scale,
-      baseNoiseAlpha,
-      orbitPulse: orbitKick,
-      profile: modeProfile,
-      transitionPulse,
-      motionEnvelope,
-    });
+    if (isMinimal) {
+      ctx.strokeStyle = withAlpha(tone.edge, 0.12);
+      ctx.lineWidth = Math.max(0.5, scale * 0.5);
+      ctx.strokeRect(offsetX + 0.5, offsetY + 0.5, drawW - 1, drawH - 1);
+    } else {
+      drawModeEffectsEnvelope({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        baseNoiseAlpha,
+        orbitPulse: orbitKick,
+        profile: modeProfile,
+        transitionPulse,
+        motionEnvelope,
+      });
 
-    drawModeFrameChrome({
-      tone,
-      offsetX,
-      offsetY,
-      drawW,
-      drawH,
-      scale,
-      profile: modeProfile,
-      transitionPulse,
-      orbitPulse: orbitKick,
-    });
+      drawModeFrameChrome({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        profile: modeProfile,
+        transitionPulse,
+        orbitPulse: orbitKick,
+      });
+    }
+
+    if (isModern) {
+      drawModernDisplayShell({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        profile: modeProfile,
+      });
+    }
 
     const vignette = ctx.createLinearGradient(offsetX, offsetY, offsetX, offsetY + drawH);
-    vignette.addColorStop(0, withAlpha(tone.text, 0.03 + transitionPulse * 0.02 + (modeProfile.bloom || 0) * 0.04 + vfxPulses.ambient * 0.02));
-    vignette.addColorStop(0.5, withAlpha(tone.text, 0.008));
-    vignette.addColorStop(1, withAlpha(tone.text, 0.03 + transitionPulse * 0.02 + (modeProfile.bloom || 0) * 0.04 + vfxPulses.ambient * 0.02));
+    const vignetteStrength = isMinimal
+      ? 0.012
+      : 0.03 + transitionPulse * 0.02 + (modeProfile.bloom || 0) * 0.04 + vfxPulses.ambient * 0.02;
+    const vignetteCenter = isMinimal ? 0.004 : 0.008;
+    vignette.addColorStop(0, withAlpha(tone.text, vignetteStrength));
+    vignette.addColorStop(0.5, withAlpha(tone.text, vignetteCenter));
+    vignette.addColorStop(1, withAlpha(tone.text, vignetteStrength));
     ctx.fillStyle = vignette;
     ctx.fillRect(offsetX, offsetY, drawW, drawH);
     ctx.strokeStyle = withAlpha(tone.text, 0.24);
     ctx.lineWidth = 1;
     ctx.strokeRect(offsetX, offsetY, drawW, drawH);
+  }
+
+  function drawModernDisplayShell({
+    tone,
+    offsetX,
+    offsetY,
+    drawW,
+    drawH,
+    scale,
+    profile,
+  }) {
+    const beams = 10;
+    const alpha = clamp((profile && profile.toneStrength ? profile.toneStrength : 0.7) * 0.15, 0.05, 0.24);
+    const glowColor = tone.accentPulse || tone.secondary || tone.text;
+    const drift = (state.visual.fxFrame * 0.08) % (drawW || 1);
+
+    ctx.setLineDash([Math.max(2, Math.round(scale * 2.4)), Math.max(3, Math.round(scale * 3.4))]);
+    ctx.lineWidth = Math.max(0.7, scale * 0.7);
+    for (let i = 0; i < 2; i += 1) {
+      const top = offsetY + (i === 0 ? 0.5 : drawH - 0.8);
+      ctx.strokeStyle = withAlpha(glowColor, alpha - i * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(offsetX + drift * (i + 1), top);
+      ctx.lineTo(offsetX + Math.min(drawW, drawW - 2) - ((drift * (i + 1)) % drawW), top);
+      ctx.stroke();
+    }
+
+    ctx.lineWidth = Math.max(0.55, scale * 0.55);
+    ctx.setLineDash([]);
+    for (let i = 0; i < beams; i += 1) {
+      const seed = frameNoise(i, state.visual.fxFrame, 33);
+      const x = offsetX + seed * drawW;
+      const h = drawH * (0.03 + (seed % 0.07));
+      const y = offsetY + ((state.visual.fxFrame * 0.14 + i * 11) % Math.max(1, drawH - 3));
+      ctx.fillStyle = withAlpha(glowColor, alpha * (0.14 + (seed % 0.25)));
+      ctx.fillRect(x, y, Math.max(1, Math.round(scale * 1.4)), h);
+    }
+
+    ctx.fillStyle = withAlpha(tone.secondary, alpha * 0.7);
+    ctx.fillRect(offsetX + drawW - Math.max(10, Math.round(10 * scale)), offsetY + 2, Math.max(8, Math.round(8 * scale)), Math.max(5, Math.round(5 * scale)));
   }
 
   function drawModeEffectsEnvelope({

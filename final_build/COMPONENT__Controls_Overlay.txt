@@ -1,26 +1,56 @@
 Component: Controls Overlay
 Purpose:
-Keep gameplay controls, mode status, and mission telemetry on an external HUD rail to keep canvas visuals uncluttered.
-The overlay must remain readable at a glance and remain synchronized every frame without mutating gameplay state.
+Keep gameplay controls, mode status, and mission telemetry on a glass-style external HUD rail while preserving a premium, highly legible frame around the canvas.
+The overlay must stay readable at a glance, remain synchronized every frame, and never mutate gameplay state.
+
+Visual contract:
+- Shell chrome and HUD panels must feel modern and intentional across desktop/mobile.
+- Start/goal/metric text must remain high-contrast against animated glow layers.
+- Help toggle, action list, and mission telemetry must remain scannable with reduced-motion set.
+- Visual state should be mode/preset-reactive and deterministic (no random chrome flicker).
+- Visual color system must be token-driven (`styles.css` custom properties) so mode changes only swap token values, not selector structure.
+- Additional animation layers should remain subtle, deterministic, and readable even on battery-constrained/mobile targets.
 
 Inputs:
 - Mode (`title`, `hub`, `mission`, `battle`, `result`).
 - HUD state from:
   - `state.ui.helpVisible`
   - `state.ui.helpPinned`
-  - `state.ui.autoHelpUntilFrame`
-  - `state.ui.firstMissionHelpShown`
+- `state.ui.autoHelpUntilFrame`
+- `state.ui.firstMissionHelpShown`
 - Mode context from:
   - `contextActionsForMode()`
   - `objectiveHintText()`
 - Action context from:
   - `externalActionsForMode()`
   - `resolveBattleActionsForMode()`
-- Metrics contract from `syncModeMetricsPayload()`.
+- Metrics contract from:
+  - `syncModeMetricsPayload()`.
+- `styles.css` visual classes:
+  - `.page-shell`, `.game-shell`, `.shell-ornament-*`
+  - `.controls-panel`, `.hud-panel`
+  - `.controls-actions`, `.hud-console-list`
+  - `#start-btn`
+- Structural shell classes:
+  - `.command-shell`
+  - `.command-stage`
+- New animated chrome keys:
+  - `actionStream`, `actionPulse`, `badgeSweep`, `panelShimmer`, `statusSlide`, `cmdGlow`
+- JS chrome-state hooks:
+  - `body[data-game-mode]`
+  - `body[data-visual-preset]`
+  - `body[data-motion-state]`
+- `body[data-visual-tier]`
+- `body[data-ui-tier]`
+- Decorative shell markup from `index.html`:
+  - `.shell-ornament.shell-ornament-left`
+  - `.shell-ornament.shell-ornament-right`
+  - `.command-shell`
+  - `.command-stage`
 
 Outputs:
 - External controls panel in DOM:
-- `#controls-panel`
+  - `#controls-panel`
 - `#controls-actions`
 - `#controls-objective`
 - Structured HUD panels in DOM:
@@ -37,6 +67,9 @@ Outputs:
   - `comboHint`
   - `cooldownState`
   - `frameBudget`
+- Visual chrome render:
+  - Canvas frame shell and start CTA in DOM with modern chrome (`#game-shell`, `#start-btn`).
+  - Left/right shell ornaments visible and static at the panel corners.
 
 State:
 - `state.ui.helpVisible`: current manual visibility state.
@@ -57,6 +90,24 @@ Behavior:
 - `syncModeMetricsPayload()` produces a stable UI snapshot and scene-aware label strings.
 - `syncHudTextNode()` + `updateHudNodeClass()` apply class states (`.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`) to threat and action chips.
 - `hudNodes.consoleLines` keeps the last 2–3 console messages and stays fixed-height.
+- `styles.css` now applies a layered glass and neon panel system:
+  - dynamic shell backplate gradient pass,
+  - panel borders and pseudo-element glow,
+  - ornament rings around gameplay canvas,
+  - interactive action-row hover/selection polish,
+  - animated focus treatment for `#start-btn`.
+- `styles.css` now uses a deeper tokenized chroma layer:
+  - game shell gradients, shell ornaments, ambient background wash, CTA tones, panel scan speeds, and strip/chip glow all flow from `:root` tokens and preset overrides.
+- Dynamic animation controls are tokenized per preset/mode:
+  - `--shell-scan-speed`, `--game-shell-scan-speed`, `--shell-halo-speed`, `--shell-orbit-speed`
+  - `--panel-pulse-speed`, `--status-slide-speed`, `--action-stream-speed`, `--cta-sheen-speed`, `--cta-beat-speed`
+- `syncExternalControlsUI()` now publishes mode/preset/motion state to `<body>` attributes used by CSS:
+  - `data-game-mode` for mode-aware panel and CTA chrome.
+  - `data-visual-preset` for shell and control palette adaptation.
+  - `data-motion-state` for reduced-motion fallback behavior.
+- `syncExternalControlsUI()` now publishes tiered visual state:
+  - `data-visual-tier` for full mode/preset/profile-mode signal.
+  - `data-ui-tier` for manual-vs-auto profile intent.
 
 Behavior in-game:
 - Drawn HUD inside canvas is minimal (compact emergency strip only) while full mission/action/completion context is external.
@@ -67,6 +118,13 @@ Edge Cases:
 - If expected DOM nodes are missing, synchronization fails open with no gameplay mutation.
 - Mobile layouts collapse and stack as the right rail below the canvas.
 - Reduced-motion preference applies to animation-heavy UI classes via CSS class hook.
+- If browser animation is disabled, the overlay must still remain readable with all pseudo-element glow and pulse effects effectively static.
+- On narrow viewports, the `.controls-actions` two-column layout should not wrap mission actions beyond visible bounds.
+- Preset transitions should keep animation duration behavior consistent (e.g., minimal style does not animate chrome layers aggressively).
+- New:
+  - 390px and 768px layouts should preserve contrast for status chips and keep start CTA tappable.
+  - shell ornaments remain visible and symmetric in compact layouts.
+  - `body[data-motion-state="reduced"]` and desktop `prefers-reduced-motion` should suppress high-frequency effects while preserving baseline structure.
 
 Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/game.js`
@@ -76,7 +134,13 @@ Dependencies:
 Acceptance Checks:
 - `H` and `#controls-toggle` immediately update visibility and panel collapse state.
 - Mode transitions (title→hub→mission→result) update action/objective/console text deterministically without gameplay changes.
+- `.command-shell` and `.command-stage` wrappers exist without affecting HUD synchronization.
 - At least 70% of control/status context is in DOM HUD (not canvas overlays).
 - Threat/mission chips render state classes for instant readability.
 - Keyboard and objective HUD remain visible during gameplay while keeping gameplay canvas visually uncluttered.
 - Battle action list uses active player pet move options and visibly indicates selected move.
+- `.page-shell`, `.controls-panel`, and `.hud-panel` styles include modern glass borders and layered gradient accents.
+- `.shell-ornament-left` and `.shell-ornament-right` are both visible during normal and reduced-motion modes.
+- `.controls-actions` hover/selected visuals still satisfy contrast constraints.
+- Desktop shell chrome and mobile (390px/768px) remain legible and stable with reduced-motion preference active.
+- Mode/preset transitions do not introduce layout jumps; only cosmetic motion/color tokens update.
