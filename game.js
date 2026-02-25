@@ -3098,21 +3098,21 @@
       orderedPlanets,
     });
 
-    const driftA = Math.floor(state.frame * 0.2) % 8;
-    for (let i = 0; i <= 18; i += 1) {
-      const y = boardY + 7 + i * 11;
-      const band = 0.11 + (i % 3) * 0.01;
+    const driftA = Math.floor(state.frame * 0.16) % 6;
+    for (let i = 0; i <= 10; i += 1) {
+      const y = boardY + 10 + i * 18;
+      const band = 0.07 + (i % 2) * 0.01;
       sceneCtx.strokeStyle = withAlpha(palette.subtle, band * 0.92);
-      sceneCtx.lineWidth = i % 2 === 0 ? 0.55 : 0.38;
+      sceneCtx.lineWidth = i % 2 === 0 ? 0.42 : 0.26;
       sceneCtx.beginPath();
       sceneCtx.moveTo(boardX + 8 + driftA, y);
       sceneCtx.lineTo(boardX + boardW - 8 - driftA, y);
       sceneCtx.stroke();
     }
-    for (let i = 0; i <= 11; i += 1) {
-      const x = boardX + 6 + i * ((boardW - 14) / 11);
-      sceneCtx.strokeStyle = withAlpha(palette.subtle, 0.1 + (i % 2) * 0.015);
-      sceneCtx.lineWidth = i % 2 === 0 ? 0.48 : 0.26;
+    for (let i = 0; i <= 6; i += 1) {
+      const x = boardX + 8 + i * ((boardW - 16) / 6);
+      sceneCtx.strokeStyle = withAlpha(palette.subtle, 0.08 + (i % 2) * 0.01);
+      sceneCtx.lineWidth = i % 2 === 0 ? 0.36 : 0.2;
       sceneCtx.beginPath();
       sceneCtx.moveTo(x, boardY + 9);
       sceneCtx.lineTo(x, boardY + boardH - 9);
@@ -3159,13 +3159,13 @@
       sceneCtx.lineTo(next.x, next.y);
       sceneCtx.stroke();
 
-      for (let k = 0; k < 4; k += 1) {
-        const t = (routeFlow + k / 4) % 1;
+      for (let k = 0; k < 2; k += 1) {
+        const t = (routeFlow + k / 2) % 1;
         const mx = current.x + (next.x - current.x) * t;
         const my = current.y + (next.y - current.y) * t;
         const flick = ((state.frame * 0.2 + k * 1.5) % 3) < 1.35 ? 1 : 0.45;
         sceneCtx.fillStyle = withAlpha(routeColor, (baseAlpha + 0.08) * flick);
-        sceneCtx.fillRect(mx - 1, my - 1, 2, 2);
+        sceneCtx.fillRect(mx - 0.5, my - 0.5, 1, 1);
       }
     }
 
@@ -3187,14 +3187,6 @@
     for (const planet of orderedPlanets) {
       const isLocked = state.planetLockId === planet.id;
       const isFocused = focused && focused.id === planet.id;
-      const cardW = 124;
-      const cardH = 30;
-      const targetSide = planet.x > SIM_W / 2;
-      const cardX = clamp(Math.floor(targetSide ? planet.x - cardW - 10 : planet.x + 10), boardX + 6, boardX + boardW - cardW - 6);
-      const cardY = clamp(Math.floor(planet.y - 1), boardY + 16, SIM_H - cardH - 6);
-      const cardTone = isFocused || isLocked ? withAlpha(palette.panelFill, 0.96) : withAlpha(palette.panelFill, 0.86);
-      const cardEdge = isFocused || isLocked ? palette.secondary : palette.edge;
-      drawPanel(cardX, cardY, cardW, cardH, { fill: cardTone, edge: cardEdge, radius: 1 });
 
       drawSpriteByKey(
         "planet",
@@ -3223,53 +3215,21 @@
       sceneCtx.arc(planet.x, planet.y, planet.r + 4.7, 0, Math.PI * 2);
       sceneCtx.stroke();
 
-      const preview = makePlanetPreview(planet);
-      const missionChip = `${preview.taskText} • ${preview.targetName}`;
-      const chipText = `${preview.taskText}`;
-      const chipAccent = withAlpha(tone.secondary, 0.28);
-      const leftPad = cardX + 4;
-      const textY = cardY + 8;
-      sceneCtx.fillStyle = palette.text;
-      sceneCtx.font = "600 8px Sora, sans-serif";
-      sceneCtx.fillText(planet.name, leftPad, textY);
-      sceneCtx.font = "7px Sora, sans-serif";
-      sceneCtx.fillStyle = toneTextShade(palette.text);
-      sceneCtx.fillText(planet.biome, leftPad, textY + 8);
-      sceneCtx.fillStyle = toneTextShade(palette.secondary);
-      sceneCtx.fillRect(leftPad, textY + 14.5, Math.max(20, chipText.length * 2.9), 5);
-      sceneCtx.fillStyle = tone.text;
-      sceneCtx.fillText(chipText, leftPad + 1.5, textY + 18);
-      sceneCtx.fillStyle = chipAccent;
-      sceneCtx.fillText(preview.targetName, leftPad + 60, textY + 18);
-
-      if (isLocked && state.planetLockTimer > 0) {
-        sceneCtx.fillStyle = palette.lead;
-        sceneCtx.fillText(`Lock ${state.planetLockTimer}`, leftPad, cardY + 28);
-      } else if (isFocused) {
-        sceneCtx.fillStyle = palette.accentPulse;
-        sceneCtx.fillText("Docked", leftPad, cardY + 28);
+      if (isFocused || isLocked) {
+        const lockText = isLocked && state.planetLockTimer > 0 ? ` · ${state.planetLockTimer}` : "";
+        const label = `${planet.name}${lockText}`;
+        const labelW = clamp(Math.floor(20 + label.length * 3.4), 32, 118);
+        const labelX = clamp(Math.floor(planet.x + 8), boardX + 6, boardX + boardW - labelW - 6);
+        const labelY = clamp(Math.floor(planet.y - 18), boardY + 6, boardY + boardH - 16);
+        drawPanel(labelX, labelY, labelW, 12, {
+          fill: withAlpha(palette.panelFill, 0.9),
+          edge: isLocked ? palette.secondary : palette.edge,
+          radius: 1,
+        });
+        sceneCtx.fillStyle = isLocked ? palette.lead : palette.text;
+        sceneCtx.font = "600 6px Sora, sans-serif";
+        sceneCtx.fillText(label, labelX + 3, labelY + 8);
       }
-    }
-
-    if (focused) {
-      const focusSide = focused.x > SIM_W / 2;
-      const focusCardW = 138;
-      const focusCardH = 30;
-      const focusCardX = clamp(
-        Math.floor(focusSide ? focused.x - focusCardW - 14 : focused.x + 14),
-        boardX + 6,
-        boardX + boardW - focusCardW - 6,
-      );
-      const focusCardY = clamp(Math.floor(focused.y + 12), boardY + 6, boardY + boardH - focusCardH - 6);
-      drawHubFocusCard({
-        tone,
-        palette,
-        cardX: focusCardX,
-        cardY: focusCardY,
-        cardW: focusCardW,
-        cardH: focusCardH,
-        focused,
-      });
     }
 
     drawPanel(14, 14, 140, 82, { fill: withAlpha(palette.panelFill, 0.92), edge: palette.panelEdge, radius: 1 });

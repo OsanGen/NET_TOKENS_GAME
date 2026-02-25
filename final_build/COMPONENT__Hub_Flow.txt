@@ -13,8 +13,10 @@ Outputs:
 - Hub render with route links, readable labels, and launch prompts.
 
 Visual Behavior:
-- Route nodes render in a board-like layout with larger mission cards, directional route arrows, and focus halos.
-- Mission preview cards include biome and target-specimen chips and deterministic route copy.
+- Route nodes render in a board-like layout with simplified grid density, directional links, and focus halos.
+- Per-node mission cards are removed to avoid overlap clutter.
+- Only focused or lock-active planets show compact mini-tags near the node (`<planet name> · <lock timer>`).
+- Mission/task details remain in the dedicated route board panel and external HUD, not on every node.
 
 State:
 - `state.hubs`: four seeded planets around centered hub anchor.
@@ -27,17 +29,18 @@ Layout Rules:
 - Position solver applies a fixed-pass separation pass (`relaxHubPlanets`) to avoid overlap.
 - Coordinates are clamped to `HUB_NODE_MARGIN` bounds for label-safe room.
 - Route order is computed by angle around center to produce readable looped links.
-- Planet cards are rendered near each node with mission-preview fields.
+- Focus/lock tags are clamped to board bounds and rendered as short chips only when needed.
 
 Edge Cases:
 - Leaving proximity during lock cancels timer and requires re-lock.
 - Hub returns from result reset lock state cleanly.
 - Start button is hidden outside title mode to prevent accidental overlay clutter.
-- Preview text uses deterministic local seed sampling so node card hints match mission generation.
+- Compact tags must remain on-screen even when focused nodes are near edges.
 
 Acceptance Checks:
 - Player can lock and launch every visible planet deterministically.
-- No clipped/off-canvas planet labels under normal seed runs.
+- No overlapping per-node cards in normal hub views.
+- No clipped/off-canvas compact focus/lock tags under normal seed runs.
 - Route path is readable and does not self-overlap heavily for default counts.
-- Node previews render deterministic mission hints without mutating global RNG.
+- Focused mission hints remain deterministic via route board panel and HUD without mutating global RNG.
 - Lock messages and countdown match behavior in text state.

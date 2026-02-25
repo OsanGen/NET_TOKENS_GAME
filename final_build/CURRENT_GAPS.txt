@@ -1,6 +1,6 @@
 final_build (component | status | next action)
 - Mission Flow | done | verify all task variants remain gated by target capture in longer play sessions
-- Hub Flow | in_progress | tune HUB_NODE_MIN_GAP and board spacing after one full 10-seed smoke pass
+- Hub Flow | in_progress | validate new decluttered hub pass (no per-node mission cards, focused/locked mini-tags only) across multiple seeds for readability and lock clarity
 - Controls Overlay | in_progress | validate the radical Manrope/Sora dashboard shell (new palette, clipped frame, strong CTA, high-contrast panel rails) on 390px and 768px screenshots after deploy
 - Visual Shell Wrapper | in_progress | run quick DOM smoke to validate new `.command-shell` / `.command-stage` wrappers don’t impact Playwright text capture or selector stability
 - Visual Dynamics | in_progress | confirm new ambient/rail/chip/button sweeps stay smooth and non-jarring across modern+minimal+neon presets
