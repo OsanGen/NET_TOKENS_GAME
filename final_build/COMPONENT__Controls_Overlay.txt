@@ -1,12 +1,13 @@
 Component: Controls Overlay
 Purpose:
-Keep gameplay controls, mode status, and mission telemetry on a glass-style external HUD rail while preserving a premium, highly legible frame around the canvas.
+Keep gameplay controls, mode status, and mission telemetry in a split external HUD layout (right telemetry rail + bottom command rail) while preserving a premium, highly legible frame around the canvas.
 The overlay must stay readable at a glance, remain synchronized every frame, and never mutate gameplay state.
 
 Visual contract:
 - Shell chrome and HUD panels must feel modern and intentional across desktop/mobile.
 - Start/goal/metric text must remain high-contrast against animated glow layers.
 - Help toggle, action list, and mission telemetry must remain scannable with reduced-motion set.
+- Layout must remain contained in viewport with no right-column spill; long action lists belong in the bottom command rail.
 - Visual state should be mode/preset-reactive and deterministic (no random chrome flicker).
 - Visual color system must be token-driven (`styles.css` custom properties) so mode changes only swap token values, not selector structure.
 - Additional animation layers should remain subtle, deterministic, and readable even on battery-constrained/mobile targets.
@@ -31,7 +32,7 @@ Inputs:
   - `syncModeMetricsPayload()`.
 - `styles.css` visual classes:
   - `.page-shell`, `.game-shell`, `.shell-ornament-*`
-  - `.controls-panel`, `.hud-panel`
+  - `.controls-panel`, `.controls-bottom`, `.hud-panel`
   - `.controls-actions`, `.hud-console-list`
   - `#start-btn`
 - Structural shell classes:
@@ -52,10 +53,11 @@ Inputs:
   - `.command-stage`
 
 Outputs:
-- External controls panel in DOM:
-  - `#controls-panel`
-- `#controls-actions`
-- `#controls-objective`
+- External controls in DOM:
+  - `#controls-panel` (right telemetry rail)
+  - `#controls-bottom` (bottom command rail)
+- `#controls-actions` (rendered in bottom rail)
+- `#controls-objective` (rendered in bottom rail)
 - Structured HUD panels in DOM:
   - `#hud-intro`
   - `#hud-objective`
@@ -87,7 +89,10 @@ State:
 
 Behavior:
 - `syncExternalControlsUI()` is the single source of truth for overlay state.
-- `H` key and `#controls-toggle` route through the same visibility path and sync panel class `.is-collapsed`.
+- `H` key and `#controls-toggle` route through the same visibility path and sync panel state via `data-expanded`.
+- Split layout contract:
+  - right panel holds context/objective/threat/mission/console telemetry,
+  - bottom rail holds mode actions + objective hint + shortcut row.
 - `externalActionsForMode()` filters out redundant `H: help` action from in-panel action list.
 - `resolveBattleActionsForMode()` reads move options from active player pet and marks selected entry.
 - `syncModeMetricsPayload()` produces a stable UI snapshot and scene-aware label strings.
@@ -124,7 +129,7 @@ Behavior in-game:
 
 Edge Cases:
 - If expected DOM nodes are missing, synchronization fails open with no gameplay mutation.
-- Mobile layouts collapse and stack as the right rail below the canvas.
+- Mobile layouts stack in this order: canvas, bottom command rail, right telemetry rail.
 - Reduced-motion preference applies to animation-heavy UI classes via CSS class hook.
 - If browser animation is disabled, the overlay must still remain readable with all pseudo-element glow and pulse effects effectively static.
 - On narrow viewports, the `.controls-actions` two-column layout should not wrap mission actions beyond visible bounds.
@@ -140,7 +145,8 @@ Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
 
 Acceptance Checks:
-- `H` and `#controls-toggle` immediately update visibility and panel collapse state.
+- `H` and `#controls-toggle` immediately update panel expanded state and hide/show the bottom command rail.
+- Desktop layout keeps the side telemetry rail bounded (scrollable if needed) with no page spill.
 - Mode transitions (title→hub→mission→result) update action/objective/console text deterministically without gameplay changes.
 - `.command-shell` and `.command-stage` wrappers exist without affecting HUD synchronization.
 - At least 70% of control/status context is in DOM HUD (not canvas overlays).

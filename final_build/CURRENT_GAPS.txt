@@ -1,7 +1,7 @@
 final_build (component | status | next action)
 - Mission Flow | done | verify all task variants remain gated by target capture in longer play sessions
 - Hub Flow | in_progress | validate clean-hub pass (reduced overlay FX, realistic vector ship glyph, realistic planet node shading, mini-tags only) across multiple seeds for readability and lock clarity
-- Controls Overlay | in_progress | validate the radical Manrope/Sora dashboard shell (new palette, clipped frame, strong CTA, high-contrast panel rails) on 390px and 768px screenshots after deploy
+- Controls Overlay | in_progress | validate new split controls layout (right telemetry + bottom actions rail) on desktop and 390px/768px to confirm no spill and stable `H` toggle behavior
 - Visual Shell Wrapper | in_progress | run quick DOM smoke to validate new `.command-shell` / `.command-stage` wrappers don’t impact Playwright text capture or selector stability
 - Visual Dynamics | in_progress | confirm reduced modern hub FX (no chromatic bleed/static wash/atmosphere bands) still feels premium without grain artifacts
 - Local Launch Tooling | done | stale/reused PID handling now guarded; keep using `scripts/open-game.sh` for reliable open/start on `5170`

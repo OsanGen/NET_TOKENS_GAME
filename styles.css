@@ -228,7 +228,11 @@ body.motion-reduced * {
   width: min(100%, 1420px);
   margin-inline: auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(290px, 25vw, 372px);
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 23vw, 340px);
+  grid-template-areas:
+    'stage side'
+    'bottom bottom';
+  grid-template-rows: auto auto;
   gap: clamp(12px, 1.5vw, 22px);
 }
 
@@ -236,6 +240,10 @@ body.motion-reduced * {
 .command-stage {
   position: relative;
   min-height: 0;
+}
+
+.command-shell {
+  grid-area: stage;
 }
 
 .command-shell::before {
@@ -397,6 +405,9 @@ body[data-game-mode='battle'] #start-btn {
 }
 
 .controls-panel {
+  grid-area: side;
+  align-self: start;
+  max-height: min(72vh, 760px);
   position: relative;
   border-radius: var(--radius-lg);
   border: 1px solid var(--surface-edge);
@@ -408,7 +419,8 @@ body[data-game-mode='battle'] #start-btn {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .controls-panel::before {
@@ -426,6 +438,51 @@ body[data-game-mode='battle'] #start-btn {
 .controls-panel > * {
   position: relative;
   z-index: 1;
+}
+
+.controls-bottom {
+  grid-area: bottom;
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-edge);
+  background: linear-gradient(180deg, var(--panel-soft), #eff3fa);
+  box-shadow:
+    0 12px 24px rgba(15, 23, 42, 0.07),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.82);
+  padding: 0.72rem 0.84rem;
+  display: grid;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.controls-bottom::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: linear-gradient(120deg, transparent 0%, rgba(17, 24, 39, 0.045) 50%, transparent 100%);
+  animation: railSweep var(--rail-sweep-speed) linear infinite;
+  opacity: 0.36;
+}
+
+.controls-bottom > * {
+  position: relative;
+  z-index: 1;
+}
+
+.controls-bottom .hud-actions {
+  margin: 0;
+}
+
+.controls-bottom .controls-actions {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.controls-bottom .controls-foot {
+  justify-self: end;
+  text-align: right;
 }
 
 .controls-header {
@@ -657,9 +714,7 @@ body[data-game-mode='battle'] #start-btn {
   text-transform: uppercase;
 }
 
-.controls-panel.is-collapsed .controls-actions,
-.controls-panel.is-collapsed .controls-objective,
-.controls-panel.is-collapsed .controls-foot {
+#controls-panel[data-expanded='false'] ~ #controls-bottom {
   display: none;
 }
 
@@ -773,15 +828,31 @@ body[data-game-mode='battle'] .hud-console-list li {
 
   #play-layout {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'stage'
+      'bottom'
+      'side';
+    grid-template-rows: auto auto auto;
     gap: 12px;
   }
 
   .controls-panel {
     width: 100%;
+    max-height: none;
+    overflow: visible;
   }
 
   .controls-actions {
     grid-template-columns: 1fr;
+  }
+
+  .controls-bottom {
+    width: 100%;
+  }
+
+  .controls-bottom .controls-foot {
+    justify-self: start;
+    text-align: left;
   }
 
   .status-strip {

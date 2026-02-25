@@ -11,8 +11,11 @@ Components:
 - Brand Scene Engine (`game.js`)
   - Tokenized palette (`BRAND_TOKENS`), scene recipes (`SCENE_RECIPES`), per-scene accent lead selector.
 - Controls Overlay (`game.js`, `index.html`, `styles.css`)
-  - External DOM controls rail (`#controls-panel`) with `H` and button toggle.
-  - Mode-specific action copy + objective hint synced outside the canvas.
+  - Split external HUD layout:
+    - right telemetry rail (`#controls-panel`)
+    - bottom command rail (`#controls-bottom`)
+  - `H` and button toggle drive shared visibility state.
+  - Mode-specific action copy + objective hint synced outside the canvas in the bottom rail.
 - Visual Post Process (`game.js`)
   - Lightweight scanline/noise pass with no glow/chroma/vignette stack.
 - Asset Pipeline (`scripts/generate-imagegen-assets.sh`, `tmp/imagegen/astro-gauntlet-assets.jsonl`)
