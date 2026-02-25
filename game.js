@@ -418,6 +418,8 @@
   const input = {
     left: false,
     right: false,
+    leftEdge: false,
+    rightEdge: false,
     up: false,
     down: false,
     space: false,
@@ -1576,7 +1578,7 @@
     }
     if (mode === "battle") {
       return [
-        "Up/Down: choose",
+        "Left/Right or Up/Down: choose",
         "Space/Enter: confirm",
         "Backspace/Esc: cancel",
         "Fight, Switch, or Capture",
@@ -1615,7 +1617,7 @@
         formatBattleMenuItem(BATTLE_ROOT_ACTIONS[1] || "Switch", battle.menu.rootIndex === 1),
         formatBattleMenuItem(BATTLE_ROOT_ACTIONS[2] || "Capture", battle.menu.rootIndex === 2),
       );
-      items.push("Arrows: choose menu");
+      items.push("Left/Right/Up/Down: choose");
     } else if (battle.menu.layer === "fight") {
       const playerPet = activePlayerPet();
       const moves = playerPet && Array.isArray(playerPet.moves) ? playerPet.moves : [];
@@ -1629,7 +1631,7 @@
           items.push(formatBattleMenuItem(label, battle.menu.moveIndex === i));
         }
       }
-      items.push("Arrows: choose move");
+      items.push("Left/Right/Up/Down: choose");
       items.push("Backspace: return");
     } else if (battle.menu.layer === "switch") {
       const candidates = alivePartyIds();
@@ -1639,7 +1641,7 @@
         const petLabel = `${speciesForId(pet.speciesId).name} HP ${pet.hp}/${pet.maxHp}`;
         items.push(formatBattleMenuItem(petLabel, battle.menu.switchIndex === i));
       }
-      items.push("Arrows: choose pet");
+      items.push("Left/Right/Up/Down: choose");
       items.push("Backspace: return");
     }
     items.push("Enter/Space: confirm", "P: profile cycle", visualAction);
@@ -2423,9 +2425,11 @@
     }
 
     const switchChoices = alivePartyIds();
+    const prevEdge = input.leftEdge || input.upEdge;
+    const nextEdge = input.rightEdge || input.downEdge;
     if (battle.menu.layer === "root") {
-      if (input.upEdge) battle.menu.rootIndex = (battle.menu.rootIndex + BATTLE_ROOT_ACTIONS.length - 1) % BATTLE_ROOT_ACTIONS.length;
-      if (input.downEdge) battle.menu.rootIndex = (battle.menu.rootIndex + 1) % BATTLE_ROOT_ACTIONS.length;
+      if (prevEdge) battle.menu.rootIndex = (battle.menu.rootIndex + BATTLE_ROOT_ACTIONS.length - 1) % BATTLE_ROOT_ACTIONS.length;
+      if (nextEdge) battle.menu.rootIndex = (battle.menu.rootIndex + 1) % BATTLE_ROOT_ACTIONS.length;
       if (input.confirmEdge) {
         battle.phase = "player_select";
         battle.actingSide = "player";
@@ -2451,8 +2455,8 @@
 
     if (battle.menu.layer === "fight") {
       const moves = player.moves;
-      if (input.upEdge) battle.menu.moveIndex = (battle.menu.moveIndex + moves.length - 1) % moves.length;
-      if (input.downEdge) battle.menu.moveIndex = (battle.menu.moveIndex + 1) % moves.length;
+      if (prevEdge) battle.menu.moveIndex = (battle.menu.moveIndex + moves.length - 1) % moves.length;
+      if (nextEdge) battle.menu.moveIndex = (battle.menu.moveIndex + 1) % moves.length;
       if (input.cancelEdge) {
         battle.menu.layer = "root";
         return;
@@ -2484,8 +2488,8 @@
         finishBattleToMission(false);
         return;
       }
-      if (input.upEdge) battle.menu.switchIndex = (battle.menu.switchIndex + switchChoices.length - 1) % switchChoices.length;
-      if (input.downEdge) battle.menu.switchIndex = (battle.menu.switchIndex + 1) % switchChoices.length;
+      if (prevEdge) battle.menu.switchIndex = (battle.menu.switchIndex + switchChoices.length - 1) % switchChoices.length;
+      if (nextEdge) battle.menu.switchIndex = (battle.menu.switchIndex + 1) % switchChoices.length;
       if (input.cancelEdge && player && player.hp > 0) {
         battle.menu.layer = "root";
         return;
@@ -4780,6 +4784,8 @@
     }
 
     input.spaceEdge = false;
+    input.leftEdge = false;
+    input.rightEdge = false;
     input.upEdge = false;
     input.downEdge = false;
     input.confirmEdge = false;
@@ -4807,8 +4813,10 @@
     const key = e.code;
     if (key === "ArrowLeft" || key === "KeyA") {
       input.left = isDown;
+      if (isDown) input.leftEdge = true;
     } else if (key === "ArrowRight" || key === "KeyD") {
       input.right = isDown;
+      if (isDown) input.rightEdge = true;
     } else if (key === "ArrowUp" || key === "KeyW") {
       input.up = isDown;
       if (isDown) input.upEdge = true;

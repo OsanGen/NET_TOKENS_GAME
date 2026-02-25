@@ -2,12 +2,14 @@ Component: Controls Overlay
 Purpose:
 Keep gameplay controls, mode status, and mission telemetry in a split external HUD layout (right telemetry rail + bottom command rail) while preserving a premium, highly legible frame around the canvas.
 The overlay must stay readable at a glance, remain synchronized every frame, and never mutate gameplay state.
+The layout must also remain compact enough to fit within viewport bounds on common laptop heights.
 
 Visual contract:
 - Shell chrome and HUD panels must feel modern and intentional across desktop/mobile.
 - Start/goal/metric text must remain high-contrast against animated glow layers.
 - Help toggle, action list, and mission telemetry must remain scannable with reduced-motion set.
 - Layout must remain contained in viewport with no right-column spill; long action lists belong in the bottom command rail.
+- OSAN proof-first constraints apply: low decoration weight, minimal gradients, restrained accent coverage, and content-first hierarchy.
 - Visual state should be mode/preset-reactive and deterministic (no random chrome flicker).
 - Visual color system must be token-driven (`styles.css` custom properties) so mode changes only swap token values, not selector structure.
 - Additional animation layers should remain subtle, deterministic, and readable even on battery-constrained/mobile targets.
@@ -35,6 +37,8 @@ Inputs:
   - `.controls-panel`, `.controls-bottom`, `.hud-panel`
   - `.controls-actions`, `.hud-console-list`
   - `#start-btn`
+- OSAN design standard file:
+  - `/Volumes/data/Online/OSAN Visual System v2 — CogSec Pastel (45).txt`
 - Structural shell classes:
   - `.command-shell`
   - `.command-stage`
@@ -93,6 +97,9 @@ Behavior:
 - Split layout contract:
   - right panel holds context/objective/threat/mission/console telemetry,
   - bottom rail holds mode actions + objective hint + shortcut row.
+- Compactness contract:
+  - reduced panel/card paddings and typography scale for dense but readable presentation.
+  - action chips in bottom rail are single-line with ellipsis to avoid overflow-driven height growth.
 - `externalActionsForMode()` filters out redundant `H: help` action from in-panel action list.
 - `resolveBattleActionsForMode()` reads move options from active player pet and marks selected entry.
 - `syncModeMetricsPayload()` produces a stable UI snapshot and scene-aware label strings.
@@ -130,6 +137,7 @@ Behavior in-game:
 Edge Cases:
 - If expected DOM nodes are missing, synchronization fails open with no gameplay mutation.
 - Mobile layouts stack in this order: canvas, bottom command rail, right telemetry rail.
+- Long action labels in battle mode must truncate safely without breaking grid flow.
 - Reduced-motion preference applies to animation-heavy UI classes via CSS class hook.
 - If browser animation is disabled, the overlay must still remain readable with all pseudo-element glow and pulse effects effectively static.
 - On narrow viewports, the `.controls-actions` two-column layout should not wrap mission actions beyond visible bounds.
@@ -147,6 +155,7 @@ Dependencies:
 Acceptance Checks:
 - `H` and `#controls-toggle` immediately update panel expanded state and hide/show the bottom command rail.
 - Desktop layout keeps the side telemetry rail bounded (scrollable if needed) with no page spill.
+- Bottom actions rail remains visible on one screen with reduced card height on battle mode.
 - Mode transitions (title→hub→mission→result) update action/objective/console text deterministically without gameplay changes.
 - `.command-shell` and `.command-stage` wrappers exist without affecting HUD synchronization.
 - At least 70% of control/status context is in DOM HUD (not canvas overlays).
@@ -157,5 +166,6 @@ Acceptance Checks:
 - `.shell-ornament-left` and `.shell-ornament-right` are both visible during normal and reduced-motion modes.
 - `.controls-actions` hover/selected visuals still satisfy contrast constraints.
 - Desktop shell chrome and mobile (390px/768px) remain legible and stable with reduced-motion preference active.
+- Controls rail styling remains OSAN-compliant: subdued gradients, no glow-dominant effects, and content-first readability.
 - Mode/preset transitions do not introduce layout jumps; only cosmetic motion/color tokens update.
 - Visual comparison against pre-pass build is immediately noticeable without interaction.
