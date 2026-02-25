@@ -136,38 +136,38 @@
     cinematic: Object.freeze({
       label: "CINEMATIC",
       particleDensity: 1.15,
-      toneStrength: 1.08,
-      motionAmp: 1.12,
+      toneStrength: 0.92,
+      motionAmp: 0.9,
       effectCap: 1.1,
-      noiseDensity: 1.04,
+      noiseDensity: 0.22,
       scanlineDensity: 1,
-      scanlineStrength: 1,
-      noiseSpeed: 1,
+      scanlineStrength: 0.32,
+      noiseSpeed: 0.86,
       bloom: 0.16,
       chromaShift: 0.02,
-      jitterShift: 1,
-      flickerShift: 1,
-      vignetteBoost: 1,
-      chromaticShift: 1,
-      shakeBoost: 1,
+      jitterShift: 0.48,
+      flickerShift: 0.28,
+      vignetteBoost: 0.68,
+      chromaticShift: 0.18,
+      shakeBoost: 0.42,
     }),
     neon: Object.freeze({
       label: "NEON",
       particleDensity: 1.55,
-      toneStrength: 1.25,
-      motionAmp: 1.35,
+      toneStrength: 1.02,
+      motionAmp: 1.12,
       effectCap: 1.3,
-      noiseDensity: 1.22,
+      noiseDensity: 0.44,
       scanlineDensity: 1.25,
-      scanlineStrength: 1.35,
-      noiseSpeed: 1.12,
-      bloom: 0.24,
+      scanlineStrength: 0.58,
+      noiseSpeed: 0.95,
+      bloom: 0.18,
       chromaShift: 0.06,
-      jitterShift: 1.22,
-      flickerShift: 1.5,
-      vignetteBoost: 1.08,
-      chromaticShift: 1.2,
-      shakeBoost: 1.08,
+      jitterShift: 0.9,
+      flickerShift: 0.92,
+      vignetteBoost: 0.86,
+      chromaticShift: 0.84,
+      shakeBoost: 0.72,
     }),
     minimal: Object.freeze({
       label: "MINIMAL (CLEAN)",
@@ -189,39 +189,46 @@
     }),
     modern: Object.freeze({
       label: "MODERN FLUX",
-      particleDensity: 0.95,
-      toneStrength: 0.96,
-      motionAmp: 0.68,
-      effectCap: 0.72,
-      noiseDensity: 0.15,
-      scanlineDensity: 0.2,
-      scanlineStrength: 0.25,
-      noiseSpeed: 1.02,
-      bloom: 0.08,
-      chromaShift: 0.004,
-      jitterShift: 0.82,
-      flickerShift: 0.08,
-      vignetteBoost: 0.78,
+      particleDensity: 0.22,
+      toneStrength: 0.72,
+      motionAmp: 0.26,
+      effectCap: 0.24,
+      noiseDensity: 0,
+      scanlineDensity: 0.02,
+      scanlineStrength: 0,
+      noiseSpeed: 0.6,
+      bloom: 0,
+      chromaShift: 0,
+      jitterShift: 0,
+      flickerShift: 0.05,
+      vignetteBoost: 0.42,
       chromaticShift: 0.22,
-      shakeBoost: 0.55,
+      shakeBoost: 0.22,
     }),
   });
 
   const VISUAL_PRESET_ORDER = Object.freeze(["modern", "minimal", "cinematic", "neon"]);
+
+  const MODERN_STYLE = Object.freeze({
+    frameAlpha: 0.18,
+    panelAlpha: 0.84,
+    edgeAlpha: 0.16,
+    softLineAlpha: 0.2,
+  });
 
   const BRAND_TOKENS = Object.freeze({
     COG_YELLOW: "#FFCB78",
     COG_BLUE: "#5DD9FF",
     COG_MINT: "#49E9C8",
     COG_PINK: "#FF8EA8",
-    INK: "#EAF5FF",
-    WHITE: "#0B182A",
-    FOG: "#122840",
-    SHADOW: "rgba(2, 8, 20, 0.56)",
-    SCANLINE: "rgba(103, 205, 255, 0.08)",
-    NOISE: "rgba(85, 190, 255, 0.06)",
-    HUD_PANEL: "rgba(16, 38, 62, 0.9)",
-    SUBTLE_GRID: "rgba(123, 217, 255, 0.18)",
+    INK: "#101824",
+    WHITE: "#FFFFFF",
+    FOG: "#ECECE8",
+    SHADOW: "rgba(16, 24, 36, 0.26)",
+    SCANLINE: "rgba(16, 24, 36, 0.045)",
+    NOISE: "rgba(0, 0, 0, 0)",
+    HUD_PANEL: "rgba(244, 248, 252, 0.96)",
+    SUBTLE_GRID: "rgba(16, 24, 36, 0.16)",
     ROUTE_STROKE: "rgba(123, 217, 255, 0.3)",
   });
 
@@ -230,56 +237,56 @@
       accentLead: "COG_BLUE",
       accentSecondary: "COG_MINT",
       accentPulse: "COG_YELLOW",
-      panelFill: "HUD_PANEL",
+      panelFill: "FOG",
       edge: "COG_BLUE",
-      surface: "FOG",
+      surface: "WHITE",
       text: "INK",
       subtle: "SUBTLE_GRID",
-      contrastMode: "dark",
+      contrastMode: "light",
     },
     hub: {
       accentLead: "COG_MINT",
       accentSecondary: "COG_BLUE",
       accentPulse: "COG_YELLOW",
-      panelFill: "HUD_PANEL",
+      panelFill: "FOG",
       edge: "COG_MINT",
-      surface: "FOG",
+      surface: "WHITE",
       text: "INK",
       subtle: "SUBTLE_GRID",
-      contrastMode: "dark",
+      contrastMode: "light",
     },
     mission: {
       accentLead: "COG_YELLOW",
       accentSecondary: "COG_PINK",
       accentPulse: "COG_BLUE",
-      panelFill: "HUD_PANEL",
+      panelFill: "FOG",
       edge: "COG_YELLOW",
-      surface: "FOG",
+      surface: "WHITE",
       text: "INK",
       subtle: "ROUTE_STROKE",
-      contrastMode: "dark",
+      contrastMode: "light",
     },
     battle: {
       accentLead: "COG_PINK",
       accentSecondary: "COG_BLUE",
       accentPulse: "COG_YELLOW",
-      panelFill: "HUD_PANEL",
+      panelFill: "FOG",
       edge: "COG_PINK",
-      surface: "FOG",
+      surface: "WHITE",
       text: "INK",
       subtle: "SCANLINE",
-      contrastMode: "dark",
+      contrastMode: "light",
     },
     result: {
       accentLead: "COG_PINK",
       accentSecondary: "COG_YELLOW",
       accentPulse: "COG_BLUE",
-      panelFill: "HUD_PANEL",
+      panelFill: "FOG",
       edge: "COG_PINK",
-      surface: "FOG",
+      surface: "WHITE",
       text: "INK",
       subtle: "SCANLINE",
-      contrastMode: "dark",
+      contrastMode: "light",
     },
   });
 
@@ -497,7 +504,7 @@
   const SPRITE_ROOT = "/assets/sprites";
   const spriteManifest = (() => {
     const base = {
-      player: `${SPRITE_ROOT}/astronaut.png`,
+      player: `${SPRITE_ROOT}/ship.png`,
       enemy: `${SPRITE_ROOT}/enemy.png`,
       beacon: `${SPRITE_ROOT}/beacon.png`,
       probe: `${SPRITE_ROOT}/probe.png`,
@@ -2949,24 +2956,20 @@
     sceneCtx.imageSmoothingEnabled = renderPolicy === "smooth";
     sceneCtx.imageSmoothingQuality = renderPolicy === "smooth" ? "high" : "low";
     sceneCtx.clearRect(0, 0, SIM_W, SIM_H);
-    const backdrop = sceneCtx.createLinearGradient(0, 0, SIM_W, SIM_H);
-    backdrop.addColorStop(0, tone.surface);
-    backdrop.addColorStop(0.52, withAlpha(tone.panelFill, 0.95));
-    backdrop.addColorStop(1, withAlpha(tone.surface, 0.92));
-    sceneCtx.fillStyle = backdrop;
+    sceneCtx.fillStyle = tone.surface;
     sceneCtx.fillRect(0, 0, SIM_W, SIM_H);
 
-    const cornerGlow = sceneCtx.createRadialGradient(
-      SIM_W * 0.78,
-      SIM_H * 0.2,
-      12,
-      SIM_W * 0.78,
-      SIM_H * 0.2,
-      SIM_W * 0.66,
+    const subtleWash = sceneCtx.createRadialGradient(
+      SIM_W * 0.72,
+      SIM_H * 0.28,
+      10,
+      SIM_W * 0.72,
+      SIM_H * 0.28,
+      SIM_W * 0.9,
     );
-    cornerGlow.addColorStop(0, withAlpha(tone.lead, 0.2));
-    cornerGlow.addColorStop(1, withAlpha(tone.lead, 0));
-    sceneCtx.fillStyle = cornerGlow;
+    subtleWash.addColorStop(0, withAlpha(tone.subtle, 0.04));
+    subtleWash.addColorStop(1, withAlpha(tone.subtle, 0));
+    sceneCtx.fillStyle = subtleWash;
     sceneCtx.fillRect(0, 0, SIM_W, SIM_H);
     sceneCtx.font = "7px Sora, sans-serif";
     drawModeScene(state.mode);
@@ -3067,78 +3070,83 @@
   }
 
   function drawHubPlanetNode({ planet, palette, isFocused, isLocked, pulse }) {
-    const glowRadius = planet.r + (isFocused ? 6 : 4);
-    sceneCtx.fillStyle = withAlpha(palette.lead, isLocked ? 0.18 : 0.1);
+    const spriteSize = Math.max(24, planet.r * 2.85);
+    const lockGlow = isFocused || isLocked ? 0.24 : 0.12;
+    sceneCtx.save();
+    sceneCtx.shadowBlur = isFocused || isLocked ? 9 : 4;
+    sceneCtx.shadowColor = withAlpha(palette.secondary, 0.28);
+    sceneCtx.fillStyle = withAlpha(palette.surface, lockGlow);
     sceneCtx.beginPath();
-    sceneCtx.arc(planet.x, planet.y, glowRadius * (0.9 + pulse * 0.2), 0, Math.PI * 2);
+    sceneCtx.arc(planet.x, planet.y, spriteSize * 0.52, 0, Math.PI * 2);
     sceneCtx.fill();
+    sceneCtx.shadowBlur = 0;
 
-    const sphere = sceneCtx.createRadialGradient(
-      planet.x - planet.r * 0.45,
-      planet.y - planet.r * 0.55,
-      1,
+    const drawn = drawSpriteByKey(
+      "planet",
       planet.x,
       planet.y,
-      planet.r + 1.6,
+      spriteSize,
+      () => {
+        const pulseSize = spriteSize * 0.58 * (0.85 + pulse * 0.16);
+        sceneCtx.fillStyle = withAlpha(palette.lead, isLocked ? 0.18 : 0.08);
+        sceneCtx.beginPath();
+        sceneCtx.arc(planet.x, planet.y, pulseSize * (isFocused ? 0.55 : 0.46), 0, Math.PI * 2);
+        sceneCtx.fill();
+        sceneCtx.strokeStyle = isLocked ? withAlpha(palette.accentPulse, 0.72) : withAlpha(palette.edge, 0.28);
+        sceneCtx.lineWidth = isLocked ? 1.3 : 1;
+        sceneCtx.beginPath();
+        sceneCtx.arc(planet.x, planet.y, pulseSize * (isFocused ? 0.58 : 0.5), 0, Math.PI * 2);
+        sceneCtx.stroke();
+      },
+      {
+        motionX: 0,
+        motionY: 0,
+        glowColor: palette.secondary,
+        glowAlpha: isFocused || isLocked ? 0.07 : 0.03,
+      },
     );
-    sphere.addColorStop(0, withAlpha(palette.surface, 0.98));
-    sphere.addColorStop(0.5, withAlpha(palette.secondary, 0.84));
-    sphere.addColorStop(1, withAlpha(palette.panelFill, 0.96));
-    sceneCtx.fillStyle = sphere;
-    sceneCtx.beginPath();
-    sceneCtx.arc(planet.x, planet.y, planet.r + 0.8, 0, Math.PI * 2);
-    sceneCtx.fill();
 
-    sceneCtx.strokeStyle = withAlpha(palette.panelEdge, 0.55);
-    sceneCtx.lineWidth = 0.9;
-    sceneCtx.beginPath();
-    sceneCtx.arc(planet.x, planet.y, planet.r + 0.8, Math.PI * 0.12, Math.PI * 1.9);
-    sceneCtx.stroke();
-
-    sceneCtx.strokeStyle = withAlpha(palette.surface, 0.36);
-    sceneCtx.lineWidth = 0.65;
-    sceneCtx.beginPath();
-    sceneCtx.arc(planet.x + 0.3, planet.y - 0.1, planet.r * 0.62, Math.PI * 0.2, Math.PI * 1.7);
-    sceneCtx.stroke();
-
-    const ringRadius = planet.r + (isFocused || isLocked ? 4.8 : 3.8);
-    sceneCtx.strokeStyle = isLocked ? withAlpha(palette.accentPulse, 0.72) : withAlpha(palette.edge, 0.42);
-    sceneCtx.lineWidth = isLocked ? 1.8 : 1.2;
-    sceneCtx.beginPath();
-    sceneCtx.arc(planet.x, planet.y, ringRadius, 0, Math.PI * 2);
-    sceneCtx.stroke();
+    if (drawn && isFocused) {
+      sceneCtx.strokeStyle = withAlpha(palette.accentPulse, 0.55);
+      sceneCtx.lineWidth = 1;
+      sceneCtx.beginPath();
+      sceneCtx.arc(planet.x, planet.y, spriteSize * 0.58, 0, Math.PI * 2);
+      sceneCtx.stroke();
+    }
+    sceneCtx.restore();
   }
 
   function drawHubShipGlyph({ shipX, shipY, palette, pulse }) {
-    const hullGradient = sceneCtx.createLinearGradient(shipX - 6, shipY - 8, shipX + 6, shipY + 6);
-    hullGradient.addColorStop(0, withAlpha(palette.surface, 0.98));
-    hullGradient.addColorStop(0.5, withAlpha(palette.secondary, 0.9));
-    hullGradient.addColorStop(1, withAlpha(palette.panelFill, 0.95));
-
-    sceneCtx.fillStyle = withAlpha(palette.lead, 0.22);
-    sceneCtx.beginPath();
-    sceneCtx.arc(shipX, shipY + 0.7, 8.6 * (0.9 + pulse * 0.14), 0, Math.PI * 2);
-    sceneCtx.fill();
-
-    sceneCtx.beginPath();
-    sceneCtx.moveTo(shipX, shipY - 7.6);
-    sceneCtx.lineTo(shipX + 6.3, shipY + 2.3);
-    sceneCtx.lineTo(shipX + 3.5, shipY + 6.2);
-    sceneCtx.lineTo(shipX - 3.5, shipY + 6.2);
-    sceneCtx.lineTo(shipX - 6.3, shipY + 2.3);
-    sceneCtx.closePath();
-    sceneCtx.fillStyle = hullGradient;
-    sceneCtx.fill();
-
-    sceneCtx.strokeStyle = withAlpha(palette.edge, 0.74);
-    sceneCtx.lineWidth = 1;
-    sceneCtx.stroke();
-
-    sceneCtx.fillStyle = withAlpha(palette.accentPulse, 0.76);
-    sceneCtx.fillRect(shipX - 1.2, shipY - 1.9, 2.4, 2.5);
-    sceneCtx.fillStyle = withAlpha(palette.secondary, 0.74);
-    sceneCtx.fillRect(shipX - 3.5, shipY + 5.3, 2, 1.5);
-    sceneCtx.fillRect(shipX + 1.5, shipY + 5.3, 2, 1.5);
+    const shipSize = 28 + pulse * 1.5;
+    const drew = drawSpriteByKey(
+      "ship",
+      shipX,
+      shipY,
+      shipSize,
+      () => {
+        sceneCtx.fillStyle = withAlpha(palette.surface, 0.15);
+        sceneCtx.beginPath();
+        sceneCtx.arc(shipX, shipY + 0.7, 9.2 * (0.9 + pulse * 0.14), 0, Math.PI * 2);
+        sceneCtx.fill();
+        sceneCtx.strokeStyle = withAlpha(palette.edge, 0.66);
+        sceneCtx.lineWidth = 1;
+        sceneCtx.beginPath();
+        sceneCtx.arc(shipX, shipY + 0.7, 9.2 * (0.9 + pulse * 0.14), 0, Math.PI * 2);
+        sceneCtx.stroke();
+      },
+      {
+        motionX: 0,
+        motionY: 0,
+        glowColor: palette.secondary,
+        glowAlpha: 0.05,
+      },
+    );
+    if (drew) {
+      sceneCtx.fillStyle = withAlpha(palette.lead, 0.22);
+      sceneCtx.beginPath();
+      sceneCtx.arc(shipX, shipY, shipSize * 0.06 * (0.9 + pulse), 0, Math.PI * 2);
+      sceneCtx.fill();
+    }
   }
 
   function drawHub() {
@@ -3694,7 +3702,32 @@
       ctx.fillRect(offsetX, offsetY, drawW, drawH);
     }
 
-    if (isMinimal) {
+    if (isModern) {
+      drawModeEffectsEnvelope({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        baseNoiseAlpha,
+        orbitPulse: orbitKick,
+        profile: modeProfile,
+        transitionPulse,
+        motionEnvelope,
+        isModern,
+      });
+      drawModernDisplayShell({
+        tone,
+        offsetX,
+        offsetY,
+        drawW,
+        drawH,
+        scale,
+        profile: modeProfile,
+        isModern,
+      });
+    } else if (isMinimal) {
       ctx.strokeStyle = withAlpha(tone.edge, 0.12);
       ctx.lineWidth = Math.max(0.5, scale * 0.5);
       ctx.strokeRect(offsetX + 0.5, offsetY + 0.5, drawW - 1, drawH - 1);
@@ -3724,9 +3757,6 @@
         transitionPulse,
         orbitPulse: orbitKick,
       });
-    }
-
-    if (isModern) {
       drawModernDisplayShell({
         tone,
         offsetX,
@@ -3741,7 +3771,9 @@
     const vignette = ctx.createLinearGradient(offsetX, offsetY, offsetX, offsetY + drawH);
     const vignetteStrength = isMinimal
       ? 0.012
-      : 0.03 + transitionPulse * 0.02 + (modeProfile.bloom || 0) * 0.04 + vfxPulses.ambient * 0.02;
+      : isModern
+        ? 0.004 + transitionPulse * 0.001 + (modeProfile.bloom || 0) * 0.015 + vfxPulses.ambient * 0.004
+        : 0.03 + transitionPulse * 0.02 + (modeProfile.bloom || 0) * 0.04 + vfxPulses.ambient * 0.02;
     const vignetteCenter = isMinimal ? 0.004 : 0.008;
     vignette.addColorStop(0, withAlpha(tone.text, vignetteStrength));
     vignette.addColorStop(0.5, withAlpha(tone.text, vignetteCenter));
@@ -3749,6 +3781,9 @@
     ctx.fillStyle = vignette;
     ctx.fillRect(offsetX, offsetY, drawW, drawH);
     ctx.strokeStyle = withAlpha(tone.text, 0.24);
+    if (isModern) {
+      ctx.strokeStyle = withAlpha(tone.text, MODERN_STYLE.frameAlpha);
+    }
     ctx.lineWidth = 1;
     ctx.strokeRect(offsetX, offsetY, drawW, drawH);
   }
@@ -3761,7 +3796,26 @@
     drawH,
     scale,
     profile,
+    isModern = false,
   }) {
+    if (isModern) {
+      const glowColor = tone.accentPulse || tone.secondary || tone.text;
+      const strokeColor = withAlpha(tone.text, MODERN_STYLE.edgeAlpha);
+      const markerSize = Math.max(8, Math.round(scale * 10));
+      ctx.setLineDash([]);
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = Math.max(0.6, scale * 0.35);
+      ctx.strokeRect(offsetX + 1.5, offsetY + 1.5, drawW - 3, drawH - 3);
+      ctx.fillStyle = withAlpha(glowColor, MODERN_STYLE.edgeAlpha);
+      ctx.fillRect(offsetX + 2, offsetY + 2, markerSize, 2);
+      ctx.fillRect(offsetX + drawW - markerSize - 2, offsetY + 2, markerSize, 2);
+      ctx.fillRect(offsetX + 2, offsetY + drawH - 4, markerSize, 2);
+      ctx.fillRect(offsetX + drawW - markerSize - 2, offsetY + drawH - 4, markerSize, 2);
+      ctx.fillStyle = withAlpha(tone.secondary, MODERN_STYLE.softLineAlpha);
+      ctx.fillRect(offsetX + drawW - Math.round(scale * 3.8), offsetY + 2, Math.round(scale * 2.4), markerSize);
+      return;
+    }
+
     const beams = 10;
     const alpha = clamp((profile && profile.toneStrength ? profile.toneStrength : 0.7) * 0.15, 0.05, 0.24);
     const glowColor = tone.accentPulse || tone.secondary || tone.text;
@@ -3805,12 +3859,25 @@
     profile,
     transitionPulse = 0,
     motionEnvelope = 1,
+    isModern = false,
   }) {
     const modeProfile = profile || VISUAL_PIPELINE.vfxProfiles[state.mode] || VISUAL_PIPELINE.vfxProfiles.title;
     const cleanHubMode = state.mode === "hub" && isModernVisualPreset();
     const envelopeStrength = clamp(motionEnvelope, 0, 1);
     const frame = state.frame;
     const pulses = resolveVfxPulses();
+    if (isModern) {
+      const starCount = Math.max(10, Math.round((state.mode === "hub" ? 36 : 26) * envelopeStrength));
+      const starTone = withAlpha(tone.subtle, 0.36);
+      for (let i = 0; i < starCount; i += 1) {
+        const x = Math.round(frameNoise(i * 23, state.seed, 83) * drawW);
+        const y = Math.round(frameNoise(i * 29, state.seed + 13, 89) * drawH);
+        const alpha = (0.06 + (frameNoise(i * 7, state.seed, 31) * 0.08)) * (1 + pulses.ambient * 0.08);
+        ctx.fillStyle = withAlpha(starTone, alpha);
+        ctx.fillRect(offsetX + x, offsetY + y, Math.max(1, Math.round(scale * 0.9)), Math.max(1, Math.round(scale * 0.9)));
+      }
+      return;
+    }
     const starMotion = (modeProfile.motionAmp !== undefined ? modeProfile.motionAmp : 0.16) * envelopeStrength;
     const starBudget = cleanHubMode ? 0.45 : 1;
     const starCount = Math.max(

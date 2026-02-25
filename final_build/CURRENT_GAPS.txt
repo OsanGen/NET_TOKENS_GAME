@@ -7,8 +7,9 @@ final_build (component | status | next action)
 - Local Launch Tooling | done | stale/reused PID handling now guarded; keep using `scripts/open-game.sh` for reliable open/start on `5170`
 - Validation Loop | in_progress | run a local smoke pass through key flows (title→hub→mission→result) at normal and reduced-motion settings
 - Visual Asset Content | blocked | set `OPENAI_API_KEY` then run imagegen for upgraded `ship.png` and `planet-node.png` (photoreal-styled game sprites), then integrate and compare against current vector fallback
+- Visual Asset Content | done | rerun imagegen with provided key and concurrency 1, validated all 24 prompts render and sync to `assets/sprites`; next action: run a visual QA pass on updated 64x64 sprites in hub/mission loops
 - Skill Client Tooling | blocked | align module resolution for `/Users/abelsanchez/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` if strict skill-client execution is required
 - Core Runtime | done | node-check passed + Playwright smoke runs and returns frames in output/web-game
-- Visual Post Process | in_progress | run desktop/mobile smoke to confirm reduced-motion body class and post-process envelope reads stable after grain/noise removal
-- Visual Post Process | in_progress | validate the new in-canvas dark command palette/backdrop gradient pass is visibly distinct from the old white scene in title+hub+mission+battle states
+- Visual Post Process | in_progress | verify desktop/mobile smoke on deployed build shows visibly distinct modern shell (minimal UI grain, no CRT shimmer, no heavy glow) after default preset load and preset cycling
+- Visual Post Process | in_progress | verify title+hub+mission+battle all show readable 10-second captures with lower clutter and stronger white/Fog composition under reduced-motion and normal modes
 - Pages Deployment | done | new repo `NET_TOKENS_GAME` is deployed at `https://osangen.github.io/NET_TOKENS_GAME/`; old repo `ai-power-users-codex53-demo` rollback commits are on `main` and no longer serve NET_TOKENS_GAME branding

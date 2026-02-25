@@ -10,7 +10,8 @@ Inputs:
 
 Outputs:
 - Regenerated PNG assets for:
-  - 18 alien species,
+  - 24 sprite manifests from `tmp/imagegen/astro-gauntlet-assets.jsonl`,
+  - 16 alien entities (including the eight regenerated ones),
   - astronaut,
   - enemy,
   - beacon,
@@ -20,19 +21,22 @@ Outputs:
 - 64x64 nearest-neighbor sprite files in `assets/sprites/`.
 
 Current Status:
-- Prompt manifest updated to CogSec Pastel style locks:
+- Prompt manifest currently targets CogSec Pastel style locks:
   - token palette only,
   - thin INK outlines,
   - flat 2D,
   - no glow/heavy gradients,
   - no 3D cues.
-- Live generation blocked by missing `OPENAI_API_KEY`.
+- Live generation completed using provided `OPENAI_API_KEY` with low parallelism:
+  - `IMAGEGEN_CONCURRENCY=1`
+  - missing 8 prompts regenerated and synced successfully
+  - raw and synced outputs now both at 24 files.
 
 Runtime Fallback Strategy:
 - `state.visual.useVectorFallback` forces brand-safe vector rendering until regenerated sprites are available.
 - Existing sprite loader remains active and deterministic.
 
 Acceptance Checks:
-- After API key is set, batch generation succeeds and syncs 24 sprite files.
+ - After API key is set and generation is rerun with throttled concurrency, batch generation succeeds and syncs 24 sprite files.
 - Runtime can switch from vector fallback to generated sprites without logic changes.
 - All generated assets remain readable at 64x64 scale and palette-compliant.

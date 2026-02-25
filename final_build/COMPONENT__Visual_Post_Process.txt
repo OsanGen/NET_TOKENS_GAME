@@ -1,142 +1,114 @@
 Component: Visual Post Process
 Purpose:
-Own the full visual pipeline for all scenes:
-- Render internal scene into an offscreen world buffer.
-- Compose that buffer into the display with deterministic scaling.
-- Apply mode-driven scanline/chromatic overlays and profile-based detail budgets.
-- Replace grain/noise texture with deterministic, structured veil/vein/ring passes for cleaner creep polish.
-- Keep the in-canvas scene language visually distinct with a dark command-grade backdrop and high-contrast accent framing.
-Gameplay simulation, collision checks, and hooks remain unchanged.
+Own the full visual pipeline for all scenes and keep HUD presentation in line with the current CogSec pastel scope:
+- Render the internal scene buffer.
+- Compose to the display at deterministic scale.
+- Apply profile-driven overlays without grain-heavy effects.
+- Keep visual quality knobs centralized and replayable by seed.
+- Preserve gameplay logic and public API contract.
 
 Inputs:
 - World scene dimensions: `SIM_W=640`, `SIM_H=360`.
-- Internal render scale: `INTERNAL_RENDER_SCALE=4` (offscreen scene buffer).
-- Display canvas geometry (`canvas.width`, `canvas.height`, DPR-aware sizing).
-- `state.mode`
-- `state.frame`, `state.seed`
-- `state.visual`:
-  - `renderQualityMode`
-  - `scaleMode`
-  - `accentLead`
-  - `contrastMode`
-  - `fxProfile`
-  - `fxFrame`
-  - `vfxPreset` (`cinematic`, `neon`, `minimal`)
-  - `visualProfile` (`premium` | `standard` | `low`)
-  - `visualProfileAuto`
-  - `frameWarnings` / `frameWarningLimit`
-  - `modeTransition`
-- Deterministic helpers: `frameNoise`, `sceneTone`, `accentColor`, `withAlpha`, `sceneTone`.
+- Internal render scale: `INTERNAL_RENDER_SCALE=4`.
+- Canvas geometry: `canvas.width`, `canvas.height` plus DPR-aware draw sizing.
+- Game state:
+  - `state.mode`
+  - `state.visual`:
+    - `renderQualityMode`
+    - `scaleMode`
+    - `accentLead`
+    - `contrastMode`
+    - `fxProfile`
+    - `fxFrame`
+    - `vfxPreset`
+    - `visualProfile`
+    - `visualProfileAuto`
+    - `modeTransition`
+    - `frameWarnings` / `frameWarningLimit`
+    - `battleImpactBurst` / `battleImpactSide`
+    - `routePulsePhase` / `hubPulseOffset`
+  - `state.seed`
+  - `state.frame`
+- Deterministic helpers and palettes:
+  - `frameNoise`, `sceneTone`, `accentColor`, `withAlpha`, `toneTextShade`.
 
 Outputs:
-- A single frame rendered into `#game-canvas` with:
-  - deterministic near-integer scale policy for crisp pixels,
-  - readable, tone-driven overlays,
-  - profile-aware scanline/particle/ring intensity,
-  - optional reduced-motion scaling for motion-heavy FX.
-- External API stability: `window.render_game_to_text()` and `window.advanceTime(ms)` continue unchanged.
+- A single composed frame in `#game-canvas` that is readable, low-cluttered, and color-disciplined.
+- Consistent profile behavior across modes and presets.
+- Preserved gameplay-facing contracts:
+  - `window.render_game_to_text()`
+  - `window.advanceTime(ms)`
 
 State model:
-- Draw-time only; no gameplay simulation mutation.
-- Scene canvas remains `SIM_W * INTERNAL_RENDER_SCALE` with transform-based world coordinate space.
-- `renderQualityMode` defaults to `nearest` when unspecified.
-- `state.visual` visual-specific fields used at compose time:
-  - `fxProfile`
-  - `vfxPreset`
-  - `visualProfile`
-  - `visualProfileAuto`
-  - `fxFrame`
-  - `routePulsePhase`
-  - `hubPulseOffset`
-  - `battleImpactBurst`
-  - `battleImpactSide`
-  - `battleHud`
-  - `modeTransition`
-  - `frameWarnings`
-- Internal post-process buffers:
-  - `postFxCanvas` (`640x360`)
-  - `postFxCtx`
-  - `postFxImageData`
+- Draw-time only; no gameplay mutation.
+- Scene pipeline buffers:
+  - `scene` offscreen canvas at `SIM_W * INTERNAL_RENDER_SCALE`
+  - `postFxCanvas` (`640x360`) for optional effects merge
+  - `postFxImageData` scratch buffer
+- Profile state tracks:
+  - `state.visual.visualProfile`
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfileAuto`
+  - `state.visual.lastFrameMs`
+  - `state.visual.modeTransition`
 
-Visual preset layer:
-- `VISUAL_PRESETS` defines three styles:
+Visual preset stack:
+- `VISUAL_PRESETS`
+  - `modern`
+  - `minimal`
   - `cinematic`
   - `neon`
-  - `minimal`
-- `resolveModeVfxProfile()` merges mode profile with preset + quality tiers.
-- `resolveActiveVfxProfile()` also applies transition blends from `state.visual.modeTransition`.
-- `resolveVisualQualityMode()` auto-shifts `premium`/`standard`/`low` based on frame budget when `visualProfileAuto` is enabled.
-- `resolvePostProcessSourceCanvas()` applies deterministic chromatic channel splitting when `chromaShift > 0`.
-- `cycleVisualPreset()` (`V` key) and `cycleVisualQualityProfile()` (`P` key) mutate profile state.
+- Visual tier is read each frame through `resolveActiveVfxProfile()` and applied in one place.
+- `resolveVisualPresetKey()` now drives styling hooks through body data attributes:
+  - `data-visual-preset`
+  - `data-game-mode`
+  - `data-ui-tier`
+  - `data-motion-state`
 
-Render-quality policy:
-- Scene context:
-  - `sceneCtx.setTransform(INTERNAL_RENDER_SCALE,0,0,INTERNAL_RENDER_SCALE,0,0)` each frame.
-  - `sceneCtx.imageSmoothingEnabled` follows policy.
-- Post compose:
-  - `rawScale = min(canvasW/SIM_W, canvasH/SIM_H)`
-  - integer snapping in nearest mode with overflow tolerance from pipeline config.
-  - `smooth` mode only when requested.
-  - `drawPostProcess()` applies `motionEnvelope` to limit jitter/beats under reduced-motion preference.
+Modern preset behavior:
+- `VISUAL_PRESET_ORDER` defaults to modern-first.
+- Modern mode suppresses grain/noise-heavy legacy passes:
+  - noise density and scanline intensity are bounded near-zero
+  - minimal atmosphere layering
+  - no heavy chromatic bleed paths for modern branch
+  - no heavy static wash artifacts
+- `drawPostProcess()` uses an explicit modern envelope branch and modern shell overlay branch.
 
-Brand + overlay contract:
-- Tone governor enforces `sceneTone(mode)` for all overlay surfaces and accents.
-- `withAlpha` applies deterministic RGB/RGBA normalization for safe contrast.
-- `assertSingleAccent()` and `assertReadableContrast()` run in `render()`.
-- Overlay text remains compact and sparse; gameplay status/action text is primarily externalized to DOM HUD cards.
-- Scene palette baseline is now dark by default:
-  - `BRAND_TOKENS.WHITE/FOG/HUD_PANEL` are dark surfaces.
-  - `BRAND_TOKENS.INK` is high-luminance text.
-  - mode recipes use `contrastMode: dark`.
-- CSS is externalized in `styles.css` through `.page-shell`, `#game-shell`, `.shell-ornament`, `.hud-panel`, `.hud-chip`, `.hud-badges`, `.hud-console-list`, `.controls-actions`, `.status-strip`, `#start-btn`, and state classes (`.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`).
-- Reduced-motion is dual-bound:
-  - JS envelope clamp in `drawPostProcess()`.
-  - `motion-reduced` / `prefers-reduced-motion` in CSS.
-- Modern hub cleanup pass:
-  - For `state.mode === "hub"` with modern preset, heavy legacy FX layers are suppressed:
-    - no deadspace veins
-    - no interference bars
-    - no static wash
-    - no chromatic bleed
-    - no extra hub atmosphere bands
-  - Scanline and particle intensity are reduced to avoid grain/CRT artifacts.
-- New visual-identity layer:
-  - Introduced tokenized color depth variables for chrome, edge glow, grid opacity, sheen, and pulse speed in `styles.css`.
-  - Added richer shell motion variables (`--game-shell-grid-opacity`, `--game-shell-sheen-opacity`, `--shell-sweep-speed`) so modes can retune animation and intensity without DOM logic changes.
-  - Added CSS animations that are motion-safe:
-    - `auroraDrift`, `shellGridPulse`, `statusSweep`, and enhanced `panelSweep` usage.
-    - Visual overlays now blend across `body`, `.page-shell`, `.game-shell`, `.controls-panel`, and `.status-strip`.
- - In-canvas backdrop depth pass (new):
-   - `drawWorldScene()` now paints a gradient between `tone.surface` and `tone.panelFill`.
-   - Adds deterministic corner glow keyed to scene lead accent to avoid flat single-color canvases.
+Render pipeline:
+- Compose flow:
+  1. `drawScene()` renders world primitives + sprites to `scene`.
+  2. `drawWorldScene()` applies restrained base tone fill and subtle wash only.
+  3. `drawPostProcess()` scales and places source into gameplay canvas.
+  4. Envelope + shell overlays run according to active profile (`modern` / `minimal` / cinematic variants).
+- Scaling policy:
+  - nearest-nearest preference with tiny overflow tolerance
+  - optional smooth path when configured.
 
-Mode animation stack:
-- Mission:
-  - parallax stars
-  - objective halo and sector/route field motion
-  - deterministic comet lanes
-  - beacon sweep cue
-- Hub:
-  - focus pulse
-  - route flow markers and node indicators
-  - ship orbit halo
-- Battle:
-  - lane streaks
-  - impact bursts
-  - turn pulse strip
-- Title/Result:
-  - ambient pulse and structured scanline veil envelope
- - Sprite polish pass (new this turn):
-   - subpixel sprite jitter for hostile micro-motion
-   - per-entity faint outline/ring and shadow haze before post-process layering
-   - tiny entity-side drift particles for alien units while maintaining sprite silhouette
-   - optional sprite edge tinting controlled by entity tone and active mode
-- Post-process overlay additions:
-  - preset-aware particle drift
-  - deterministic pressure rings (`drawPostProcessBloom` now ink-styled)
-  - zero-grain structured fracture pass (`drawPostProcessStaticWash`)
-  - chromatic split (`resolvePostProcessSourceCanvas`)
-  - scanline density scaling
+Frame quality controls:
+- `VISUAL_PIPELINE` defines global effect budgets.
+- `VISUAL_QUALITY_PROFILES` drives automatic downgrade under pressure.
+- `resolveVisualQualityMode()` applies profile auto-switching when `visualProfileAuto` is true.
+- `resolveActiveVfxProfile()` merges mode profile + preset + transition blend + profile quality.
+
+Brand + CSS interface:
+- Styles for all visible surfaces live in `styles.css`:
+  - `.page-shell`, `.hero-band`, `.command-shell`
+  - `#game-shell`, `#game-canvas`, `.shell-ornament`
+  - `.controls-panel`, `.hud-panel`, `.hud-chip`, `.hud-badges`, `.controls-actions`, `.status-strip`
+  - `#start-btn`, `.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`
+- CSS now follows CogSec pastel rules:
+  - White/Fog field first.
+  - INK borders for structure.
+  - one micro-accent color per mode via body attributes.
+
+Reduced-motion safety:
+- JS clamp in `drawPostProcess()` plus body dataset binding (`data-motion-state`) for all critical overlays.
+- `prefers-reduced-motion` and `body.motion-reduced` disable non-critical animation loops.
+
+Mode coverage:
+- Title/HUB/Mission/Battle/Result share consistent shell and overlay grammar.
+- `mission` and `battle` retain stronger action/readability markers without adding grain.
+- `drawModeEffectsEnvelope()` has explicit modern branch to prevent accidental visual overload.
 
 Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/game.js`
@@ -160,36 +132,25 @@ Key helper surfaces:
 - `drawMissionSectorField()`
 - `drawMissionBeaconSweep()`
 - `drawMissionCometLanes()`
-- `drawMissionStatusStrip()` (legacy helper; status now surfaced via HUD)
-- `drawSpriteByKey()` (supports optional sprite overlay tint + subpixel pass options)
-- `drawSpriteEntity()` (now applies micro-atmosphere effects for every rendered sprite)
+- `drawSpriteByKey()`
+- `drawSpriteEntity()`
 - `resolveSpriteRenderOffset()`
 - `resolveSpriteAccent()`
 - `drawSpriteMicroAtmosphere()`
 - `drawBattleFocusLanes()`
 - `drawBattleImpactStreak()`
 - `drawBattleTurnPulse()`
-- `drawPostProcessChromaticBleed({ scale })` guard path
-- `drawWorldScene()` backdrop gradient + accent glow pass
-- `prefersReducedMotion()`, `applyReducedMotionState()`, `bindReducedMotionPreference()`
-- `state.visual.battleHud` (`enemyHp`, `playerHp`) interpolation for battle HP bars
+- `drawPostProcessChromaticBleed()`
+- `drawWorldScene()`
+- `applyReducedMotionState()`
+- `bindReducedMotionPreference()`
 
 Acceptance checks:
-- Style layer now supports deep color theming and motion tuning through CSS custom properties by:
-  - verifying `body[data-visual-preset=...]` overrides `--game-shell-grid-opacity`, `--game-shell-sheen-opacity`, and chrome intensity tokens.
-  - keeping `minimal` preset at near-static motion while modern/neon presets increase color sweep and chroma intensity.
-- HUD shell/overlay animation stack is readable in reduced-motion mode:
-  - `prefers-reduced-motion` should collapse non-essential sweep/stream animations while preserving card contrast and static glow.
-- `drawPostProcessChromaticBleed()` defends against undefined `scale` by defaulting to `1`.
-- `VISUAL_PIPELINE.effects.grainCount/noiseCount/staticWashDensity` are intentionally set to zero/noise-free defaults.
-- `drawPostProcessStaticWash()` now uses deterministic fracture/veil bands (no speckled noise).
-- `drawPostProcessBloom()` now emits segmented ink-ring pressure strokes, not radial glow wash.
-- Title and hub scenes no longer render as near-white flats; baseline canvas tone should read dark command UI at first glance.
-- Modern hub view should not present visible chromatic ghosting or film-grain style noise under default settings.
-- `render_game_to_text()` includes visual profile + frame budget metrics in `ui.metrics` and `ui.brand`.
-- Playwright smoke emits fresh shots/states without schema regressions.
-- Chromatic split remains deterministic for fixed seed and frame.
-- Visual profile transitions (`premium|standard|low`) produce observable and measurable output differences without breaking frame progress.
-- Reduced-motion user preference significantly lowers motion envelope, but does not remove readability affordances.
-- Entity render micro-atmosphere does not alter gameplay collision/logic and remains visually bounded (no alpha or sprite extent exceeds 20% of entity radius).
-- Sprite enhancement pass (`drawSpriteMicroAtmosphere`) degrades safely into fallback render path when vector mode is active.
+- Preset cycling and reduced-motion state are visibly reflected in DOM attributes and in CSS shells.
+- Modern preset frame rendering is substantially cleaner vs previous versions (no grain shimmer, no heavy glows, no busy overlay clutter).
+- One accent discipline holds:
+  - decorative color is bounded to thin UI accents and chips.
+- Accessibility baseline:
+  - text contrast remains readable in major panels at default settings.
+- External API remains stable (`render_game_to_text` and `advanceTime` unchanged).
+- Motion intensity visibly lowers for reduced-motion context while layout/readability stay intact.
