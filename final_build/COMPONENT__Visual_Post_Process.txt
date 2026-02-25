@@ -9,7 +9,7 @@ Own the full visual pipeline for all scenes and keep HUD presentation in line wi
 
 Inputs:
 - World scene dimensions: `SIM_W=640`, `SIM_H=360`.
-- Internal render scale: `INTERNAL_RENDER_SCALE=4`.
+- Internal render scale: `INTERNAL_RENDER_SCALE=6`.
 - Canvas geometry: `canvas.width`, `canvas.height` plus DPR-aware draw sizing.
 - Game state:
   - `state.mode`
@@ -81,8 +81,11 @@ Render pipeline:
   3. `drawPostProcess()` scales and places source into gameplay canvas.
   4. Envelope + shell overlays run according to active profile (`modern` / `minimal` / cinematic variants).
 - Scaling policy:
-  - nearest-nearest preference with tiny overflow tolerance
-  - optional smooth path when configured.
+  - `smooth` is now the default policy for the visual pipeline
+  - nearest policy remains available via explicit `renderQualityMode` / `scaleMode` override
+  - sprite draw points and glow fills use fractional placement when policy is `"smooth"`
+  - this keeps sprites readable at higher internal scale without re-snapping artifacts
+- `INTERNAL_RENDER_SCALE` bump reduces visible upsample blur and improves apparent model resolution
 
 Frame quality controls:
 - `VISUAL_PIPELINE` defines global effect budgets.
@@ -148,6 +151,7 @@ Key helper surfaces:
 Acceptance checks:
 - Preset cycling and reduced-motion state are visibly reflected in DOM attributes and in CSS shells.
 - Modern preset frame rendering is substantially cleaner vs previous versions (no grain shimmer, no heavy glows, no busy overlay clutter).
+- Sprite overlay fallback branch bug for glow rendering is addressed by using the same draw coordinates as image blits, preventing misaligned alpha halos.
 - One accent discipline holds:
   - decorative color is bounded to thin UI accents and chips.
 - Accessibility baseline:

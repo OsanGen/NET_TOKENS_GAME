@@ -3,7 +3,7 @@
 
   const SIM_W = 640;
   const SIM_H = 360;
-  const INTERNAL_RENDER_SCALE = 4;
+  const INTERNAL_RENDER_SCALE = 6;
   const TARGET_FPS = 60;
   const FRAME_MS = 1000 / TARGET_FPS;
   const VIEW_MARGIN = 2;
@@ -104,7 +104,7 @@
 
   const VISUAL_PIPELINE = Object.freeze({
     mode: "premium",
-    defaultPolicy: "nearest",
+    defaultPolicy: "smooth",
     allowSmoothFallback: false,
     sceneScaleMode: "integer",
     hudLineHeight: 8,
@@ -215,6 +215,9 @@
     edgeAlpha: 0.16,
     softLineAlpha: 0.2,
   });
+
+  const VISUAL_SPRITE_SCALE = 1.24;
+  const VISUAL_PLANET_SCALE = 1.18;
 
   const BRAND_TOKENS = Object.freeze({
     COG_YELLOW: "#FFCB78",
@@ -1091,12 +1094,13 @@
     const image = entry ? entry.image : null;
     const renderX = x + (Number.isFinite(opts.motionX) ? opts.motionX : 0);
     const renderY = y + (Number.isFinite(opts.motionY) ? opts.motionY : 0);
+    const isSmooth = resolveVisualPolicy() === "smooth";
     if (entry && entry.state === "ready" && image && image.complete && image.naturalWidth > 0) {
-      const snappedDiameter = Math.max(1, Math.round(diameter));
+      const snappedDiameter = Math.max(1, isSmooth ? diameter : Math.round(diameter));
       const half = snappedDiameter * 0.5;
-      const snapX = Math.round(renderX - half);
-      const snapY = Math.round(renderY - half);
-      sceneCtx.drawImage(image, snapX, snapY, snappedDiameter, snappedDiameter);
+      const drawX = isSmooth ? renderX - half : Math.round(renderX - half);
+      const drawY = isSmooth ? renderY - half : Math.round(renderY - half);
+      sceneCtx.drawImage(image, drawX, drawY, snappedDiameter, snappedDiameter);
       if (opts.glowColor) {
         const glowAlpha = Number.isFinite(opts.glowAlpha) ? opts.glowAlpha : 0.05;
         const glowColor = withAlpha(opts.glowColor, Math.max(0, Math.min(0.18, glowAlpha)));
@@ -1104,7 +1108,7 @@
           sceneCtx.save();
           sceneCtx.globalCompositeOperation = "source-atop";
           sceneCtx.fillStyle = glowColor;
-          sceneCtx.fillRect(snapX, snapY, snappedDiameter, snappedDiameter);
+          sceneCtx.fillRect(drawX, drawY, snappedDiameter, snappedDiameter);
           sceneCtx.restore();
         }
       }
@@ -1124,12 +1128,12 @@
   }
 
   function spriteSizeForEntity(entity) {
-    if (entity.kind === "player") return Math.max(14, entity.r * 6.2);
-    if (entity.kind === "alien") return Math.max(16, entity.r * 4.8);
-    if (entity.kind === "enemy") return Math.max(18, entity.r * 5.2);
-    if (entity.kind === "beacon") return Math.max(16, entity.r * 7.2);
-    if (entity.kind === "probe") return Math.max(16, entity.r * 7.4);
-    return Math.max(12, entity.r * 4.2);
+    if (entity.kind === "player") return Math.max(14, entity.r * 6.2) * VISUAL_SPRITE_SCALE;
+    if (entity.kind === "alien") return Math.max(16, entity.r * 4.8) * VISUAL_SPRITE_SCALE;
+    if (entity.kind === "enemy") return Math.max(18, entity.r * 5.2) * VISUAL_SPRITE_SCALE;
+    if (entity.kind === "beacon") return Math.max(16, entity.r * 7.2) * VISUAL_SPRITE_SCALE;
+    if (entity.kind === "probe") return Math.max(16, entity.r * 7.4) * VISUAL_SPRITE_SCALE;
+    return Math.max(12, entity.r * 4.2) * VISUAL_SPRITE_SCALE;
   }
 
   function drawSpriteEntity(entity, fallbackDraw) {
@@ -1396,7 +1400,7 @@
     visual: {
       accentLead: SCENE_RECIPES.title.accentLead,
       contrastMode: SCENE_RECIPES.title.contrastMode,
-      renderQualityMode: "nearest",
+      renderQualityMode: "smooth",
       fxProfile: VISUAL_PIPELINE.vfxProfiles.title,
       vfxPreset: "modern",
       visualProfile: "standard",
@@ -1416,7 +1420,7 @@
         camera: 0,
       },
       useVectorFallback: true,
-      scaleMode: "nearest",
+      scaleMode: "smooth",
       battleHud: {
         enemyHp: 0,
         playerHp: 0,
@@ -3077,7 +3081,7 @@
   }
 
   function drawHubPlanetNode({ planet, palette, isFocused, isLocked, pulse }) {
-    const spriteSize = Math.max(38, planet.r * 4.6);
+    const spriteSize = Math.max(38, planet.r * 4.6) * VISUAL_PLANET_SCALE;
     const lockGlow = isFocused || isLocked ? 0.24 : 0.12;
     sceneCtx.save();
     sceneCtx.shadowBlur = isFocused || isLocked ? 9 : 4;
@@ -4728,7 +4732,7 @@
 
   function render() {
     if (!sceneCtx || !ctx) return;
-    state.visual.renderQualityMode = state.visual.renderQualityMode || "nearest";
+    state.visual.renderQualityMode = state.visual.renderQualityMode || "smooth";
     state.visual.renderPolicy = resolveVisualPolicy();
     state.visual.accentLead = pickAccentLead(state.mode, state.mission, state.seed);
     state.visual.contrastMode = (SCENE_RECIPES[state.mode] && SCENE_RECIPES[state.mode].contrastMode) || "light";
