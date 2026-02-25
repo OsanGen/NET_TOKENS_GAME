@@ -210,19 +210,19 @@
   const VISUAL_PRESET_ORDER = Object.freeze(["modern", "minimal", "cinematic", "neon"]);
 
   const BRAND_TOKENS = Object.freeze({
-    COG_YELLOW: "#FCDC70",
-    COG_BLUE: "#71BFDD",
-    COG_MINT: "#82CC98",
-    COG_PINK: "#F5B4BC",
-    INK: "#101824",
-    WHITE: "#FFFFFF",
-    FOG: "#ECECE8",
-    SHADOW: "rgba(16, 24, 36, 0.08)",
-    SCANLINE: "rgba(16, 24, 36, 0.045)",
-    NOISE: "rgba(16, 24, 36, 0.045)",
-    HUD_PANEL: "rgba(236, 236, 232, 0.82)",
-    SUBTLE_GRID: "rgba(16, 24, 36, 0.12)",
-    ROUTE_STROKE: "rgba(16, 24, 36, 0.23)",
+    COG_YELLOW: "#FFCB78",
+    COG_BLUE: "#5DD9FF",
+    COG_MINT: "#49E9C8",
+    COG_PINK: "#FF8EA8",
+    INK: "#EAF5FF",
+    WHITE: "#0B182A",
+    FOG: "#122840",
+    SHADOW: "rgba(2, 8, 20, 0.56)",
+    SCANLINE: "rgba(103, 205, 255, 0.08)",
+    NOISE: "rgba(85, 190, 255, 0.06)",
+    HUD_PANEL: "rgba(16, 38, 62, 0.9)",
+    SUBTLE_GRID: "rgba(123, 217, 255, 0.18)",
+    ROUTE_STROKE: "rgba(123, 217, 255, 0.3)",
   });
 
   const SCENE_RECIPES = Object.freeze({
@@ -230,56 +230,56 @@
       accentLead: "COG_BLUE",
       accentSecondary: "COG_MINT",
       accentPulse: "COG_YELLOW",
-      panelFill: "FOG",
+      panelFill: "HUD_PANEL",
       edge: "COG_BLUE",
-      surface: "WHITE",
+      surface: "FOG",
       text: "INK",
       subtle: "SUBTLE_GRID",
-      contrastMode: "light",
+      contrastMode: "dark",
     },
     hub: {
       accentLead: "COG_MINT",
       accentSecondary: "COG_BLUE",
       accentPulse: "COG_YELLOW",
-      panelFill: "FOG",
+      panelFill: "HUD_PANEL",
       edge: "COG_MINT",
-      surface: "WHITE",
+      surface: "FOG",
       text: "INK",
       subtle: "SUBTLE_GRID",
-      contrastMode: "light",
+      contrastMode: "dark",
     },
     mission: {
       accentLead: "COG_YELLOW",
       accentSecondary: "COG_PINK",
       accentPulse: "COG_BLUE",
-      panelFill: "FOG",
+      panelFill: "HUD_PANEL",
       edge: "COG_YELLOW",
-      surface: "WHITE",
+      surface: "FOG",
       text: "INK",
       subtle: "ROUTE_STROKE",
-      contrastMode: "light",
+      contrastMode: "dark",
     },
     battle: {
       accentLead: "COG_PINK",
       accentSecondary: "COG_BLUE",
       accentPulse: "COG_YELLOW",
-      panelFill: "FOG",
+      panelFill: "HUD_PANEL",
       edge: "COG_PINK",
-      surface: "WHITE",
+      surface: "FOG",
       text: "INK",
       subtle: "SCANLINE",
-      contrastMode: "light",
+      contrastMode: "dark",
     },
     result: {
       accentLead: "COG_PINK",
       accentSecondary: "COG_YELLOW",
       accentPulse: "COG_BLUE",
-      panelFill: "FOG",
+      panelFill: "HUD_PANEL",
       edge: "COG_PINK",
-      surface: "WHITE",
+      surface: "FOG",
       text: "INK",
       subtle: "SCANLINE",
-      contrastMode: "light",
+      contrastMode: "dark",
     },
   });
 
@@ -2949,7 +2949,24 @@
     sceneCtx.imageSmoothingEnabled = renderPolicy === "smooth";
     sceneCtx.imageSmoothingQuality = renderPolicy === "smooth" ? "high" : "low";
     sceneCtx.clearRect(0, 0, SIM_W, SIM_H);
-    sceneCtx.fillStyle = tone.surface;
+    const backdrop = sceneCtx.createLinearGradient(0, 0, SIM_W, SIM_H);
+    backdrop.addColorStop(0, tone.surface);
+    backdrop.addColorStop(0.52, withAlpha(tone.panelFill, 0.95));
+    backdrop.addColorStop(1, withAlpha(tone.surface, 0.92));
+    sceneCtx.fillStyle = backdrop;
+    sceneCtx.fillRect(0, 0, SIM_W, SIM_H);
+
+    const cornerGlow = sceneCtx.createRadialGradient(
+      SIM_W * 0.78,
+      SIM_H * 0.2,
+      12,
+      SIM_W * 0.78,
+      SIM_H * 0.2,
+      SIM_W * 0.66,
+    );
+    cornerGlow.addColorStop(0, withAlpha(tone.lead, 0.2));
+    cornerGlow.addColorStop(1, withAlpha(tone.lead, 0));
+    sceneCtx.fillStyle = cornerGlow;
     sceneCtx.fillRect(0, 0, SIM_W, SIM_H);
     sceneCtx.font = "7px Sora, sans-serif";
     drawModeScene(state.mode);

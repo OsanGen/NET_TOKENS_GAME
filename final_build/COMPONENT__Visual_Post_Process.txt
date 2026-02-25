@@ -5,6 +5,7 @@ Own the full visual pipeline for all scenes:
 - Compose that buffer into the display with deterministic scaling.
 - Apply mode-driven scanline/chromatic overlays and profile-based detail budgets.
 - Replace grain/noise texture with deterministic, structured veil/vein/ring passes for cleaner creep polish.
+- Keep the in-canvas scene language visually distinct with a dark command-grade backdrop and high-contrast accent framing.
 Gameplay simulation, collision checks, and hooks remain unchanged.
 
 Inputs:
@@ -83,10 +84,23 @@ Brand + overlay contract:
 - `withAlpha` applies deterministic RGB/RGBA normalization for safe contrast.
 - `assertSingleAccent()` and `assertReadableContrast()` run in `render()`.
 - Overlay text remains compact and sparse; gameplay status/action text is primarily externalized to DOM HUD cards.
-- CSS is externalized in `styles.css` through `.hud-panel`, `.hud-chip`, `.hud-badges`, `.hud-console-list`, and state classes (`.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`).
+- Scene palette baseline is now dark by default:
+  - `BRAND_TOKENS.WHITE/FOG/HUD_PANEL` are dark surfaces.
+  - `BRAND_TOKENS.INK` is high-luminance text.
+  - mode recipes use `contrastMode: dark`.
+- CSS is externalized in `styles.css` through `.page-shell`, `#game-shell`, `.shell-ornament`, `.hud-panel`, `.hud-chip`, `.hud-badges`, `.hud-console-list`, `.controls-actions`, `.status-strip`, `#start-btn`, and state classes (`.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`).
 - Reduced-motion is dual-bound:
   - JS envelope clamp in `drawPostProcess()`.
   - `motion-reduced` / `prefers-reduced-motion` in CSS.
+- New visual-identity layer:
+  - Introduced tokenized color depth variables for chrome, edge glow, grid opacity, sheen, and pulse speed in `styles.css`.
+  - Added richer shell motion variables (`--game-shell-grid-opacity`, `--game-shell-sheen-opacity`, `--shell-sweep-speed`) so modes can retune animation and intensity without DOM logic changes.
+  - Added CSS animations that are motion-safe:
+    - `auroraDrift`, `shellGridPulse`, `statusSweep`, and enhanced `panelSweep` usage.
+    - Visual overlays now blend across `body`, `.page-shell`, `.game-shell`, `.controls-panel`, and `.status-strip`.
+ - In-canvas backdrop depth pass (new):
+   - `drawWorldScene()` now paints a gradient between `tone.surface` and `tone.panelFill`.
+   - Adds deterministic corner glow keyed to scene lead accent to avoid flat single-color canvases.
 
 Mode animation stack:
 - Mission:
@@ -148,14 +162,21 @@ Key helper surfaces:
 - `drawBattleImpactStreak()`
 - `drawBattleTurnPulse()`
 - `drawPostProcessChromaticBleed({ scale })` guard path
+- `drawWorldScene()` backdrop gradient + accent glow pass
 - `prefersReducedMotion()`, `applyReducedMotionState()`, `bindReducedMotionPreference()`
 - `state.visual.battleHud` (`enemyHp`, `playerHp`) interpolation for battle HP bars
 
 Acceptance checks:
+- Style layer now supports deep color theming and motion tuning through CSS custom properties by:
+  - verifying `body[data-visual-preset=...]` overrides `--game-shell-grid-opacity`, `--game-shell-sheen-opacity`, and chrome intensity tokens.
+  - keeping `minimal` preset at near-static motion while modern/neon presets increase color sweep and chroma intensity.
+- HUD shell/overlay animation stack is readable in reduced-motion mode:
+  - `prefers-reduced-motion` should collapse non-essential sweep/stream animations while preserving card contrast and static glow.
 - `drawPostProcessChromaticBleed()` defends against undefined `scale` by defaulting to `1`.
 - `VISUAL_PIPELINE.effects.grainCount/noiseCount/staticWashDensity` are intentionally set to zero/noise-free defaults.
 - `drawPostProcessStaticWash()` now uses deterministic fracture/veil bands (no speckled noise).
 - `drawPostProcessBloom()` now emits segmented ink-ring pressure strokes, not radial glow wash.
+- Title and hub scenes no longer render as near-white flats; baseline canvas tone should read dark command UI at first glance.
 - `render_game_to_text()` includes visual profile + frame budget metrics in `ui.metrics` and `ui.brand`.
 - Playwright smoke emits fresh shots/states without schema regressions.
 - Chromatic split remains deterministic for fixed seed and frame.
