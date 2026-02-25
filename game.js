@@ -501,7 +501,14 @@
   });
   const BATTLE_ROOT_ACTIONS = ["Fight", "Switch", "Capture"];
 
-  const SPRITE_ROOT = "/assets/sprites";
+  const SPRITE_ROOT = (() => {
+    try {
+      return new URL("./assets/sprites/", document.baseURI).href.replace(/\/$/, "");
+    } catch (error) {
+      console.warn("Using legacy sprite root fallback due base URL error:", error);
+      return "/assets/sprites";
+    }
+  })();
   const spriteManifest = (() => {
     const base = {
       player: `${SPRITE_ROOT}/ship.png`,
@@ -1045,31 +1052,27 @@
   }
 
   function probeSprite(entry) {
-    fetch(entry.src, { method: "HEAD", cache: "no-store" })
-      .then((res) => {
-        if (!res || !res.ok) {
-          markSpriteUnavailable(entry);
-          return;
-        }
-        const image = new Image();
-        image.decoding = "async";
-        image.onload = () => {
-          if (entry.state !== "loading") return;
-          entry.image = image;
-          entry.state = "ready";
-          spriteStatus.loaded += 1;
-          spriteStatus.loading -= 1;
-          if (spriteStatus.loading <= 0 && spriteStatus.missing === 0) {
-            state.visual.useVectorFallback = false;
-          }
-        };
-        image.onerror = () => {
-          markSpriteUnavailable(entry);
-        };
-        entry.image = image;
-        image.src = entry.src;
-      })
-      .catch(() => markSpriteUnavailable(entry));
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      if (entry.state !== "loading") return;
+      if (!image.naturalWidth || !image.naturalHeight) {
+        markSpriteUnavailable(entry);
+        return;
+      }
+      entry.image = image;
+      entry.state = "ready";
+      spriteStatus.loaded += 1;
+      spriteStatus.loading -= 1;
+      if (spriteStatus.loading <= 0 && spriteStatus.missing === 0) {
+        state.visual.useVectorFallback = false;
+      }
+    };
+    image.onerror = () => {
+      markSpriteUnavailable(entry);
+    };
+    entry.image = image;
+    image.src = entry.src;
   }
 
   function markSpriteUnavailable(entry) {
