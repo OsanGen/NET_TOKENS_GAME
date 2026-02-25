@@ -1122,12 +1122,12 @@
   }
 
   function spriteSizeForEntity(entity) {
-    if (entity.kind === "player") return Math.max(6, entity.r * 3.2);
-    if (entity.kind === "alien") return Math.max(7, entity.r * 2.6);
-    if (entity.kind === "enemy") return Math.max(8, entity.r * 3.3);
-    if (entity.kind === "beacon") return Math.max(9, entity.r * 5.2);
-    if (entity.kind === "probe") return Math.max(8, entity.r * 5.4);
-    return Math.max(6, entity.r * 2.4);
+    if (entity.kind === "player") return Math.max(14, entity.r * 6.2);
+    if (entity.kind === "alien") return Math.max(16, entity.r * 4.8);
+    if (entity.kind === "enemy") return Math.max(18, entity.r * 5.2);
+    if (entity.kind === "beacon") return Math.max(16, entity.r * 7.2);
+    if (entity.kind === "probe") return Math.max(16, entity.r * 7.4);
+    return Math.max(12, entity.r * 4.2);
   }
 
   function drawSpriteEntity(entity, fallbackDraw) {
@@ -3073,7 +3073,7 @@
   }
 
   function drawHubPlanetNode({ planet, palette, isFocused, isLocked, pulse }) {
-    const spriteSize = Math.max(24, planet.r * 2.85);
+    const spriteSize = Math.max(38, planet.r * 4.6);
     const lockGlow = isFocused || isLocked ? 0.24 : 0.12;
     sceneCtx.save();
     sceneCtx.shadowBlur = isFocused || isLocked ? 9 : 4;
@@ -3120,7 +3120,7 @@
   }
 
   function drawHubShipGlyph({ shipX, shipY, palette, pulse }) {
-    const shipSize = 28 + pulse * 1.5;
+    const shipSize = 42 + pulse * 2;
     const drew = drawSpriteByKey(
       "ship",
       shipX,
@@ -3515,8 +3515,9 @@
     drawPanel(18, 22, 122, 52);
     drawPanel(180, 94, 122, 52);
 
-    drawSpriteByKey(`alien-${enemy.speciesId}`, 254, 52, 22, () => drawAlienFallback({ x: 254, y: 52, r: 6, species: enemySpecies }));
-    drawSpriteByKey(`alien-${player.speciesId}`, 66, 122, 22, () => drawAlienFallback({ x: 66, y: 122, r: 6, species: playerSpecies }));
+    const battlePortraitSize = 40;
+    drawSpriteByKey(`alien-${enemy.speciesId}`, 254, 52, battlePortraitSize, () => drawAlienFallback({ x: 254, y: 52, r: 6, species: enemySpecies }));
+    drawSpriteByKey(`alien-${player.speciesId}`, 66, 122, battlePortraitSize, () => drawAlienFallback({ x: 66, y: 122, r: 6, species: playerSpecies }));
 
     sceneCtx.fillStyle = tone.text;
     sceneCtx.font = "700 8px Sora, sans-serif";

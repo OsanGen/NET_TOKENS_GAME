@@ -8,6 +8,7 @@ final_build (component | status | next action)
 - Validation Loop | in_progress | run a local smoke pass through key flows (title→hub→mission→result) at normal and reduced-motion settings
 - Visual Asset Content | blocked | set `OPENAI_API_KEY` then run imagegen for upgraded `ship.png` and `planet-node.png` (photoreal-styled game sprites), then integrate and compare against current vector fallback
 - Asset Pipeline | in_progress | validate sprite loader works without HEAD and works for file:// + subpath deployments
+- Visual Asset Content | in_progress | validate enlarged runtime sprite render scale across hub/mission/battle so 64x64 art reads clearly on desktop and mobile
 - Visual Asset Content | done | rerun imagegen with provided key and concurrency 1, validated all 24 prompts render and sync to `assets/sprites`; next action: run a visual QA pass on updated 64x64 sprites in hub/mission loops
 - Skill Client Tooling | blocked | align module resolution for `/Users/abelsanchez/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` if strict skill-client execution is required
 - Core Runtime | done | node-check passed + Playwright smoke runs and returns frames in output/web-game

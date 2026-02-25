@@ -19,6 +19,7 @@ Outputs:
   - planet node,
   - ship.
 - 64x64 nearest-neighbor sprite files in `assets/sprites/`.
+- Runtime-visible sprite rendering that is large enough to make generated art legible in active gameplay scenes.
 
 Current Status:
 - Prompt manifest currently targets CogSec Pastel style locks:
@@ -35,8 +36,10 @@ Current Status:
 Runtime Fallback Strategy:
 - `state.visual.useVectorFallback` forces brand-safe vector rendering until regenerated sprites are available.
 - Existing sprite loader remains active and deterministic.
+- Runtime render sizing is decoupled from physics radii, allowing larger sprite presentation without changing gameplay collision or timing.
 
 Acceptance Checks:
  - After API key is set and generation is rerun with throttled concurrency, batch generation succeeds and syncs 24 sprite files.
 - Runtime can switch from vector fallback to generated sprites without logic changes.
 - All generated assets remain readable at 64x64 scale and palette-compliant.
+- In hub, mission, and battle views, entities and portraits are visibly larger than previous baseline and artwork details are distinguishable at a glance.
