@@ -10,6 +10,9 @@ Visual contract:
 - Visual state should be mode/preset-reactive and deterministic (no random chrome flicker).
 - Visual color system must be token-driven (`styles.css` custom properties) so mode changes only swap token values, not selector structure.
 - Additional animation layers should remain subtle, deterministic, and readable even on battery-constrained/mobile targets.
+- Current visual direction is intentionally radical and obvious to non-technical viewers:
+  - clipped command-frame geometry, brighter cyan/mint/amber palette, and stronger hero hierarchy.
+  - shell and HUD chrome should read as enterprise dashboard + premium game, not retro flat panel.
 
 Inputs:
 - Mode (`title`, `hub`, `mission`, `battle`, `result`).
@@ -96,6 +99,11 @@ Behavior:
   - ornament rings around gameplay canvas,
   - interactive action-row hover/selection polish,
   - animated focus treatment for `#start-btn`.
+- Latest style pass replaces the previous look with a visibly distinct dashboard language:
+  - `Sora` + `Manrope` typography stack.
+  - clipped-corner game shell with high-contrast frame edges.
+  - stronger CTA treatment and brighter, mode-sensitive shell borders.
+  - restrained ambient grid + sweep animations with reduced-motion compatibility.
 - `styles.css` now uses a deeper tokenized chroma layer:
   - game shell gradients, shell ornaments, ambient background wash, CTA tones, panel scan speeds, and strip/chip glow all flow from `:root` tokens and preset overrides.
 - Dynamic animation controls are tokenized per preset/mode:
@@ -144,3 +152,4 @@ Acceptance Checks:
 - `.controls-actions` hover/selected visuals still satisfy contrast constraints.
 - Desktop shell chrome and mobile (390px/768px) remain legible and stable with reduced-motion preference active.
 - Mode/preset transitions do not introduce layout jumps; only cosmetic motion/color tokens update.
+- Visual comparison against pre-pass build is immediately noticeable without interaction.
