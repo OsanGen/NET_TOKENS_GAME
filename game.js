@@ -3425,51 +3425,118 @@
 
     sceneCtx.fillStyle = tone.surface;
     sceneCtx.fillRect(0, 0, SIM_W, SIM_H);
-    drawPanel(8, 8, SIM_W - 16, SIM_H - 16);
+    drawPanel(8, 8, SIM_W - 16, SIM_H - 16, {
+      fill: withAlpha(tone.panelFill, 0.88),
+      edge: tone.edge,
+      radius: 2,
+    });
+
     sceneCtx.fillStyle = tone.edge;
     sceneCtx.fillRect(8, 8, SIM_W - 16, 4);
-    const battleGlow = Math.floor(4.2 * (0.7 + ambient * 0.6));
-    sceneCtx.fillStyle = withAlpha(tone.edge, 0.15);
-    for (let i = 0; i < battleGlow; i += 1) {
-      sceneCtx.fillRect(12 + i * 1.2, 22, 1, 56);
+    sceneCtx.fillStyle = withAlpha(tone.edge, 0.18);
+    for (let i = 0; i < 5; i += 1) {
+      const x = 10 + i * ((SIM_W - 20) / 4);
+      sceneCtx.fillRect(x, 8, 1, 6);
     }
 
-    drawPanel(18, 22, 122, 52);
-    drawPanel(180, 94, 122, 52);
+    const sidePad = 14;
+    const sideGapReserve = Math.max(78, Math.floor(SIM_W * 0.18));
+    const combatCardW = clamp(Math.floor((SIM_W - sidePad * 2 - sideGapReserve) / 2), 140, 240);
+    const combatCardH = clamp(Math.floor(SIM_H * 0.56), 130, 208);
+    const combatCardY = 22;
+    const centerGap = SIM_W - sidePad * 2 - combatCardW * 2;
+    const enemyCardX = sidePad;
+    const playerCardX = sidePad + combatCardW + centerGap;
+    const portraitSize = Math.min(Math.floor(Math.min(combatCardW, combatCardH) * 0.54), 116);
+    const barW = combatCardW - 28;
+    const barH = 6;
 
-    const battlePortraitSize = 40;
-    drawSpriteByKey(`alien-${enemy.speciesId}`, 254, 52, battlePortraitSize, () => drawAlienFallback({ x: 254, y: 52, r: 6, species: enemySpecies }));
-    drawSpriteByKey(`alien-${player.speciesId}`, 66, 122, battlePortraitSize, () => drawAlienFallback({ x: 66, y: 122, r: 6, species: playerSpecies }));
+    function drawCombatCard(cardX, species, portraitKey, hpText, hpPercent, accent, level, isPlayerCard, title) {
+      drawPanel(cardX, combatCardY, combatCardW, combatCardH, {
+        fill: withAlpha(tone.panelFill, 0.94),
+        edge: tone.edge,
+        radius: 2,
+      });
 
+      const portraitX = cardX + Math.floor(combatCardW / 2);
+      const portraitY = combatCardY + Math.floor(combatCardH * 0.46);
+      drawSpriteByKey(
+        portraitKey,
+        portraitX,
+        portraitY,
+        portraitSize,
+        () => drawAlienFallback({ x: portraitX, y: portraitY, r: Math.max(8, Math.floor(portraitSize * 0.16)), species }),
+      );
+
+      const titleX = cardX + 12;
+      const titleY = combatCardY + 17;
+      const barX = cardX + 14;
+      const barY = combatCardY + combatCardH - 32;
+      const hpY = combatCardY + combatCardH - 22;
+      sceneCtx.fillStyle = tone.text;
+      sceneCtx.textAlign = "left";
+      sceneCtx.font = "700 8px Sora, sans-serif";
+      sceneCtx.fillText(title, titleX, titleY);
+      sceneCtx.font = "700 7px Sora, sans-serif";
+      sceneCtx.fillText(species.name, titleX, titleY + 12);
+      sceneCtx.font = "6px Sora, sans-serif";
+      sceneCtx.fillText(level, titleX, titleY + 20);
+      sceneCtx.fillStyle = isPlayerCard ? withAlpha(playerAccent, 0.2) : withAlpha(enemyAccent, 0.2);
+      sceneCtx.fillRect(barX, barY, barW, barH);
+      sceneCtx.fillStyle = accent;
+      sceneCtx.fillRect(barX, barY, Math.max(2, Math.floor(barW * hpPercent)), barH);
+      sceneCtx.fillStyle = withAlpha(accent, 0.35);
+      sceneCtx.fillRect(barX, barY, Math.max(2, Math.floor(barW * hpPercent * (0.3 + ambient * 0.18))), barH);
+      sceneCtx.strokeStyle = tone.text;
+      sceneCtx.strokeRect(barX, barY, barW, barH);
+      sceneCtx.fillStyle = tone.text;
+      sceneCtx.font = "6px Sora, sans-serif";
+      sceneCtx.fillText(hpText, barX, hpY);
+    }
+
+    drawCombatCard(
+      enemyCardX,
+      enemySpecies,
+      `alien-${enemy.speciesId}`,
+      `HP ${enemy.hp}/${enemy.maxHp}`,
+      easedEnemyHp,
+      enemyAccent,
+      `Lv ${enemy.level}`,
+      false,
+      "Enemy",
+    );
+    drawCombatCard(
+      playerCardX,
+      playerSpecies,
+      `alien-${player.speciesId}`,
+      `HP ${player.hp}/${player.maxHp}`,
+      easedPlayerHp,
+      playerAccent,
+      `Lv ${player.level}`,
+      true,
+      "Player",
+    );
+
+    drawPanel(12, SIM_H - 74, SIM_W - 24, 58, {
+      fill: withAlpha(tone.panelFill, 0.9),
+      edge: tone.edge,
+      radius: 2,
+    });
     sceneCtx.fillStyle = tone.text;
+    sceneCtx.textAlign = "center";
     sceneCtx.font = "700 8px Sora, sans-serif";
-    sceneCtx.fillText(enemySpecies.name, 22, 34);
-    sceneCtx.fillText(playerSpecies.name, 184, 106);
-    sceneCtx.font = "7px Sora, sans-serif";
-    sceneCtx.fillText(`Lv ${enemy.level}`, 22, 44);
-    sceneCtx.fillText(`Lv ${player.level}`, 184, 116);
-    sceneCtx.fillText(`Turn ${battle.turn}`, 254, 18);
+    sceneCtx.fillText(`TURN ${battle.turn} — BATTLE`, SIM_W / 2, SIM_H - 57);
+    sceneCtx.font = "6px Sora, sans-serif";
+    sceneCtx.fillText("Use side action rail to execute abilities and switch options.", SIM_W / 2, SIM_H - 45);
+    sceneCtx.fillText("Combat state updates are streamed in the console panel.", SIM_W / 2, SIM_H - 37);
 
-    sceneCtx.fillStyle = tone.panelFill;
-    sceneCtx.fillRect(22, 50, 108, 6);
-    sceneCtx.fillRect(184, 122, 108, 6);
-    sceneCtx.fillStyle = enemyAccent;
-    sceneCtx.fillRect(22, 50, Math.floor(easedEnemyHp * 108), 6);
-    sceneCtx.fillStyle = playerAccent;
-    sceneCtx.fillRect(184, 122, Math.floor(easedPlayerHp * 108), 6);
-    sceneCtx.fillStyle = withAlpha(playerAccent, 0.4);
-    sceneCtx.fillRect(184, 122, Math.max(2, Math.floor(easedPlayerHp * 108 * ambient * 0.25)), 6);
-    sceneCtx.fillStyle = withAlpha(enemyAccent, 0.16);
-    sceneCtx.fillRect(22, 50, Math.max(2, Math.floor((easedEnemyHp + 0.04) * 108 * ambient * 0.22)), 6);
-    sceneCtx.strokeStyle = tone.text;
-    sceneCtx.strokeRect(22, 50, 108, 6);
-    sceneCtx.strokeRect(184, 122, 108, 6);
+    const sideGlow = 12;
+    sceneCtx.fillStyle = withAlpha(enemyAccent, 0.06);
+    sceneCtx.fillRect(enemyCardX + 2, combatCardY + combatCardH * 0.9, combatCardW - 4, sideGlow);
+    sceneCtx.fillStyle = withAlpha(playerAccent, 0.06);
+    sceneCtx.fillRect(playerCardX + 2, combatCardY + combatCardH * 0.9, combatCardW - 4, sideGlow);
 
-    drawPanel(8, 138, SIM_W - 16, 30);
-    sceneCtx.fillStyle = tone.text;
-    sceneCtx.font = "7px Sora, sans-serif";
-    sceneCtx.fillText("Battle controls moved to side rail.", 16, 150);
-    sceneCtx.fillText("Combat logs stream in console panel.", 16, 160);
+    sceneCtx.textAlign = "left";
   }
 
   function drawResult() {
