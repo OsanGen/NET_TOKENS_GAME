@@ -12,7 +12,6 @@ final_build (component | status | next action)
 - Visual Asset Content | in_progress | validate enlarged runtime sprite render scale across hub/mission/battle so 64x64 art reads clearly on desktop and mobile
 - Visual Asset Content | done | rerun imagegen with provided key and concurrency 1, validated all 24 prompts render and sync to `assets/sprites`; next action: run a visual QA pass on updated 64x64 sprites in hub/mission loops
 - Skill Client Tooling | blocked | align module resolution for `/Users/abelsanchez/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` if strict skill-client execution is required
-- Core Runtime | done | node-check passed + Playwright smoke runs and returns frames in output/web-game
-- Visual Post Process | in_progress | verify desktop/mobile smoke on deployed build shows visibly distinct modern shell (minimal UI grain, no CRT shimmer, no heavy glow) after default preset load, preset cycling, and updated sprite sampling path
-- Visual Post Process | in_progress | verify title+hub+mission+battle all show readable 10-second captures with lower clutter and stronger white/Fog composition under reduced-motion and normal modes
+- Core Runtime | done | dead code removed from runtime (`normalizeModeTransition`, `biomeAccentToken`, `drawHubFocusCard`, `drawMissionStatusStrip`) and node/smoke checks rerun without regressions
+- Visual Post Process | in_progress | verify title+hub+mission+battle on deployed and local builds show no modern-mode shimmer/grain and no motion jitter in baseline preset; then verify ships/planets are visibly bigger and crisp at 390px/768px breakpoints after hard refresh (or cache-busted deploy)
 - Pages Deployment | done | new repo `NET_TOKENS_GAME` is deployed at `https://osangen.github.io/NET_TOKENS_GAME/`; old repo `ai-power-users-codex53-demo` rollback commits are on `main` and no longer serve NET_TOKENS_GAME branding

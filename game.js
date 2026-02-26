@@ -202,7 +202,7 @@
       jitterShift: 0,
       flickerShift: 0.05,
       vignetteBoost: 0.42,
-      chromaticShift: 0.22,
+      chromaticShift: 0,
       shakeBoost: 0.22,
     }),
   });
@@ -216,8 +216,8 @@
     softLineAlpha: 0.2,
   });
 
-  const VISUAL_SPRITE_SCALE = 1.24;
-  const VISUAL_PLANET_SCALE = 1.18;
+  const VISUAL_SPRITE_SCALE = 1.6;
+  const VISUAL_PLANET_SCALE = 1.5;
 
   const BRAND_TOKENS = Object.freeze({
     COG_YELLOW: "#FFCB78",
@@ -420,14 +420,14 @@
 
   const input = {
     left: false,
+    up: false,
     right: false,
     leftEdge: false,
     rightEdge: false,
-    up: false,
+    upEdge: false,
     down: false,
     space: false,
     spaceEdge: false,
-    upEdge: false,
     downEdge: false,
     confirmEdge: false,
     cancelEdge: false,
@@ -606,19 +606,6 @@
     return (hi + 0.05) / (lo + 0.05);
   }
 
-  function normalizeModeTransition(profile, mode) {
-    if (!profile || !state.visual) return null;
-    return {
-      mode: mode || state.mode,
-      timer: profile.timer || 0,
-      duration: profile.duration || 0,
-      fromMode: profile.fromMode || mode || state.mode,
-      toMode: profile.toMode || mode || state.mode,
-      transitionBlend: profile.transitionBlend || 0,
-      accentColor: profile.accentColor || BRAND_TOKENS.COG_BLUE,
-    };
-  }
-
   function resolveVisualPolicy() {
     if (!state || !state.visual) return VISUAL_PIPELINE.defaultPolicy;
     if (state.visual.renderQualityMode === "smooth" || state.visual.scaleMode === "smooth") return "smooth";
@@ -708,30 +695,30 @@
     const accentLead = baseProfile.accentColor || pickAccentLead(selectedMode, state.mission, state.seed);
     return {
       ...baseProfile,
-      toneStrength: (baseProfile.toneStrength || 0) * (preset.toneStrength || 1) * (qualityMode.toneScale || 1),
-      motionAmp: (baseProfile.motionAmp || 0) * (preset.motionAmp || 1) * (preset.noiseSpeed || 1) * (qualityMode.motionScale || 1),
+      toneStrength: (baseProfile.toneStrength ?? 0) * (preset.toneStrength ?? 1) * (qualityMode.toneScale ?? 1),
+      motionAmp: (baseProfile.motionAmp ?? 0) * (preset.motionAmp ?? 1) * (preset.noiseSpeed ?? 1) * (qualityMode.motionScale ?? 1),
       particles: Math.max(
         1,
-        Math.round((baseProfile.particles || 0) * (preset.particleDensity || 1) * (qualityMode.particlesScale || 1)),
+        Math.round((baseProfile.particles ?? 0) * (preset.particleDensity ?? 1) * (qualityMode.particlesScale ?? 1)),
       ),
-      particleDensity: preset.particleDensity || 1,
-      effectCap: (baseProfile.effectCap || 0) * (preset.effectCap || 1) * (qualityMode.motionScale || 1),
-      noiseDensity: (baseProfile.noiseDensity || 1) * (preset.noiseDensity || 1) * (qualityMode.noiseScale || 1),
-      scanlineDensity: (baseProfile.scanlineDensity || 1) * (preset.scanlineDensity || 1) * (qualityMode.scanlineScale || 1),
-      scanlineStrength: (baseProfile.scanlineStrength || 0.5) * (preset.scanlineStrength || 1) * (qualityMode.ambientScale || 1),
-      noiseSpeed: (baseProfile.noiseSpeed || 1) * (preset.noiseSpeed || 1) * (qualityMode.motionScale || 1),
-      bloom: (baseProfile.bloom || 0) * (preset.bloom || 1) * (qualityMode.bloomScale || 1),
+      particleDensity: preset.particleDensity ?? 1,
+      effectCap: (baseProfile.effectCap ?? 0) * (preset.effectCap ?? 1) * (qualityMode.motionScale ?? 1),
+      noiseDensity: (baseProfile.noiseDensity ?? 1) * (preset.noiseDensity ?? 1) * (qualityMode.noiseScale ?? 1),
+      scanlineDensity: (baseProfile.scanlineDensity ?? 1) * (preset.scanlineDensity ?? 1) * (qualityMode.scanlineScale ?? 1),
+      scanlineStrength: (baseProfile.scanlineStrength ?? 0.5) * (preset.scanlineStrength ?? 1) * (qualityMode.ambientScale ?? 1),
+      noiseSpeed: (baseProfile.noiseSpeed ?? 1) * (preset.noiseSpeed ?? 1) * (qualityMode.motionScale ?? 1),
+      bloom: (baseProfile.bloom ?? 0) * (preset.bloom ?? 1) * (qualityMode.bloomScale ?? 1),
       chromaShift:
-        (baseProfile.chromaticSplit || 0) *
-        (preset.chromaShift || 1) *
-        (preset.chromaticShift || 1) *
-        (qualityMode.toneScale || 1),
-      frameJitter: (baseProfile.frameJitter || 0) * (preset.jitterShift || 1) * (qualityMode.motionScale || 1),
-      shakeGain: (baseProfile.shakeGain || 0) * (preset.shakeBoost || 1) * (qualityMode.motionScale || 1),
-      flickerChance: (baseProfile.flickerChance || 0) * (preset.flickerShift || 1) * (qualityMode.ambientScale || 1),
+        (baseProfile.chromaticSplit ?? 0) *
+        (preset.chromaShift ?? 1) *
+        (preset.chromaticShift ?? 1) *
+        (qualityMode.toneScale ?? 1),
+      frameJitter: (baseProfile.frameJitter ?? 0) * (preset.jitterShift ?? 1) * (qualityMode.motionScale ?? 1),
+      shakeGain: (baseProfile.shakeGain ?? 0) * (preset.shakeBoost ?? 1) * (qualityMode.motionScale ?? 1),
+      flickerChance: (baseProfile.flickerChance ?? 0) * (preset.flickerShift ?? 1) * (qualityMode.ambientScale ?? 1),
       vignetteAmount: Math.min(
         0.14,
-        (baseProfile.vignetteAmount || 0) * (preset.vignetteBoost || 1) * (qualityMode.vignetteScale || 1),
+        (baseProfile.vignetteAmount ?? 0) * (preset.vignetteBoost ?? 1) * (qualityMode.vignetteScale ?? 1),
       ),
       accentLead,
       accentColor: BRAND_TOKENS[accentLead] || BRAND_TOKENS.COG_BLUE,
@@ -918,10 +905,11 @@
 
   function resolvePostProcessSourceCanvas(profile) {
     const activeProfile = profile || resolveActiveVfxProfile();
-    const chromaShift = Math.max(0, activeProfile.chromaShift || 0);
+    const chromaShift = Number.isFinite(activeProfile.chromaShift) ? Math.max(0, activeProfile.chromaShift) : 0;
     if (chromaShift <= 0 || !postFxCtx) return scene;
 
-    const shiftPx = Math.max(1, Math.round(chromaShift * 40));
+    const shiftPx = Math.round(chromaShift * 40);
+    if (shiftPx < 1) return scene;
     postFxCtx.setTransform(1, 0, 0, 1, 0, 0);
     postFxCtx.clearRect(0, 0, SIM_W, SIM_H);
     postFxCtx.imageSmoothingEnabled = true;
@@ -1094,8 +1082,13 @@
     const image = entry ? entry.image : null;
     const renderX = x + (Number.isFinite(opts.motionX) ? opts.motionX : 0);
     const renderY = y + (Number.isFinite(opts.motionY) ? opts.motionY : 0);
-    const isSmooth = resolveVisualPolicy() === "smooth";
+    const isModern = isModernVisualPreset();
+    const isSmooth = !isModern && resolveVisualPolicy() === "smooth";
     if (entry && entry.state === "ready" && image && image.complete && image.naturalWidth > 0) {
+      const previousSmoothing = sceneCtx.imageSmoothingEnabled;
+      const previousSmoothingQuality = sceneCtx.imageSmoothingQuality;
+      sceneCtx.imageSmoothingEnabled = isSmooth;
+      sceneCtx.imageSmoothingQuality = isSmooth ? "high" : "low";
       const snappedDiameter = Math.max(1, isSmooth ? diameter : Math.round(diameter));
       const half = snappedDiameter * 0.5;
       const drawX = isSmooth ? renderX - half : Math.round(renderX - half);
@@ -1112,6 +1105,8 @@
           sceneCtx.restore();
         }
       }
+      sceneCtx.imageSmoothingEnabled = previousSmoothing;
+      sceneCtx.imageSmoothingQuality = previousSmoothingQuality;
       return true;
     }
     if (fallbackDraw) fallbackDraw();
@@ -1520,11 +1515,13 @@
     const tone = sceneStyle(mode);
     const governor = colorGovernor(mode, state.mission, state.seed);
     const profileLead = BRAND_TOKENS[governor.primary] || BRAND_TOKENS.COG_BLUE;
+    const accentPulse = BRAND_TOKENS[governor.accentPulse] || BRAND_TOKENS[tone.accentPulseToken] || profileLead;
+    const secondaryTone = governor.missionTint || BRAND_TOKENS[governor.secondary] || BRAND_TOKENS[tone.secondaryToken] || profileLead;
     const toneProfile = {
       primary: BRAND_TOKENS[governor.primary] || BRAND_TOKENS.COG_BLUE,
-      secondary: governor.missionTint || BRAND_TOKENS[governor.secondary] || BRAND_TOKENS.COG_YELLOW,
+      secondary: secondaryTone,
       lead: BRAND_TOKENS[governor.primary] || BRAND_TOKENS.COG_BLUE,
-      accentPulse: BRAND_TOKENS[governor.accentPulse] || BRAND_TOKENS.COG_BLUE,
+      accentPulse,
       panelFill: BRAND_TOKENS[tone.panelFill] || BRAND_TOKENS.HUD_PANEL,
       edge: BRAND_TOKENS[tone.edgeToken] || BRAND_TOKENS.INK,
       surface: BRAND_TOKENS[tone.surface] || BRAND_TOKENS.WHITE,
@@ -1533,8 +1530,6 @@
     };
     toneProfile.primary = profileLead;
     toneProfile.lead = profileLead;
-    toneProfile.secondary = profileLead;
-    toneProfile.accentPulse = profileLead;
     return toneProfile;
   }
 
@@ -1856,15 +1851,18 @@
   }
 
   function brandAuditSnapshot() {
+    const tone = sceneTone(state.mode);
+    const profile = resolveModeVfxProfile(state.mode);
+    const isSingleLead = tone.secondary === tone.lead && tone.accentPulse === tone.lead;
     return {
-      oneAccentLead: true,
+      oneAccentLead: isSingleLead,
       accentLead: state.visual.accentLead,
-      secondaryTone: "active",
-      toneDepth: "twoTone",
-      glowEffects: state.visual.vfxPreset !== "minimal",
-      visualProfile: state.visual.visualProfile,
+      secondaryTone: tone.secondary,
+      toneDepth: isSingleLead ? "singleTone" : "twoTone",
+      glowEffects: profile.bloom > 0.01 || profile.chromaShift > 0 || profile.flickerChance > 0,
+      visualProfile: resolveVisualQualityMode(),
       visualProfileAuto: state.visual.visualProfileAuto,
-      heavyGradients: false,
+      heavyGradients: profile.toneStrength > 0.9 || profile.motionAmp > 0.6,
       overlayWordCap: true,
       contrastMode: state.visual.contrastMode,
       frameBudget: state.visual.lastFrameMs,
@@ -1875,16 +1873,16 @@
     return (base ^ ((index + 1) * 2654435761)) >>> 0;
   }
 
-  function hubBiomeByIndex(index) {
-    return HUB_BIOMES[index % HUB_BIOMES.length];
+  function setInputDown(inputKey, edgeKey, isDown) {
+    const wasDown = input[inputKey];
+    input[inputKey] = isDown;
+    if (isDown && !wasDown) {
+      input[edgeKey] = true;
+    }
   }
 
-  function biomeAccentToken(biome) {
-    if (biome === "Nix") return "COG_BLUE";
-    if (biome === "Gloom") return "COG_PINK";
-    if (biome === "Core") return "COG_YELLOW";
-    if (biome === "Ash") return "COG_MINT";
-    return "COG_BLUE";
+  function hubBiomeByIndex(index) {
+    return HUB_BIOMES[index % HUB_BIOMES.length];
   }
 
   function relaxHubPlanets(planets) {
@@ -2760,10 +2758,16 @@
 
   function maybeCollectTarget(entity) {
     if (!entity || entity.kind !== "alien" || entity.captured) return;
-  }
+    if (!state.objective.current || !input.spaceEdge) return;
+    if (dist2(state.player, entity) > (state.player.r + entity.r + 2) ** 2) return;
 
-  function maybeKillEnemy(entity) {
-    return entity;
+    const speciesId = entity.species && entity.species.id ? entity.species.id : null;
+    if (!speciesId) return;
+
+    entity.captured = true;
+    registerBattleCapture(speciesId);
+    state.messages = [`Captured ${speciesForId(speciesId).name}`, "Specimen added"];
+    state.entities = state.entities.filter((activeEntity) => activeEntity !== entity);
   }
 
   function updateMission(dt) {
@@ -3053,31 +3057,6 @@
         sceneCtx.fillRect(bx, by, 1.3, 1.3);
       }
     }
-  }
-
-  function drawHubFocusCard({ tone, palette, cardX, cardY, cardW, cardH, focused }) {
-    const preview = makePlanetPreview(focused);
-    const lockPulse = state.planetLockId === focused.id ? 0.78 : 0.43 + Math.sin(state.frame * 0.11) * 0.16;
-    drawPanel(cardX - 1, cardY - 1, cardW + 2, cardH + 2, {
-      fill: withAlpha(palette.panelFill, 0.16),
-      edge: withAlpha(palette.accentPulse, 0.35),
-      radius: 1,
-    });
-    sceneCtx.fillStyle = withAlpha(tone.accentPulse, 0.12);
-    sceneCtx.fillRect(cardX + 3, cardY + 3, cardW - 6, cardH - 6);
-    sceneCtx.fillStyle = tone.text;
-    sceneCtx.font = "700 7px Sora, sans-serif";
-    sceneCtx.fillText(focused.name, cardX + 4, cardY + 10);
-    sceneCtx.font = "6px Sora, sans-serif";
-    sceneCtx.fillStyle = toneTextShade(palette.text);
-    sceneCtx.fillText(preview.taskText, cardX + 4, cardY + 18);
-    sceneCtx.fillStyle = withAlpha(palette.secondary, 0.45);
-    sceneCtx.fillRect(cardX + 4, cardY + 23, Math.max(22, preview.targetName.length * 2.3), 4);
-    sceneCtx.fillStyle = tone.text;
-    sceneCtx.fillText(preview.targetName, cardX + 5, cardY + 26);
-    sceneCtx.strokeStyle = withAlpha(palette.accentPulse, 0.38 + lockPulse * 0.1);
-    sceneCtx.lineWidth = 0.7;
-    sceneCtx.strokeRect(cardX + 1, cardY + 1, cardW, cardH);
   }
 
   function drawHubPlanetNode({ planet, palette, isFocused, isLocked, pulse }) {
@@ -3424,71 +3403,6 @@
     drawHud();
   }
 
-  function drawMissionStatusStrip({ tone }) {
-    const mission = state.mission;
-    const objective = state.objective.current;
-    if (!mission || !objective) return;
-    const barY = SIM_H - 34;
-    const hudH = 12;
-    const panelY = barY - 3;
-    const taskX = 12;
-    const targetX = 156;
-    const statusX = 318;
-    const baseY = barY + 7;
-    const statReady = objective.taskDone ? "Ready" : "In progress";
-    const targetTone = mission.target ? speciesForId(mission.target.id).color : tone.accentPulse;
-    const targetPulse = 0.55 + Math.sin(state.visual.fxFrame * 0.1 + mission.task.targetValue) * 0.2;
-
-    sceneCtx.fillStyle = withAlpha(tone.panelFill, 0.94);
-    sceneCtx.fillRect(4, panelY, SIM_W - 8, hudH);
-    sceneCtx.strokeStyle = withAlpha(tone.edge, 0.32);
-    sceneCtx.lineWidth = 1;
-    sceneCtx.strokeRect(4, panelY, SIM_W - 8, hudH);
-
-    const captureRatio = Math.min(1, objective.targetCaptured / Math.max(1, objective.targetRequired));
-    const clearWaveRatio = mission.task.id === "clear_wave"
-      ? Math.max(0, 1 - objective.enemyCount / Math.max(1, mission.enemyTarget || mission.task.targetValue || 1))
-      : 0;
-    const taskRatio = objective.taskDone ? 1 : clearWaveRatio;
-    sceneCtx.fillStyle = withAlpha(tone.surface, 0.74);
-    sceneCtx.fillRect(taskX + 2, barY + 2, 120, 8);
-    sceneCtx.fillStyle = withAlpha(tone.secondary, 0.55);
-    sceneCtx.fillRect(taskX + 2, barY + 2, 120 * captureRatio * taskRatio, 8);
-    sceneCtx.fillStyle = withAlpha(tone.accentPulse, Math.max(0.22, targetPulse * 0.18));
-    sceneCtx.fillRect(taskX + 2, barY + 2, 120 * captureRatio, 8);
-
-    sceneCtx.fillStyle = withAlpha(tone.text, 0.88);
-    sceneCtx.font = "7px Sora, sans-serif";
-    sceneCtx.fillText(`Task: ${mission.task.text}`, taskX + 124, baseY);
-    sceneCtx.fillStyle = withAlpha(targetTone, targetPulse);
-    sceneCtx.fillText(`Target ${objective.targetName}`, targetX + 14, baseY);
-    sceneCtx.fillText(`x${objective.targetCaptured}/${objective.targetRequired}`, targetX + 82, baseY);
-    sceneCtx.fillStyle = tone.text;
-    if (mission.task.id === "clear_wave") {
-      sceneCtx.fillText(`Enemies ${Math.max(0, objective.enemyCount)}`, statusX, baseY);
-    } else if (mission.task.id === "hold_sector") {
-      const holdPct = Math.round((state.objective.holdProgress / mission.task.targetValue) * 100);
-      sceneCtx.fillText(`Hold ${holdPct}%`, statusX, baseY);
-    } else if (mission.task.id === "activate_beacon") {
-      const beacon = state.entities.find((entity) => entity.kind === "beacon");
-      sceneCtx.fillText(`Beacon ${beacon && beacon.activated ? "ready" : "off"}`, statusX, baseY);
-    } else if (mission.task.id === "escort_probe") {
-      const probe = state.entities.find((entity) => entity.kind === "probe");
-      sceneCtx.fillText(`Probe ${probe && probe.attached ? "linked" : "free"}`, statusX, baseY);
-    }
-    sceneCtx.fillText(`Status ${statReady}`, statusX - 26, panelY + 9);
-
-    if (taskRatio > 0 && objective.targetCaptured >= objective.targetRequired) {
-      const readyX = 570;
-      const readyY = panelY + 5;
-      const readyPulse = 0.7 + Math.sin(state.visual.fxFrame * 0.22) * 0.22;
-      sceneCtx.fillStyle = withAlpha(tone.secondary, Math.max(0.15, readyPulse * 0.25));
-      sceneCtx.fillRect(readyX, readyY, 36, 6);
-      sceneCtx.fillStyle = tone.text;
-      sceneCtx.fillText("READY", readyX + 3, panelY + 9);
-    }
-  }
-
   function drawBattle() {
     if (!state.battle) return;
     const tone = sceneTone("battle");
@@ -3651,9 +3565,10 @@
     const renderPolicy = resolveVisualPolicy();
     const isMinimal = isMinimalVisualPreset();
     const isModern = isModernVisualPreset();
-    const scale = resolveRenderScale(rawScale, displayW, displayH);
-    const drawW = SIM_W * scale;
-    const drawH = SIM_H * scale;
+    const resolvedScale = resolveRenderScale(rawScale, displayW, displayH);
+    const drawW = Math.max(1, Math.round(SIM_W * resolvedScale));
+    const drawH = Math.max(1, Math.round(SIM_H * resolvedScale));
+    const scale = drawW / SIM_W;
     const offsetX = Math.floor((displayW - drawW) / 2);
     const offsetY = Math.floor((displayH - drawH) / 2);
     const modeProfile = profileOverride || resolveActiveVfxProfile();
@@ -3668,9 +3583,9 @@
       flickerChance:
         (modeProfile.flickerChance || 0) * (1 + vfxPulses.battle * 1.2 + vfxPulses.ambient * 0.45 + vfxPulses.modeShift * 0.3),
     };
-    const motionEnvelope = prefersReducedMotion() ? 0.28 : isMinimal ? 0 : 1;
+    const motionEnvelope = isModern ? 0 : prefersReducedMotion() ? 0.28 : isMinimal ? 0 : 1;
     const jitter =
-      isMinimal
+      isMinimal || isModern
       ? 0
       : renderPolicy === "smooth"
         ? (frameNoise(97, state.frame, 13) - 0.5) *
@@ -3679,12 +3594,13 @@
           motionEnvelope
         : 0;
     const frameSource = resolvePostProcessSourceCanvas(sourceProfile);
-    const flickerChance = isMinimal
+    const flickerChance = isMinimal || isModern
       ? 0
       : clamp((modeProfile.flickerChance || 0) * (0.85 + vfxPulses.battle * 1.1), 0, 0.22);
-    const activeFlicker = frameNoise(11, state.visual.fxFrame, 17) < flickerChance
-      ? withAlpha(BRAND_TOKENS.INK, 0.07 + vfxPulses.battle * 0.03)
-      : null;
+    const activeFlicker =
+      flickerChance > 0 && !isModern && frameNoise(11, state.visual.fxFrame, 17) < flickerChance
+        ? withAlpha(BRAND_TOKENS.INK, 0.07 + vfxPulses.battle * 0.03)
+        : null;
     const baseNoiseAlpha =
       isMinimal
       ? 0
@@ -3694,7 +3610,7 @@
         motionEnvelope;
     const driftPulse = (state.frame * 0.015 + state.seed * 0.0000001) % 1;
     const orbitKick =
-      isMinimal
+      isMinimal || isModern
       ? 0
       : (Math.sin(state.visual.fxFrame * 0.09) + 1) *
           (0.12 + vfxPulses.camera * 0.16 + transitionPulse * 0.06) *
@@ -3879,15 +3795,6 @@
     const frame = state.frame;
     const pulses = resolveVfxPulses();
     if (isModern) {
-      const starCount = Math.max(10, Math.round((state.mode === "hub" ? 36 : 26) * envelopeStrength));
-      const starTone = withAlpha(tone.subtle, 0.36);
-      for (let i = 0; i < starCount; i += 1) {
-        const x = Math.round(frameNoise(i * 23, state.seed, 83) * drawW);
-        const y = Math.round(frameNoise(i * 29, state.seed + 13, 89) * drawH);
-        const alpha = (0.06 + (frameNoise(i * 7, state.seed, 31) * 0.08)) * (1 + pulses.ambient * 0.08);
-        ctx.fillStyle = withAlpha(starTone, alpha);
-        ctx.fillRect(offsetX + x, offsetY + y, Math.max(1, Math.round(scale * 0.9)), Math.max(1, Math.round(scale * 0.9)));
-      }
       return;
     }
     const starMotion = (modeProfile.motionAmp !== undefined ? modeProfile.motionAmp : 0.16) * envelopeStrength;
@@ -4016,7 +3923,10 @@
       });
     }
 
-    if (state.mode === "mission" || state.mode === "battle" || (state.mode === "hub" && !cleanHubMode)) {
+    if (
+      !isModern &&
+      (state.mode === "mission" || state.mode === "battle" || (state.mode === "hub" && !cleanHubMode))
+    ) {
       drawPostProcessStaticWash({
         tone,
         offsetX,
@@ -4816,28 +4726,21 @@
   function keyEvent(e, isDown) {
     const key = e.code;
     if (key === "ArrowLeft" || key === "KeyA") {
-      input.left = isDown;
-      if (isDown) input.leftEdge = true;
+      setInputDown("left", "leftEdge", isDown);
     } else if (key === "ArrowRight" || key === "KeyD") {
-      input.right = isDown;
-      if (isDown) input.rightEdge = true;
+      setInputDown("right", "rightEdge", isDown);
     } else if (key === "ArrowUp" || key === "KeyW") {
-      input.up = isDown;
-      if (isDown) input.upEdge = true;
+      setInputDown("up", "upEdge", isDown);
     } else if (key === "ArrowDown" || key === "KeyS") {
-      input.down = isDown;
-      if (isDown) input.downEdge = true;
+      setInputDown("down", "downEdge", isDown);
     } else if (key === "Space") {
-      input.space = isDown;
-      if (isDown) {
-        input.spaceEdge = true;
-        input.confirmEdge = true;
-      }
+      setInputDown("space", "spaceEdge", isDown);
+      if (isDown && !input.confirmEdge) input.confirmEdge = true;
       if (isDown && state.mode === "title") {
         startFromTitle();
       }
     } else if (key === "Enter" && isDown) {
-      input.confirmEdge = true;
+      if (isDown && !input.confirmEdge) input.confirmEdge = true;
       if (state.mode === "title") startFromTitle();
     } else if ((key === "Backspace" || key === "Escape") && isDown) {
       input.cancelEdge = true;
@@ -4908,12 +4811,14 @@
                 }
               : null;
           })(),
-          enemyPet: {
-            speciesId: state.battle.enemyPet.speciesId,
-            hp: state.battle.enemyPet.hp,
-            maxHp: state.battle.enemyPet.maxHp,
-            status: state.battle.enemyPet.status,
-          },
+          enemyPet: state.battle.enemyPet
+            ? {
+                speciesId: state.battle.enemyPet.speciesId,
+                hp: state.battle.enemyPet.hp,
+                maxHp: state.battle.enemyPet.maxHp,
+                status: state.battle.enemyPet.status,
+              }
+            : null,
           options: {
             root: BATTLE_ROOT_ACTIONS,
             layer: state.battle.menu.layer,
@@ -4995,7 +4900,10 @@
 
   window.render_game_to_text = renderGameToText;
   window.advanceTime = (ms) => {
-    const steps = Math.max(1, Math.round(ms / FRAME_MS));
+    const durationMs = Number(ms);
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return Promise.resolve();
+    const steps = Math.max(0, Math.round(durationMs / FRAME_MS));
+    if (steps <= 0) return Promise.resolve();
     for (let i = 0; i < steps; i += 1) {
       step(1 / TARGET_FPS);
     }
@@ -5028,8 +4936,18 @@
   document.addEventListener("keyup", (e) => keyEvent(e, false));
   window.addEventListener("resize", resizeCanvas);
   window.addEventListener("blur", () => {
-    input.left = input.right = input.up = input.down = input.space = false;
-    input.spaceEdge = input.upEdge = input.downEdge = input.confirmEdge = input.cancelEdge = false;
+    input.left = false;
+    input.right = false;
+    input.up = false;
+    input.down = false;
+    input.space = false;
+    input.leftEdge = false;
+    input.rightEdge = false;
+    input.upEdge = false;
+    input.downEdge = false;
+    input.spaceEdge = false;
+    input.confirmEdge = false;
+    input.cancelEdge = false;
   });
   applyReducedMotionState();
   bindReducedMotionPreference();
@@ -5051,7 +4969,7 @@
     last = now;
     state.visual.lastFrameMs = Number.isFinite(dt) ? Math.max(1, dt * 1000) : FRAME_MS * 1000;
     accumulator += dt;
-    const clamped = Math.min(accumulator, 0.25);
+    accumulator = Math.min(accumulator, 0.25);
     while (accumulator >= FRAME_MS / 1000) {
       update(FRAME_MS / 1000);
       accumulator -= FRAME_MS / 1000;

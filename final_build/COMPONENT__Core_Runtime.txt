@@ -1,39 +1,109 @@
 Component: Core Runtime
 Purpose:
-Run deterministic gameplay and rendering with stable automation hooks while preserving responsive keyboard controls.
+Own deterministic simulation/render state progression, deterministic mode transitions, and automation surface for gameplay telemetry and visual compliance.
+
+Entry Points:
+- Browser IIFE bootstrap in `game.js` (immediate execution on load).
+- `startBtn.click` => `startFromTitle()`.
+- Keyboard event listeners via `document.addEventListener('keydown'|'keyup', keyEvent)`.
+- Browser resize + blur listeners.
+- RAF loop `loop(now)` as the frame scheduler.
+- Test/automation hooks: `window.render_game_to_text()` and `window.advanceTime(ms)`.
+
+Module Boundaries:
+- State initialization and mutation block (`state`, `input`, `hudNodes`).
+- Utility layer: color, RNG, geometry, parse helpers.
+- Visual stack:
+  - Scene assembly (`drawWorldScene`, `draw...` mode renderers)
+  - Post-process and compose (`drawPostProcess`, `resolveActiveVfxProfile`)
+  - DOM sync (`syncExternalControlsUI`)
+- Game logic block:
+  - hub/missions/combat/update loops.
+- Asset block:
+  - sprite manifest + probe/lifecycle tracking (`initializeSpriteRegistry`, `markSpriteUnavailable`, `spriteStatus`).
+- IO block:
+  - keyboard actions, resize/blur, fullscreen controls, automation exports.
 
 Inputs:
-- Keyboard: `Arrow`/`WASD` move, `Space` interact/attack/start, `Enter` start, `H` help toggle, `F` fullscreen, `Esc` exit fullscreen.
-- Start button click: `#start-btn`.
-- Resize/fullscreen browser events.
-- Deterministic automation hooks:
-  - `window.advanceTime(ms)`
-  - `window.render_game_to_text()`
+- User: `Arrow/WASD`, `Space`, `Enter`, `H`, `V`, `P`, `F`, `Escape`.
+- DOM: `#game-canvas`, `#start-btn`, `#controls-*` nodes.
+- External hooks: `window.innerWidth/Height`, `performance.now()`, browser visibility/fullscreen APIs.
+- Deterministic seed/state: `state.seed`, `state.rng`, `state.mode`.
 
 Outputs:
-- Rendered canvas frame at internal 320x180 simulation resolution.
-- Deterministic JSON text state including gameplay and UI/brand fields.
-- Mode transitions: `title -> hub -> mission -> result -> hub`.
+- Rendered frame to canvas in `SIM_W x SIM_H` source pipeline and scaled output.
+- Deterministic JSON in `render_game_to_text()` (mode, state, payload, telemetry, brand audit).
+- DOM HUD mutations via `hudNodes` + shell attributes.
+- Gameplay transitions among `title`, `hub`, `mission`, `battle`, `result`.
 
-State:
-- `state.mode`, `state.frame`, `state.seed`, `state.rng`.
-- `state.player`: movement, hp, knockback, cooldown, invulnerability.
-- `state.mission`, `state.objective`, `state.entities`, `state.hubs`.
-- `state.ui`: help visibility/pin/timer flags.
-- `state.visual`: accent lead, contrast mode, sprite fallback mode.
+Data Models:
+- `state`: world + flow state.
+  - Player: `x, y, vx, vy, hp, invulnFrames, shootCd, knockbackX, knockbackY, flash, damageStreak, damageDecay`.
+  - Mission: `planetId, target, task, encounter, entities, enemyQueue, spawn timers, encounter lock`.
+  - Battle: `active, menu, enemyPet, playerPet, log, turn`.
+  - Visual: `accentLead, contrastMode, vfxPreset, visualProfile, visualProfileAuto, modeTransition, vfxPulse, battleHud, useVectorFallback`.
+  - UI: `helpVisible, helpPinned, autoHelpUntilFrame, firstMissionHelpShown`.
+  - Infrastructure state: `frame`, `seed`, `rng`, `player`, `petDex`, `party`, `storage`, `hubs`, `messages`.
+- `hudNodes`: cached DOM refs for telemetry sync.
+- `spriteRegistry`: per-key image loading with status (`loading`, `ready`, `missing`).
+- External telemetry payload from text hook includes `ui.brandAudit` and `assets` counters.
 
-Edge Cases:
-- Help overlay can be hidden immediately via `H` even during auto-help window.
-- Start input works from button, `Enter`, and `Space` only on title.
-- Canvas sizing uses CSS size + DPR backing pixels without transform mismatch.
-- Missing sprites do not break runtime due procedural fallback path.
+Data Flow:
+- `loop(now)` computes frame delta -> accumulator -> one or more fixed timestep `update(1/60)` calls -> `render()`.
+- `update(dt)` dispatches mode logic (`updateHub`, `updateMission`, `updateBattle`), processes transitions, pulses decay, mission success checks.
+- `render()` selects profile/presets -> resolves scene tone -> draws world scene -> post-process -> HUD sync.
+- Inputs are edge- and level-buffered (`setInputDown`) then consumed in mode functions and battle menu code.
+- Mode changes via `setMode()` and `startModeTransition()` update gameplay + visual transition metadata for shader/profile blend.
 
-Dependencies:
-- Browser Canvas2D + RAF/fullscreen APIs.
-- Local Playwright validation client (`web_game_playwright_client_local.js`) and deterministic probes.
+Background Jobs / Timing:
+- Continuous RAF loop with fixed-timestep accumulator.
+- `setInterval`/`setTimeout` are only used in Playwright helper shim; runtime uses no recurring polling loops.
+- `normalizeTransitionFrames` controls transition duration normalization in gameplay mode changes.
+
+State Management:
+- State is centralized mutable object mutated in-place every frame.
+- Determinism relies on explicit `seed()` + xorshift-style RNG usage per mode and mission seed derivations.
+- External resets via `resetGame()`/`resetObjective()`.
+- Transient transition state in `state.visual.modeTransition` and top-level `transition` (result-to-hub countdown)
+  represent separate concerns: scene blend vs mission-result auto-return.
+
+Caching Layers:
+- Sprite cache with `spriteRegistry` and loading counters.
+- Render cache surfaces: `scene` and `postFxCanvas` reused each frame.
+- Brand/audio-neutral profile cache via `resolveVisualPreset`/`resolveVisualPolicy` call chain.
+
+API Surfaces:
+- Exposed runtime hooks: `window.render_game_to_text`, `window.advanceTime`, `window.gameState`.
+- No authenticated APIs, network APIs, or backend calls in game runtime.
+
+Logging & Observability:
+- Console warnings via `assertSingleAccent` and `assertReadableContrast` emit once-per-runner warnings.
+- In-game `messages` queue acts as gameplay log (last entries surfaced in UI + text payload).
+- Playwright helper captures console/page errors into `errors-*.json` and optionally halts iteration on first failure.
+
+Error Handling:
+- Guarded command inputs with feature presence checks (`if (!state.visual) return`, `if (!targetId) return`, etc.).
+- Animation and input handlers fail soft where safe (early returns, bounds checks).
+- Modal errors are only escalated through console + render loop continues.
+- Known hard failures: invalid asset/probe load falls back to vector rendering paths.
+
+Dependency/Integration Surfaces:
+- Browser: Canvas2D, RAF, fullscreen, resize, preferences media query.
+- Tooling: `/Users/abelsanchez/CODEX/NEWGAME/web_game_playwright_client_local.js` for deterministic UI smoke.
+- Assets: `assets/sprites/*` plus fallback draw code.
+- Deploy/build: static HTML/CSS/CANVAS bundle and GitHub Pages workflow.
 
 Acceptance Checks:
-- Hooks exist and return deterministic values for identical step sequences.
-- `H` toggles `ui.helpVisible` in `render_game_to_text()`.
-- Fullscreen/resizing preserves centered render and input alignment.
-- No runtime exceptions during mode transitions.
+- `node --check game.js` and `node --check web_game_playwright_client_local.js` clean.
+- Deterministic startup by setting seed and replaying same `advanceTime` path yields identical text payload.
+- `space` on title transitions only in title mode; `setMode` transitions cover title/hub/mission/result/battle.
+- `render_game_to_text` includes `ui.brandAudit` with live tone/visual profile metrics.
+- Playwright smoke path executes with no `errors-*.json` output after script steps.
+
+Maintenance Notes:
+- Dead runtime helpers were removed in this pass:
+  - `normalizeModeTransition`
+  - `biomeAccentToken`
+  - `drawHubFocusCard`
+  - `drawMissionStatusStrip`
+- These were unused and only increased drift risk during future refactors.
