@@ -1406,6 +1406,9 @@
       hubPulseOffset: 0,
       battleImpactBurst: 0,
       battleImpactSide: "neutral",
+      battleImpactColor: null,
+      battleImpactSeed: 0,
+      battleImpactSeverity: 1,
       vfxPulse: {
         transition: 0,
         modeShift: 0,
@@ -2290,12 +2293,20 @@
     const typeMult = moveEffectiveness(move.type, defenderType);
     const damage = Math.max(1, Math.round(base * typeMult * variance));
     defender.hp = Math.max(0, defender.hp - damage);
-    state.visual.battleImpactBurst = Math.min(14, Math.max(0, damage + 2));
-    const attackerSpecies = activePlayerPet() && attacker.id === activePlayerPet().id;
+    const tone = sceneTone(state.mode);
+    const attackerSpeciesId = attacker && (attacker.speciesId || attacker.species?.id);
+    const attackerSpeciesColor = attackerSpeciesId ? speciesForId(attackerSpeciesId).color : null;
+    state.visual.battleImpactColor = attackerSpeciesColor || tone.accentPulse;
+    const burstMagnitude = Math.min(18, Math.max(0, damage + 3));
+    state.visual.battleImpactBurst = burstMagnitude;
+    state.visual.battleImpactSeverity = Math.max(1, Math.min(4, Math.ceil(damage / 4)));
+    state.visual.battleImpactSeed = (Number(state.visual.battleImpactSeed || 0) + 1) % 999;
+    const activePlayer = activePlayerPet();
+    const attackerSpecies = activePlayer && attacker && attacker.id === activePlayer.id;
     state.visual.battleImpactSide = attackerSpecies ? "player" : "enemy";
-    queueVfxPulse("battle", 0.38, { scale: 1 + Math.min(0.9, damage / 16) });
-    queueVfxPulse("camera", 0.18, { scale: 1 + Math.min(0.5, damage / 20) });
-    if (damage >= 5) queueVfxPulse("split", 0.2);
+    queueVfxPulse("battle", 0.46, { scale: 1 + Math.min(1, damage / 14) });
+    queueVfxPulse("camera", 0.22, { scale: 1 + Math.min(0.7, damage / 16) });
+    if (damage >= 5) queueVfxPulse("split", 0.22);
     appendBattleLog(`${attackerName} used ${move.name}`);
     if (typeMult > 1) appendBattleLog("It is super effective");
     if (typeMult < 1) appendBattleLog("It is resisted");
@@ -2317,6 +2328,11 @@
     }
     state.encounterCounter += 1;
     const enemySpeciesId = enemyEntity.enemySpeciesId || state.mission.target.id;
+    state.visual.battleImpactColor = null;
+    state.visual.battleImpactBurst = 0;
+    state.visual.battleImpactSide = "neutral";
+    state.visual.battleImpactSeed = state.visual.battleImpactSeed || 0;
+    state.visual.battleImpactSeverity = 1;
     state.battle = {
       active: true,
       encounterId: state.encounterCounter,
@@ -2562,6 +2578,9 @@
     state.visual.hubPulseOffset = 0;
     state.visual.battleImpactBurst = 0;
     state.visual.battleImpactSide = "neutral";
+    state.visual.battleImpactColor = null;
+    state.visual.battleImpactSeed = 0;
+    state.visual.battleImpactSeverity = 1;
     if (state.visual.vfxPulse) {
       state.visual.vfxPulse.transition = 0;
       state.visual.vfxPulse.modeShift = 0;
@@ -2586,6 +2605,13 @@
       queueVfxPulse("transition", 0.45);
     }
     state.mode = mode;
+    if (mode !== "battle" && state.visual) {
+      state.visual.battleImpactBurst = 0;
+      state.visual.battleImpactSide = "neutral";
+      state.visual.battleImpactColor = null;
+      state.visual.battleImpactSeed = state.visual.battleImpactSeed || 0;
+      state.visual.battleImpactSeverity = 1;
+    }
     state.visual.accentLead = pickAccentLead(nextMode, state.mission, state.seed);
     state.visual.fxProfile = VISUAL_PIPELINE.vfxProfiles[nextMode] || VISUAL_PIPELINE.vfxProfiles.title;
     state.visual.contrastMode = (SCENE_RECIPES[nextMode] && SCENE_RECIPES[nextMode].contrastMode) || "light";
@@ -3964,6 +3990,7 @@
 
     if (state.mode === "battle") {
       drawBattleImpactStreak({ tone, offsetX, offsetY, drawW, drawH, scale, toneStrength });
+      drawBattleImpactFlash({ tone, offsetX, offsetY, drawW, drawH, scale });
       drawBattleFocusLanes({ tone, offsetX, offsetY, drawW, drawH, scale });
       drawBattleTurnPulse({ tone, offsetX, offsetY, drawW, drawH, scale });
       drawBattleCommandGrid({ tone, offsetX, offsetY, drawW, drawH, scale, toneStrength });
@@ -4664,23 +4691,124 @@
   function drawBattleImpactStreak({ tone, offsetX, offsetY, drawW, drawH, scale }) {
     const burst = Math.max(0, state.visual.battleImpactBurst || 0);
     if (burst <= 0) return;
-    const laneStart = offsetX + drawW * 0.19;
+    const severity = clamp(Number.isFinite(Number(state.visual.battleImpactSeverity))
+      ? Number(state.visual.battleImpactSeverity)
+      : 1, 1, 4);
+    const burstFocus = Math.min(1, burst / 10);
+    const direction = state.visual.battleImpactSide === "enemy" ? -1 : 1;
     const laneY = state.visual.battleImpactSide === "enemy" ? offsetY + drawH * 0.44 : offsetY + drawH * 0.56;
-    const width = Math.max(2, Math.round(drawW * 0.58 * Math.min(1, burst / 10)));
-    const dash = Math.max(1, Math.round(scale * 1.2));
-    const x = laneStart + Math.sin(state.frame * 0.36 + burst * 0.2) * scale * 3;
-    const hue = state.visual.battleImpactSide === "enemy" ? tone.secondary : tone.accentPulse;
-    const burstGlow = ctx.createLinearGradient(x, laneY, x + width, laneY);
-    burstGlow.addColorStop(0, withAlpha(hue, 0.18));
-    burstGlow.addColorStop(1, withAlpha(hue, 0.01));
+    const laneStart = direction === 1 ? offsetX + drawW * 0.17 : offsetX + drawW * 0.77;
+    const laneWidth = Math.max(
+      8,
+      Math.round(drawW * 0.36 * (0.56 + burstFocus * 0.75) * (0.5 + severity * 0.12)),
+    );
+    const drift = Math.sin(state.visual.fxFrame * 0.36 + burst * 0.2) * scale * 3 * direction;
+    const pulse = 0.14 + burstFocus * (0.16 + severity * 0.02);
+    const primary = state.visual.battleImpactColor || tone.accentPulse;
+    const secondary = tone.secondary;
+    const edge = state.visual.battleImpactSide === "enemy" ? tone.secondary : tone.accentPulse;
+    const x0 = laneStart + drift;
+    const x1 = x0 + laneWidth * direction;
+    const burstGlow = ctx.createLinearGradient(x0, laneY, x1, laneY);
+    burstGlow.addColorStop(0, withAlpha(primary, 0.3 * pulse));
+    burstGlow.addColorStop(0.5, withAlpha(secondary, 0.16 * pulse));
+    burstGlow.addColorStop(1, withAlpha(edge, 0.06 * pulse));
     ctx.fillStyle = burstGlow;
-    ctx.fillRect(x, laneY, width, dash);
-    ctx.strokeStyle = withAlpha(hue, 0.35);
-    ctx.lineWidth = Math.max(0.6, scale * 0.55);
+    ctx.fillRect(
+      Math.min(x0, x1),
+      laneY - Math.max(1, scale * 0.9),
+      Math.abs(x1 - x0),
+      Math.max(1.6, scale * 2.2),
+    );
+    ctx.strokeStyle = withAlpha(primary, 0.26 + 0.16 * burstFocus + severity * 0.025);
+    ctx.lineWidth = Math.max(1.3, scale * (0.95 + severity * 0.08));
     ctx.beginPath();
-    ctx.moveTo(x, laneY);
-    ctx.lineTo(x + width, laneY);
+    ctx.moveTo(x0, laneY);
+    ctx.lineTo(x1, laneY);
     ctx.stroke();
+    ctx.strokeStyle = withAlpha(edge, 0.16 + 0.2 * burstFocus);
+    ctx.lineWidth = Math.max(0.65, scale * 0.42);
+    ctx.setLineDash([Math.max(1, scale * 2), Math.max(1, scale * 2.2)]);
+    ctx.beginPath();
+    ctx.moveTo(x0, laneY);
+    ctx.lineTo(x1, laneY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function drawBattleImpactFlash({ tone, offsetX, offsetY, drawW, drawH, scale }) {
+    const burst = Math.max(0, state.visual.battleImpactBurst || 0);
+    if (burst <= 0) return;
+    const severity = clamp(Number.isFinite(Number(state.visual.battleImpactSeverity))
+      ? Number(state.visual.battleImpactSeverity)
+      : 1, 1, 4);
+    const burstFocus = Math.min(1, burst / 10);
+    const isMinimal = isMinimalVisualPreset();
+    const reducedMotion = prefersReducedMotion() || (state.visual && state.visual.visualProfileAuto === false && isMinimal);
+    const motionScale = reducedMotion ? 0.22 : 1;
+    const direction = state.visual.battleImpactSide === "enemy" ? -1 : 1;
+    const centerY = state.visual.battleImpactSide === "enemy" ? offsetY + drawH * 0.42 : offsetY + drawH * 0.58;
+    const impactX = (direction === 1 ? offsetX + drawW * 0.5 : offsetX + drawW * 0.5) + direction * drawW * 0.03;
+    const impactY = centerY + Math.sin(state.visual.fxFrame * 0.42 + burst) * scale * 1.5 * motionScale * direction;
+    const primary = state.visual.battleImpactColor || tone.accentPulse;
+    const secondary = tone.secondary;
+    const impactPulse = 0.2 + burstFocus * 0.2 + severity * 0.03;
+    const flashLength = Math.max(
+      20 * scale,
+      drawW * 0.05 * (0.72 + burstFocus * (0.74 + severity * 0.06)),
+    );
+    const flashEndX = impactX + direction * flashLength;
+    const flashGlow = ctx.createLinearGradient(impactX, impactY, flashEndX, impactY);
+    flashGlow.addColorStop(0, withAlpha(primary, clamp(0.34 * impactPulse * motionScale, 0, 0.75)));
+    flashGlow.addColorStop(1, withAlpha(secondary, clamp(0.09 * impactPulse * motionScale, 0, 0.42)));
+    ctx.strokeStyle = flashGlow;
+    ctx.lineWidth = Math.max(1.4, scale * 1.9 * (0.7 + burstFocus));
+    ctx.beginPath();
+    ctx.moveTo(impactX, impactY);
+    ctx.lineTo(flashEndX, impactY);
+    ctx.stroke();
+
+    const ringRadius = Math.max(
+      14,
+      Math.round(
+        Math.min(drawW, drawH) *
+          (0.058 + burstFocus * 0.04 + severity * 0.012),
+      ),
+    );
+    const ringPulse = 1 + Math.sin(state.visual.fxFrame * 0.3 + state.visual.battleImpactSeed) * (0.12 + severity * 0.02);
+    const ring = ctx.createRadialGradient(impactX, impactY, 0.4, impactX, impactY, ringRadius * ringPulse);
+    ring.addColorStop(0, withAlpha(primary, 0.22 * impactPulse * motionScale));
+    ring.addColorStop(0.45, withAlpha(secondary, 0.11 * impactPulse * motionScale));
+    ring.addColorStop(1, withAlpha(secondary, 0));
+    ctx.fillStyle = ring;
+    ctx.beginPath();
+    ctx.arc(impactX, impactY, ringRadius * (1 + burstFocus * (0.35 + severity * 0.08)), 0, Math.PI * 2);
+    ctx.fill();
+
+    const sparks = Math.max(6, 6 + Math.floor(burstFocus * 6) + Math.floor(severity));
+    for (let i = 0; i < sparks; i += 1) {
+      const angle = state.visual.fxFrame * 0.14 + (state.visual.battleImpactSeed + i * 17) * 0.28;
+      const radial = Math.max(
+        scale * 2.5,
+        ringRadius * (0.24 + i * (0.06 + burstFocus * 0.04) + severity * 0.02),
+      );
+      const drift = frameNoise(i * 7, state.visual.battleImpactSeed + i, 37) * Math.PI * 2;
+      const px = impactX + Math.cos(angle + drift) * radial * motionScale;
+      const py = impactY + Math.sin(angle * 0.9 + drift) * radial * 0.62 * motionScale;
+      const sparkW = Math.max(0.9, scale * (1 + (i % 3) * 0.28));
+      const sparkH = Math.max(0.9, scale * (1.9 - (i % 3) * 0.28));
+      const phase = 1 - i / Math.max(1, sparks);
+      const sparkAlpha = Math.max(
+        0.03,
+        0.16 * phase * (0.58 + burstFocus * 0.44 + severity * 0.06) * motionScale,
+      );
+      ctx.fillStyle = withAlpha(primary, sparkAlpha);
+      ctx.beginPath();
+      ctx.ellipse(px, py, sparkW, sparkH * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = withAlpha(secondary, sparkAlpha * 0.45);
+      ctx.fillRect(px - sparkW * 0.2, py - sparkW * 0.3, sparkW * 0.4, sparkH * 0.6);
+    }
   }
 
   function drawBattleCommandGrid({ tone, offsetX, offsetY, drawW, drawH, scale, t = 1 }) {

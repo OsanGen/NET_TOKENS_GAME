@@ -25,7 +25,7 @@ Inputs:
     - `visualProfileAuto`
     - `modeTransition`
     - `frameWarnings` / `frameWarningLimit`
-    - `battleImpactBurst` / `battleImpactSide`
+    - `battleImpactBurst` / `battleImpactSide` / `battleImpactColor` / `battleImpactSeed` / `battleImpactSeverity`
     - `routePulsePhase` / `hubPulseOffset`
   - `state.seed`
   - `state.frame`
@@ -147,6 +147,7 @@ Key helper surfaces:
 - `drawSpriteMicroAtmosphere()`
 - `drawBattleFocusLanes()`
 - `drawBattleImpactStreak()`
+- `drawBattleImpactFlash()`
 - `drawBattleTurnPulse()`
 - `drawPostProcessChromaticBleed()`
 - `drawWorldScene()`
@@ -157,6 +158,10 @@ Acceptance checks:
 - Preset cycling and reduced-motion state are visibly reflected in DOM attributes and in CSS shells.
 - Modern preset frame rendering is substantially cleaner vs previous versions (no grain shimmer, no heavy glows, no busy overlay clutter).
 - Modern branch must show zero flicker/shimmer/jitter artifacts under baseline gameplay and fixed-viewport captures.
+- Battle strike impact visuals are now two-part:
+  - directional lane streak
+  - flash ring + radial wash + deterministic sparklets
+  - attacker species tint + intensity tiers derived from damage and reduced-motion-aware dampening
 - Sprite overlay fallback branch bug for glow rendering is addressed by using the same draw coordinates as image blits, preventing misaligned alpha halos.
 - One accent discipline holds:
   - decorative color is bounded to thin UI accents and chips.

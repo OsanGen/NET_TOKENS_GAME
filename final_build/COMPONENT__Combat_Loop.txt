@@ -7,6 +7,12 @@ Inputs:
 - Player input state (`input.space`, movement keys).
 - Battle menu edge inputs (`leftEdge`, `rightEdge`, `upEdge`, `downEdge`, `confirmEdge`, `cancelEdge`).
 - Active mission entities.
+- Combat rendering bridge state in `state.visual` for hit VFX metadata:
+  - `battleImpactColor`
+  - `battleImpactSeed`
+  - `battleImpactBurst`
+  - `battleImpactSeverity`
+  - `battleImpactSide`
 
 Outputs:
 - Deterministic enemy spawn cadence from queued definitions.
@@ -24,6 +30,11 @@ Behavior:
 - Enemy movement blends inertia + chase vector.
 - Player attack checks now rely on `input.space` (not stale player-state field).
 - Enemy removal updates score and objective enemy count.
+- `applyMove()` now stamps battle VFX metadata only (no gameplay math changes) after damage resolution so the visual layer can render impact streak + flash events:
+  - attacker species tint seed
+  - attack direction side
+  - damage-tiered burst/severity
+- Battle pulses (`battle`, `camera`, `split`) are still queue-based and profile-safe.
 - Battle menu navigation is axis-agnostic:
   - previous selection: Left or Up,
   - next selection: Right or Down,
@@ -41,3 +52,4 @@ Acceptance Checks:
 - Same seed + same inputs preserve spawn timing and combat outcomes.
 - In battle, `Fight/Switch/Capture` can be cycled with Left/Right as well as Up/Down.
 - Move and switch submenus can also cycle with Left/Right without breaking Enter/Space confirm.
+- Visual impact feedback appears after each attack with attacker-tinted, directional strike artifacts and scales by damage tier.
