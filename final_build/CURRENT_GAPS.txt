@@ -2,9 +2,9 @@ final_build (component | status | next action)
 - Mission Flow | done | verify all task variants remain gated by target capture in longer play sessions
 - Combat Loop | in_progress | validate battle menu navigation accepts left/right and up/down for root/fight/switch layers without regression in confirm/cancel flow
 - Hub Flow | in_progress | validate clean-hub pass (reduced overlay FX, realistic vector ship glyph, realistic planet node shading, mini-tags only) across multiple seeds for readability and lock clarity
-- Controls Overlay | in_progress | validate compact OSAN-compliant split controls layout (reduced density, lower noise, no page spill) on desktop and 390px/768px with stable `H` toggle behavior
+- Controls Overlay | done | hard-deleted noisy `#controls-foot` and `.status-strip` surfaces; split layout remains stage + side rail + bottom action rail
 - Visual Shell Wrapper | in_progress | run quick DOM smoke to validate new `.command-shell` / `.command-stage` wrappers don’t impact Playwright text capture or selector stability
-- Visual Dynamics | in_progress | confirm reduced modern hub FX still feels premium without grain artifacts; verify no visible blocky shimmer after `drawSpriteByKey` glow alignment fix and sprite scale bump
+- Visual Dynamics | in_progress | validate INTERNAL_RENDER_SCALE reset to 1 and increased sprite/planet scales remove grain while preserving readable gameplay geometry on desktop/mobile
 - Local Launch Tooling | done | stale/reused PID handling now guarded; keep using `scripts/open-game.sh` for reliable open/start on `5170`
 - Validation Loop | in_progress | run a local smoke pass through key flows (title→hub→mission→result) at normal and reduced-motion settings
 - Visual Asset Content | blocked | set `OPENAI_API_KEY` then run imagegen for upgraded `ship.png` and `planet-node.png` (photoreal-styled game sprites), then integrate and compare against current vector fallback

@@ -79,6 +79,9 @@ Outputs:
 - Visual chrome render:
   - Canvas frame shell and start CTA in DOM with modern chrome (`#game-shell`, `#start-btn`).
   - Left/right shell ornaments visible and static at the panel corners.
+- Removed legacy noise surfaces:
+  - `#controls-foot` is deleted.
+  - `.status-strip` footer is deleted.
 
 State:
 - `state.ui.helpVisible`: current manual visibility state.
@@ -128,6 +131,7 @@ Behavior:
 - `syncExternalControlsUI()` now publishes tiered visual state:
   - `data-visual-tier` for full mode/preset/profile-mode signal.
   - `data-ui-tier` for manual-vs-auto profile intent.
+- No standalone bottom shortcut/status bars are rendered; operational hints stay inside the existing mode action rail to reduce chrome noise.
 
 Behavior in-game:
 - Drawn HUD inside canvas is minimal (compact emergency strip only) while full mission/action/completion context is external.
@@ -156,6 +160,7 @@ Acceptance Checks:
 - `H` and `#controls-toggle` immediately update panel expanded state and hide/show the bottom command rail.
 - Desktop layout keeps the side telemetry rail bounded (scrollable if needed) with no page spill.
 - Bottom actions rail remains visible on one screen with reduced card height on battle mode.
+- Legacy noise surfaces (`#controls-foot`, `.status-strip`) are absent from DOM and styles.
 - Mode transitions (title→hub→mission→result) update action/objective/console text deterministically without gameplay changes.
 - `.command-shell` and `.command-stage` wrappers exist without affecting HUD synchronization.
 - At least 70% of control/status context is in DOM HUD (not canvas overlays).

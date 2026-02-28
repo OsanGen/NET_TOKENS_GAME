@@ -482,11 +482,6 @@ body[data-game-mode='battle'] #start-btn {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
-.controls-bottom .controls-foot {
-  justify-self: end;
-  text-align: right;
-}
-
 .controls-header {
   display: flex;
   align-items: center;
@@ -712,65 +707,8 @@ body[data-game-mode='battle'] #start-btn {
   padding: 0.3rem 0.42rem;
 }
 
-.controls-foot {
-  margin: 0;
-  color: var(--ink-soft);
-  font: 700 0.54rem/1.2 var(--font-ui);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 #controls-panel[data-expanded='false'] ~ #controls-bottom {
   display: none;
-}
-
-.status-strip {
-  margin: 11px auto 0;
-  width: min(100%, 1320px);
-  border-radius: 11px;
-  border: 1px solid var(--surface-edge);
-  background: linear-gradient(160deg, var(--panel), #f2f6fb);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  overflow: hidden;
-  position: relative;
-}
-
-.status-strip::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(110deg, rgba(255, 255, 255, 0), rgba(17, 24, 39, 0.06) 50%, rgba(255, 255, 255, 0));
-  transform: translateX(-110%);
-  animation: chipSweep var(--chip-sweep-speed) linear infinite;
-}
-
-.status-strip span {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.55rem;
-  border-radius: 999px;
-  border: 1px solid var(--surface-edge);
-  background: #fff;
-  padding: 0 0.62rem;
-  color: var(--ink);
-  font-size: 0.76rem;
-}
-
-.status-strip span + span::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--active-accent);
-  display: inline-block;
-  margin-right: 10px;
 }
 
 .is-critical,
@@ -856,20 +794,6 @@ body[data-game-mode='battle'] .hud-console-list li {
     width: 100%;
   }
 
-  .controls-bottom .controls-foot {
-    justify-self: start;
-    text-align: left;
-  }
-
-  .status-strip {
-    flex-direction: column;
-    gap: 7px;
-  }
-
-  .status-strip span + span::before {
-    content: none;
-  }
-
   #start-btn {
     width: calc(100% - 1.7rem);
     right: 50%;
@@ -899,9 +823,6 @@ body[data-game-mode='battle'] .hud-console-list li {
     font-size: 0.74rem;
   }
 
-  .status-strip span {
-    width: 100%;
-  }
 }
 
 @keyframes ambientDrift {

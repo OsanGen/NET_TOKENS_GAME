@@ -3,7 +3,7 @@
 
   const SIM_W = 640;
   const SIM_H = 360;
-  const INTERNAL_RENDER_SCALE = 6;
+  const INTERNAL_RENDER_SCALE = 1;
   const TARGET_FPS = 60;
   const FRAME_MS = 1000 / TARGET_FPS;
   const VIEW_MARGIN = 2;
@@ -216,8 +216,8 @@
     softLineAlpha: 0.2,
   });
 
-  const VISUAL_SPRITE_SCALE = 1.6;
-  const VISUAL_PLANET_SCALE = 1.5;
+  const VISUAL_SPRITE_SCALE = 2.2;
+  const VISUAL_PLANET_SCALE = 2.0;
 
   const BRAND_TOKENS = Object.freeze({
     COG_YELLOW: "#FFCB78",
