@@ -3026,24 +3026,15 @@
   }
 
   function drawTitle() {
-    const accent = accentColor();
     const tone = sceneTone("title");
     sceneCtx.fillStyle = tone.surface;
     sceneCtx.fillRect(0, 0, SIM_W, SIM_H);
     drawPanel(16, 16, SIM_W - 32, SIM_H - 32);
-    sceneCtx.fillStyle = tone.edge;
-    sceneCtx.fillRect(16, 16, SIM_W - 32, 4);
-    sceneCtx.fillStyle = tone.text;
-    sceneCtx.font = "700 18px Sora, sans-serif";
-    sceneCtx.fillText("NET_TOKENS_GAME", 96, 44);
-    sceneCtx.font = "700 11px Sora, sans-serif";
-    sceneCtx.fillText("Proof-first mission deck", 100, 64);
-    sceneCtx.fillStyle = tone.lead;
-    sceneCtx.fillText("Capture a target species and complete the objective.", 54, 88);
     sceneCtx.font = "8px Sora, sans-serif";
-    sceneCtx.fillText(`Seed ${state.seed}`, 24, 160);
     sceneCtx.fillStyle = tone.lead;
-    sceneCtx.fillRect(26, 158, Math.max(8, (state.frame % 180) / 9), 2);
+    sceneCtx.fillText(`Seed ${state.seed}`, 24, SIM_H - 16);
+    sceneCtx.fillStyle = tone.lead;
+    sceneCtx.fillRect(26, SIM_H - 18, Math.max(8, (state.frame % 180) / 9), 2);
   }
 
   function drawHubRouteMesh({ tone, boardX, boardY, boardW, boardH, orderedPlanets }) {

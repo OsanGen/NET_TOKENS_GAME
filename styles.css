@@ -268,6 +268,7 @@ body.motion-reduced * {
 }
 
 .shell-ornament {
+  display: none;
   position: absolute;
   width: 68px;
   height: 68px;
@@ -320,7 +321,8 @@ body.motion-reduced * {
 
 #start-btn {
   position: absolute;
-  top: 0.85rem;
+  top: auto;
+  bottom: 0.85rem;
   right: 0.85rem;
   z-index: 3;
   border: 1px solid var(--active-accent);
@@ -758,6 +760,8 @@ body[data-game-mode='battle'] .hud-console-list li {
 
   #start-btn {
     width: calc(100% - 1.7rem);
+    top: auto;
+    bottom: 0.72rem;
     right: 50%;
     transform: translateX(50%);
     border-radius: 12px;
