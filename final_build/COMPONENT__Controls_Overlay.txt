@@ -97,6 +97,11 @@ State:
 Behavior:
 - `syncExternalControlsUI()` is the single source of truth for overlay state.
 - `H` key and `#controls-toggle` route through the same visibility path and sync panel state via `data-expanded`.
+- Keyboard-first interaction contract:
+  - `Tab` cycles primary actions in document order: canvas focus → side telemetry rail → bottom command rail.
+  - Left/right arrows are the preferred traversal for `.controls-actions` siblings; up/down remain contextual for stacked mission/battle nested rows when present.
+  - Enter/Space triggers the focused action; Escape closes transient help/action tooltips without moving mode.
+  - `syncExternalControlsUI()` must keep `aria-expanded` and data attributes coherent so assistive traversal does not leave visual state behind.
 - Split layout contract:
   - right panel holds context/objective/threat/mission/console telemetry,
   - bottom rail holds mode actions + objective hint + shortcut row.
@@ -150,6 +155,10 @@ Edge Cases:
   - 390px and 768px layouts should preserve contrast for status chips and keep start CTA tappable.
   - shell ornaments remain visible and symmetric in compact layouts.
   - `body[data-motion-state="reduced"]` and desktop `prefers-reduced-motion` should suppress high-frequency effects while preserving baseline structure.
+- Focus containment and spill prevention:
+  - Horizontal action rail overflow must stay inside `#controls-bottom` without horizontal page scroll.
+  - Focus order never jumps outside the two-rail command UI while active mode is not result.
+  - On battle mode, action list focus ring should remain visible under reduced opacity shell states.
 
 Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/game.js`
@@ -157,6 +166,13 @@ Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
 
 Acceptance Checks:
+- Directional control expectation check:
+  - Primary action rail navigation: left/right arrow traverses between available actions.
+  - Up/down navigation reserved for nested or popup action contexts only; no accidental directional hijack in flat rails.
+  - Pressing Tab should not skip visible command elements on either viewport.
+- Overflow resilience:
+  - action lane width clamp never exceeds parent rail width by >2%.
+  - bottom rail remains below the 35% viewport height cap on 768px-tall displays.
 - `H` and `#controls-toggle` immediately update panel expanded state and hide/show the bottom command rail.
 - Desktop layout keeps the side telemetry rail bounded (scrollable if needed) with no page spill.
 - Bottom actions rail remains visible on one screen with reduced card height on battle mode.
@@ -174,3 +190,61 @@ Acceptance Checks:
 - Controls rail styling remains OSAN-compliant: subdued gradients, no glow-dominant effects, and content-first readability.
 - Mode/preset transitions do not introduce layout jumps; only cosmetic motion/color tokens update.
 - Visual comparison against pre-pass build is immediately noticeable without interaction.
+
+Contract invariants:
+- Action synchronization is deterministic:
+  - same mode/input state must produce same action label ordering.
+  - selected index must remain stable across frame when mode/action list unchanged.
+- Keyboard mapping invariants:
+  - flat rails use horizontal traversal first (`leftEdge`/`rightEdge`).
+  - vertical traversal only for nested/submenu contexts.
+  - confirm/cancel cannot skip or reorder action array.
+- Synchronization invariants:
+  - `syncExternalControlsUI()` must run at least once per render frame where UI-visible mode changes.
+  - if `hudNodes.controls` or target nodes are missing, HUD sync degrades safely and logs once.
+- Accessibility invariants:
+  - `Tab` remains usable and never jumps out of command rails in active gameplay modes.
+  - focus indicator is visible in both normal and reduced-motion visual states.
+
+Failure handling:
+- Missing `#controls-panel`:
+  - keep gameplay running; suppress only external telemetry rendering to that panel.
+- Missing `#controls-bottom`/`#controls-actions`:
+  - keep control state in internal model for recovery and do not throw.
+- Duplicate IDs or selector collisions:
+  - one warning per session and fallback to deterministic first-match behavior.
+- Rapid input burst:
+  - directional edges remain bounded per frame.
+  - no repeated confirm/cancel on held keys.
+
+Cross-surface consistency:
+- External overlay text payload and internal HUD text must align with gameplay state:
+  - threat score
+  - mission objective string
+  - objective progress percentage
+  - mode-specific hint string
+- Preset transitions should not create stale action nodes; rebuild action nodes after style changes if list source changed.
+- Visual chrome changes in `styles.css` must not require component-level selector refactor.
+
+Performance constraints:
+- UI sync work remains O(N) for number of HUD nodes/actions.
+- No blocking DOM layout reads in inner loops for common frame rates.
+- Action list re-render should be minimal by diffing when available; avoid full re-creation unless action payload length changes.
+
+Diagnostics and observability:
+- Debug flags:
+  - `DEBUG_UI_SYNC` logs source/action count/state.
+  - `DEBUG_ACTION_NAV` logs index transitions when navigation keys pressed.
+- Ensure `render_game_to_text().ui.metrics` remains populated for scriptability.
+- Capture and retain selector-contract snapshots in smoke outputs for regression comparison.
+
+Acceptance extensions:
+- Layout compliance:
+  - no horizontal overflow at 390x844 and 1366x768.
+  - no clipped action text when width contraction occurs (ellipsis only).
+- Interaction reproducibility:
+  - 100 fixed-frame input events reproduce same action sequence in non-random mode.
+- Focus ring continuity:
+  - entering/exiting help mode cannot blur or clear visible focus cues.
+- Reliability:
+  - one failed action node lookup does not remove entire panel state.

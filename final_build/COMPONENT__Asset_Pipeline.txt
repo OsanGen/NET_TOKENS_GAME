@@ -1,35 +1,105 @@
 Component: Asset Pipeline
 Purpose:
 Provide deterministic sprite loading with safe fallback rendering and a CogSec-aligned generation path.
+The pipeline must keep art delivery reliable across local file URLs, subpath hosting, and static CDN-like roots while never blocking gameplay when visual assets are partial or unavailable.
 
 Inputs:
 - Sprite manifest in `game.js` (`./assets/sprites/*.png`, resolved from runtime base URI).
 - Batch prompt file `tmp/imagegen/astro-gauntlet-assets.jsonl`.
 - Generation script `scripts/generate-imagegen-assets.sh`.
 - Runtime setting `state.visual.useVectorFallback`.
+- Host/runtime constraints:
+  - Browser origin policy (`file://`, `http://localhost`, GitHub Pages path prefix).
+  - Device DPR and scaling mode (`visualQualityMode`) for crisp display.
 
 Outputs:
 - `spriteRegistry` entries with `loading|ready|missing` states.
 - `spriteStatus` counters (`total`, `loaded`, `missing`) in text payload.
 - Procedural brand-safe vector draw path when sprite assets are missing or fallback mode is forced.
+- `assets` status block in `window.render_game_to_text()`:
+  - `hasSprites`
+  - `readyRatio`
+  - `active`
+  - `pendingCount`
 
 State:
 - `spriteRegistry` key -> image/status map.
 - `spriteStatus` aggregate counts.
 - `state.visual.useVectorFallback` defaults `true` until all sprite assets are confirmed ready.
+- `spriteRequestsInFlight` count.
+- `spriteLoadFailuresByKey` debug accumulator for non-fatal missing assets.
+- `state.visual.spriteScaleMode` used to normalize draw scale with pipeline quality mode.
+
+Lifecycle and flow:
+1. Parse expected key set from `ASSET_LIST`.
+2. Initialize registry entries as `loading` and expose deterministic `spriteStatus.total`.
+3. Resolve base URL once per session from script root and normalized location path.
+4. Create `Image` objects and set `src` directly to avoid fragile `HEAD` probing.
+5. On `load`, mark `ready`, cache `Image` object, increment counters.
+6. On `error`, mark `missing`, keep deterministic fallback signature, and preserve entity rendering.
+7. On each frame, HUD and render callers read registry through `getSpriteForKey()` and never mutate gameplay state.
+8. Optional explicit fallback: `setUseVectorFallback(true)` can be asserted from debug/UI for deterministic diagnosis.
 
 Pipeline Notes:
 - Manifest updated to CogSec prompt locks (token palette only, flat 2D, no glow/no heavy gradients/no 3D).
 - Generation script performs batch API render then 64x64 nearest-neighbor downscale sync.
 - Runtime sprite probing is event-driven (`Image.onload` / `Image.onerror`) and does not depend on HTTP `HEAD` requests, reducing failures across deployment contexts.
+- Base URL is intentionally derived from `window.location.pathname` and trimmed for trailing index files.
+- `assetVersion` can be incremented with prompt-set changes to force cache refresh without code changes.
+- Generation is intentionally one-way:
+  - `/tmp` prompt feed is build input.
+  - `/assets/sprites` is runtime authoritative.
+- If fallback is enabled, draw order remains stable and only visual quality changes (not rules/math).
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/generate-imagegen-assets.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css` (for fallback chip coloration and loading affordance)
+- `/Users/abelsanchez/CODEX/NEWGAME/assets/sprites/*`
+- `/Users/abelsanchez/CODEX/NEWGAME/tmp/imagegen/astro-gauntlet-assets.jsonl`
+
+Error handling strategy:
+- Individual fetch failures are isolated per key, never cascade.
+- Missing assets never fail frame render; entities are always rendered from vector fallback path with stable shape/size.
+- `spriteStatus.missing` can be monitored via `render_game_to_text()` to detect deployment regressions.
+- Repeated failures do not retry every frame; each key is attempted once per load pass and optionally retried by an explicit hot-reload path.
+- When all assets fail, runtime remains in `useVectorFallback === true` to preserve deterministic gameplay and debugability.
+
+Performance and size controls:
+- Load happens at startup, not per frame.
+- Sprites are cached in memory as HTMLImageElement references to avoid repeated decode.
+- No extra rasterization path is introduced once the sprite is ready.
+- For large sessions, missing assets are rendered procedurally with lightweight vector paths and avoid heavy raster fallback.
+- Fallback rendering is bounded by sprite scale constants from visual profile to avoid overdraw.
+
+Observability:
+- `render_game_to_text().assets` provides live load summary for smoke scripts.
+- UI may render subtle visual indicators in loading state using `.is-muted` / `.is-warning` classes without blocking input.
+- `console` diagnostics include:
+  - "sprite load complete" with counters,
+  - per-key warnings on first 3 failures only (prevent log spam).
 
 Edge Cases:
 - Missing `OPENAI_API_KEY` aborts generation with explicit error.
 - Missing sprite files do not impact gameplay determinism.
 - Partial sprite coverage remains playable due per-entity fallback rendering.
 - `file://` and subdirectory-hosted deployments can resolve sprite assets via runtime base URL normalization.
+- Mixed-generation folders with stale filenames are ignored unless the key exists in manifest.
+- If a browser blocks cross-origin image reads, registry still marks missing and fallback covers render.
+- Browser memory pressure can drop image references; registry re-verify logic should be safe in next cycle.
+- A malformed manifest entry is treated as missing sprite and does not alter gameplay state.
+- Visual profile mismatch (e.g., forcing nearest-neighbor) should still work with the same manifest.
 
 Acceptance Checks:
 - `render_game_to_text().assets` reflects current loader status.
 - Game remains playable with zero sprites available.
 - After generation, 24 files are written to `assets/sprites` at 64x64 and can be enabled by disabling vector fallback.
+
+Debug checklist:
+- Confirm all expected keys exist and are unique in manifest at startup.
+- Validate no `HEAD` network calls are made during routine load (sprite `Image` direct `src` only).
+- Confirm startup completes when `assets/sprites` is empty and fallback remains active.
+- Verify `file://` run from local bundle and `/NET_TOKENS_GAME/` GitHub Pages subpath both load the same assets.
+- Confirm `spriteStatus.ready + spriteStatus.missing` always equals `spriteStatus.total`.
+- Confirm `spriteStatus.missing` transitions down on successful regeneration without page reload.
+- Confirm no render freeze if all sprites are missing (HUD remains interactive).

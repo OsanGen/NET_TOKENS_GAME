@@ -1,0 +1,144 @@
+Security + Reliability Assertions — NEWGAME
+
+Scope
+- Static frontend repository with no backend.
+- Assertions are practical checks tied to this codebase and workflow.
+- Enforcement level:
+  - S0: must hold before release.
+  - S1: must hold before merge.
+  - S2: should hold before major visual/UX changes.
+
+Threat model
+1. Frontend script integrity risk
+- Risk: runtime script tampering or accidental edits degrade core loop.
+- Assertion:
+  - Gameplay logic remains inside committed `game.js` and deterministic APIs remain unchanged.
+  - Review diff for any external script injection patterns or untrusted eval-like behavior.
+  - S0: all scripts loaded by `index.html` must be first-party static file paths or hash-locked.
+  - S0: no `eval`, `new Function`, `Function.prototype.constructor`, or DOM clobbering sinks in runtime path.
+
+2. Input trust abuse
+- Risk: malformed or repeated keyboard events causing invalid state transitions.
+- Assertion:
+- Input handlers should clamp invalid action attempts per mode.
+- Unknown keys must be ignored or safely mapped to no-op.
+  - S0: one-key per-frame edge extraction for confirm/cancel remains edge-only.
+  - S1: directional input must clamp selection index, never allow out-of-range.
+  - S1: non-action keys in title/hub/mission/battle must not trigger state mutation.
+
+3. State corruption
+- Risk: invalid values in key state fields causing rendering failure.
+- Assertion:
+  - clamp numeric ranges for time, HP, and burst/pulse channels.
+  - Preserve null-safe fallbacks for optional mode properties.
+  - S0: all deterministic counters (frame, timer, queue lengths) must be finite non-negative ints.
+  - S1: mission/objective booleans and enums must have guarded defaults.
+  - S1: any NaN encountered in gameplay-critical fields forces soft reset branch.
+
+4. DOM contract drift
+- Risk: renaming IDs/classes breaks sync layer and automated tools.
+- Assertion:
+  - Any DOM markup change must include matching sync-target review in `game.js`.
+  - Add a one-time verification checklist after markup edits.
+  - S0: IDs listed in the interface contract (`#controls-panel`, `#controls-bottom`, `#hud-*`, `#game-canvas`) must remain stable unless migration documented.
+  - S1: any removed UI node must have equivalent functional replacement path.
+  - S1: run a selector diff check between `index.html` and HUD sync usage after each refactor.
+
+5. Asset unavailability
+- Risk: missing image files break rendering.
+- Assertion:
+  - every required sprite key should have a corresponding asset fallback plan or validated file.
+  - S0: missing sprite assets must never block mission progression.
+  - S1: loader should never request `HEAD` for required runtime decisions.
+  - S1: vector fallback branch has deterministic draw dimensions and color tokens.
+
+6. Deployment mismatch
+- Risk: Pages artifact missing required static files.
+- Assertion:
+  - deployment path includes `index.html`, `game.js`, `styles.css`, `favicon.ico`, `assets/*`.
+  - S0: GitHub Pages deployment artifacts must include exact filenames used by relative paths.
+  - S1: smoke check should assert no 404 for first paint assets and styles.
+
+Reliability objectives
+- No runtime fatal crash under standard flows.
+- Mission transition should always complete within bounded state progression.
+- Visual overlays remain legible under reduced-motion intent.
+- Local launcher start/stop should be idempotent across repeated runs.
+- Non-functional objectives:
+  - First-meaningful frame within one second on local dev machine baseline.
+  - No frame-budget regression during battle impact VFX in modern/minimal profiles.
+- Availability objective:
+  - if local launcher fails, self-heal path should start from a clean state in <=3 attempts.
+
+Operational controls
+- Visual risk controls
+  - limit overlay amplitude and effect duration by profile
+  - enforce reduced-motion and minimal profile clamps
+- Performance controls
+  - cap expensive overlays in battle bursts
+  - avoid unbounded post-process loops
+- Process controls
+  - script-level PID tracking for local server lifecycle
+  - deterministic port and process cleanup behavior
+ - Security/process controls
+   - never commit secrets into repo or local JS runtime.
+   - remove API keys from chat/external artifacts after use.
+   - rotate API credentials in key managers, never via source files.
+
+Monitoring and evidence
+- Browser console errors monitored during smoke flow.
+- Playwright run logs and artifacts in `output/web-game` kept for evidence.
+- Deployment logs from workflow preserved for rollback decisioning.
+ - Security evidence artifacts:
+   - `npm` audit (if Node dependencies are used)
+   - network request audit during smoke (ensure no unexpected domains)
+   - source-map/console baseline for production tags.
+
+Incident response playbook
+- Symptom: blank screen on boot
+  - check asset and JS load in browser network pane
+  - validate `index.html` includes `game.js` and no script syntax errors
+- Symptom: controls/text missing
+  - validate DOM nodes in markup and sync path in `game.js`
+- Symptom: noisy visual artifacts or flicker
+  - lower pulse values and switch to minimal/reduced path for diagnosis
+- Symptom: local server refuses to start
+  - execute stop script, clear stale PID file, restart with clean state
+- Symptom: impossible mission completion state (done=true without taskDone/targetDone)
+  - force single mission reset and run replay with fixed seed.
+  - verify objective gating and log last 20 battle/combat transitions.
+- Symptom: key handling stuck states
+  - dispatch blur/focus recovery path, clear edges, re-evaluate action index boundaries.
+  - re-run focused keyboard regression script.
+- Symptom: CORS / origin split-brain deployment
+  - validate base-path and asset URL resolution under file:// and subpath GitHub Pages.
+  - assert no hard-coded absolute `/assets` paths in runtime paths.
+
+Acceptance assertions by domain
+- Security
+  - no hardcoded secret usage in runtime
+  - no secret-bearing keys or tokens inside bundled runtime output.
+- Reliability
+  - at least one smoke path from title to result
+- Maintainability
+  - living docs updated when boundary changes occur
+  - each acceptance item has a corresponding line in `final_build/CURRENT_GAPS.txt` when incomplete.
+  - each component spec references changed contracts.
+
+Future controls
+- Introduce minimal automated schema check for HUD node presence.
+- Add explicit Playwright-based selector contract tests for key DOM IDs/classes.
+- Add deterministic chaos-test for input burst handling (rapid key transitions, focus loss, repeated keys).
+- Add static scan for blocked sinks in runtime code (`eval`, `setTimeout` misuse patterns, direct `innerHTML` from untrusted input).
+- Add deployment integrity checks on subpath route and file:// contexts.
+
+Hardened rollout matrix
+- Phase 1 (S1): static controls
+  - lock down keyboard edge handling and state bounds tests.
+  - add missing-asset fallback validation in automated smoke.
+- Phase 2 (S0): release-gating controls
+  - ensure all external dependencies are explicit + tracked.
+  - ensure deployment artifact integrity under dual context (`local` and `GH Pages`).
+- Phase 3 (Post-release): resilience
+  - incident drill for one blocked visual asset path.
+  - one incident drill for rapid key burst after tab-away.

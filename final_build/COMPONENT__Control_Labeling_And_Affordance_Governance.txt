@@ -1,0 +1,76 @@
+Component: Control Labeling and Affordance Governance
+Purpose:
+Standardize control labels, symbols, and interaction semantics so navigation and actions remain intuitive (especially in action-heavy contexts) while keeping gameplay behavior unchanged.
+
+Scope:
+- Runtime control text and label generation.
+- Directional affordance consistency (left/right for horizontal rails, up/down for nested contexts).
+- Prompt/cue grammar and casing for action rows, objective hints, and startup/help text.
+- Compact-mode and reduced-motion label density controls.
+
+Inputs:
+- Runtime mode and active action context:
+  - `title`, `hub`, `mission`, `battle`, `result`.
+- Control model:
+  - action labels from current mode action list.
+- Input conventions and active locale assumptions.
+
+Outputs:
+- Consistent control strings:
+  - action prompts, navigation hints, and confirm/cancel labels.
+- Consistent affordance cues:
+  - clear distinction between rail navigation, nested navigation, and commit actions.
+- Compact-label behavior:
+  - secondary hints trimmed before overflow thresholds are reached.
+
+State model:
+- No additional gameplay state.
+- Existing label/command state remains source of truth.
+- Optional render-time label policy (compact/standard/tight) derived from viewport and profile.
+
+Primary policy:
+- Horizontal navigation keys (`left/right` or mapped equivalents) control peer-level action rails.
+- Vertical navigation keys (`up/down`) control nested contexts or modal step depth only.
+- `Tab` and `Enter/Space` maintain focus traversal and explicit activation semantics.
+- Confirm/cancel text is explicit and avoids directional ambiguity.
+- Help/runtime hints are contextual and never replace primary objective/action labels.
+
+Failure modes addressed:
+- Directional mismatch causing confusing traversal.
+- Overlong/misaligned labels obscuring core objective controls.
+- Hint overload in compact viewport.
+- Modal action text changing unexpectedly between presets.
+
+Edge cases:
+- Very small viewport with reduced label width:
+  - truncate with ellipsis and preserve action verb/noun.
+- Dynamic action list changes between frames:
+  - update labels atomically to avoid mismatch with action indices.
+- Mixed input modalities:
+  - keyboard-only and quick-restart contexts keep same label semantics.
+
+Error handling:
+- Missing label content:
+  - fallback to canonical stable placeholder.
+- Unsupported control tokens:
+  - skip and keep previous known-safe label.
+- Label overflow:
+  - deterministic truncation with consistent suffix behavior.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Input_Navigation_Focus.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Key_Repeat_And_Throttle_Governance.txt`
+
+Acceptance checks:
+- UI smoke on 390x844 and 1366x768 verifies label text remains readable and no clipping in action rail.
+- Held-left/right traversal maps to expected horizontal rail changes in mixed flat menus.
+- Up/down traversal only changes nested context when applicable.
+- No duplicate action index jumps when confirm/cancel labels are rendered during held key sessions.
+
+Non-goals:
+- Full localization/locales pipeline.
+- Game mechanic or action model refactor.
+- Adding accessibility announcement engine outside existing hints pipeline.

@@ -1,0 +1,12 @@
+component,risk,impact,likelihood,mitigation,owner,review_cadence
+Core Runtime,DOM contract drift (selector mismatch),High,High,selector constants + startup asserts,Game Core,Every change touching UI sync
+Core Runtime,Game logic regression from visual edits,High,Medium,visual-only guards + explicit acceptance checks,Game Core,Per release
+Controls Overlay,Viewport overflow/clipping,Medium,High,compact layout rules + responsive checks,Frontend,Weekly manual checks
+Visual Post Process,Frame drops from effects,Medium,Medium,effect caps + reduced-motion branch,Frontend,Per feature release
+Visual Post Process,Over-animated unreadable HUD,Medium,Medium,contrast-safe motion profile + clamp alpha,Frontend,Per release
+Assets,Missing sprite references,High,Medium,asset manifest + smoke render tests,ArtOps,On asset updates
+Deployment,Pages missing required files,High,Medium,pre-publish artifact checklist,Ops,Each deploy
+Local Tooling,Stale PID/port conflict,Medium,High,idempotent stop/start scripts,Operations,Each local cycle
+Automation,Playwright selector drift,High,Medium,selector contract docs + assertion tests,QA,Per merge
+Documentation,Spec drift after refactor,Medium,High,gap/component updates required in workflow,Docs,Per release
+Enterprise Readiness,No rollback traceability,High,Low,runbook + archived evidence,Ops,Per release

@@ -1,0 +1,146 @@
+Component: Battle Impact Visuals
+Purpose:
+Provide deterministic, readable, non-noisy hit feedback for combat actions while preserving gameplay neutrality.
+
+The component is the visual-only damage feedback layer on top of existing battle logic.
+
+Responsibilities:
+- render directional hit streak aligned with attacker side.
+- render radial impact flash/ring with controlled decay.
+- render deterministic micro-particles (sparklets/crackle) only when configured.
+- clamp hit VFX intensity and duration to preserve readability.
+- honor reduced-motion and minimal profile constraints.
+
+Inputs:
+- Damage event metadata from battle resolution:
+  - `damage` scalar from `applyMove`.
+  - `attackerSpecies` and derived species tone.
+  - `state.visual.battleImpactBurst`
+  - `state.visual.battleImpactSide`
+  - `state.visual.battleImpactColor`
+  - `state.visual.battleImpactSeed`
+- Runtime profile and tone state:
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfile`
+  - `state.visual.visualProfileAuto`
+  - `tone` (scene tone resolver)
+- Frame timing:
+  - `state.frame`
+  - pulse phase from active VFX queue.
+- Input reduction state:
+  - `prefersReducedMotion()`
+  - `resolveActiveVfxProfile()`
+
+Outputs:
+- One visual pass in battle scene render:
+  - streak (`drawBattleImpactStreak`) updated with stronger stroke and side-aware direction.
+  - flash/ring (`drawBattleImpactFlash`) with tone and species tint.
+  - optional deterministic sparklets around impact point.
+- No gameplay values mutated.
+
+State:
+- Draw-only, ephemeral impact metadata.
+- Values persist only for impact lifetime and reset on:
+  - impact completion
+  - non-battle mode entry
+  - game reset/session reset.
+
+Data contracts:
+- Color:
+  - Primary: `state.visual.battleImpactColor` if present
+  - Secondary: `tone.secondary`
+  - Accent: `tone.accentPulse`
+- Scale:
+  - baseScale = `0.62 + min(1, burst/20)`
+  - sideOffset = `battleImpactSide === "player" ? -1 : 1`
+- Duration:
+  - short window preferred (≈0.18s to 0.35s visual life).
+  - strict alpha clamp to avoid full-frame occlusion.
+
+Behavior model:
+- On resolved attack (post-damage path):
+  - queue existing pulses:
+    - `battle` pulse scale based on damage
+    - `camera` micro-recoil pulse
+    - optional `split` for high damage
+  - write impact metadata used by render pass.
+- Render pass order:
+  1) draw battle lanes / focus lines
+  2) draw directional streak
+  3) draw impact flash/ring (and sparklets when severity threshold met)
+  4) keep battle core UI and focus markers
+- Motion handling:
+  - reduced-motion: lower alpha and disable sparklets
+  - minimal profile: fewer particles and shorter life
+  - normal profile: optional full three-layer effect.
+
+Rendering constraints:
+- Coverage ceiling:
+  - combined overlays from impact VFX should never exceed roughly 18% effective panel-likeness in a frame.
+- Contrast:
+  - never fully obscure actor silhouettes or objective text.
+- Clarity:
+  - streak stroke remains single continuous visible path, not point-noise.
+- Determinism:
+  - same seed + attack sequence => same visual pattern.
+
+Failure modes:
+- Missing impact color:
+  - fallback to `tone.accentPulse`.
+- Invalid side:
+  - default centralized streak with zero side bias.
+- Replayed turns:
+  - stale impact metadata must clear before returning to non-battle or after timer expiry.
+
+Error handling:
+- Invalid metadata (NaN burst/side):
+  - sanitize to defaults and continue.
+- Sprite-less battle lane:
+  - impact effect still renders on geometric canvas.
+- Zero or negative burst:
+  - skip flash/streak draw but still decay lifecycle cleanly.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css` (for palette token semantics only)
+
+Helper surfaces:
+- `applyMove(...)` metadata writer
+- `drawBattle(...)` call site for VFX invocation
+- `drawBattleImpactStreak(...)`
+- `drawBattleImpactFlash(...)`
+- `queueVfxPulse(...)`
+- `resolveVfxBurstIntensity(...)` (or equivalent scale helper if present)
+- `prefersReducedMotion(...)`
+
+Acceptance checks:
+- Low-damage hit:
+  - visible but restrained streak + ring.
+- High-damage hit:
+  - stronger burst and optional extra arc/secondary particles.
+- Enemy and player side hits:
+  - direction indicator flips correctly.
+- Reduced-motion:
+  - no distracting flicker or excessive particle counts.
+- Visual-only invariants:
+ - `applyMove` numeric outcomes (HP, logs, queues) unchanged by VFX metadata.
+
+Security/Rework boundaries:
+- No new external inputs or data models.
+- VFX metadata is ephemeral and session-local.
+- No extra network side effects.
+
+Quality metrics:
+- Impact readability:
+  - first frame at impact must cross minimum contrast threshold vs nearby background.
+- Temporal profile:
+  - no lingering >0.35s at full-alpha.
+- Artifact budget:
+  - no ring or streak dominates frame more than 18% equivalent occlusion.
+- Determinism:
+  - repeated seed replays retain same effect timing/placement.
+
+Non-goals:
+- Changing combat damage formulas.
+- Introducing new species/attack categories.
+- Reworking battle AI.

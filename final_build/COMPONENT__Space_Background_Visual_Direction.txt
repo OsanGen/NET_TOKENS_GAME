@@ -1,0 +1,119 @@
+Component: Space Background Visual Direction
+Purpose:
+Provide a coherent astronomical visual system (ships, planets, starfields, nebula bands) that matches a “space combat command” tone and reduces “grainy/retro” perception without changing gameplay logic.
+
+Scope:
+- Scene-level visual language only: background layers, parallax behavior, color depth, and composition rhythm.
+- No gameplay math or collision logic changes.
+
+Inputs:
+- Scene identity:
+  - `state.mode`
+  - `state.uiTitle`
+  - `state.currentMission?.name`
+  - scene tone resolver outputs (`tone`).
+- Visual controls:
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfile`
+  - `state.visual.visualProfileAuto`
+- Engine context:
+  - mission progress (`state.missionTimer`, `state.waveIndex`, objective status)
+  - battle status (`state.inBattle`, `state.battle.turnSide`)
+- Canvas metrics:
+  - `SIM_W`, `SIM_H`
+  - canvas dimensions and DPR.
+
+Outputs:
+- Space-like background stack in all non-result modes:
+  - deep backdrop gradient field
+  - soft star distribution
+  - planet silhouettes/small bodies
+  - occasional subtle orbital accents
+- Visual hierarchy where gameplay entities are top visible over background.
+- Non-noisy profile transitions between mission/hub/battle.
+
+State model:
+- Render-time only (no gameplay state mutation).
+- Optional animated backdrop offsets and phase counters.
+- Palette/tone state derived from active profile and mode.
+
+Behavior and render contract:
+- Title:
+  - restrained star curtain + static horizon feel.
+- Hub:
+  - broader parallax and clearer planet node silhouettes for navigation readability.
+- Mission:
+  - increased distant depth and subtle motion banding to imply travel.
+- Battle:
+  - tighter visual contrast and stable tactical contrast around entities.
+- Result:
+  - calm reduced-motion fallback and minimal background activity.
+
+Core visual layers:
+- Deep atmosphere gradient (base field).
+- Thin star points (low density, low temporal shimmer).
+- Planetary mass layer(s) with controlled alpha and edge softness.
+- Optional comet/arc hints tied to mission progression.
+- Ambient dust/nebula accents for cinematic profiles only.
+
+Quality/declarative policy:
+- Modern profile:
+  - low grain, low scanline, low flicker
+  - high legibility and clear subject separation
+- Minimal profile:
+  - deterministic minimal motion, no high-density star noise.
+- Cinematic/Neon:
+  - richer background accents only after legibility checks pass.
+
+Constraints and anti-degradation rules:
+- No full-screen grain overlays.
+- No large moving grain/noise layers.
+- No starfield density that obscures pathing or objective text.
+- All layers must preserve target contrast minimum for ships/planets.
+- No color clashing with HUD chips and action rails.
+
+Coupling interfaces:
+- Shares tone with `Brand Scene Engine` palette contract.
+- Uses `resolveModeVfxProfile()` and `drawModeEffectsEnvelope()` hook points.
+- Works with `Visual_Post_Process` overlay budgets.
+
+Failure modes:
+- Over-saturated nebula steals contrast from entities.
+- Parallax drift creates spatial mismatch between mode background and gameplay geometry.
+- Background motion overload during reduced-motion contexts.
+
+Error handling:
+- If tone data is missing:
+  - fallback to neutral ink field and limited stars.
+- If animation timing invalid:
+  - zero delta fallback to static backdrop snapshot.
+- If profile unsupported:
+  - defer to `modern` profile.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/assets/sprites/*`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Brand_Scene_Engine.txt`
+
+Acceptance checks:
+- Visual perception check:
+  - same-mode captures should feel immediately less “grainy” and clearly spatial.
+- Contrast check:
+  - ships and planets remain dominant subjects at all tested viewport sizes.
+- Flow check:
+  - mission path/hud remains readable with star/planet layering active.
+- Mode clarity check:
+  - users can distinguish mission and battle contexts in 2-3 seconds.
+- Reduced-motion safety:
+  - static layers still preserve depth with no flicker.
+
+Performance checks:
+- Background draw budget remains within normal frame envelope.
+- Background quality automatically lowers if `Frame Timing & Performance Budget` signals pressure.
+- No full-frame blur/softening from background accumulation.
+
+Non-goals:
+- 3D engine migration.
+- Physics-driven orbital simulation.
+- External space-asset streaming at runtime.

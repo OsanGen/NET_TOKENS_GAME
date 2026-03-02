@@ -1,0 +1,73 @@
+Component: Deployment Routing and Path Governance
+Purpose:
+Ensure deployment pathing and route handling are deterministic across root and subpath hosting so the game renders consistently without broken links or fallback breakage.
+
+Scope:
+- Asset and script path resolution in deployed and local contexts.
+- Subpath compatibility checks for GitHub Pages (`/NET_TOKENS_GAME/`) and nested hosting.
+- Runtime route behavior for startup, restart, and hard reload flows.
+
+Inputs:
+- Hosting context:
+  - root deployment (`/`), subpath deployment (`/NET_TOKENS_GAME/`), and local file-based run.
+- Route-sensitive fetch behavior:
+  - browser requesting `index.html`, `styles.css`, `game.js`, `/assets/*`.
+- Runtime state transitions:
+  - start/restart/reload and mode transitions.
+
+Outputs:
+- Stable asset URL resolution for all required public artifacts.
+- Successful reload behavior with identical game bootstrap state on root and subpath.
+- Deterministic path fallback behavior where needed.
+
+State model:
+- No gameplay state changes.
+- Deployment path policy remains configuration-based:
+  - expected route set
+  - allowed fallback set
+  - route test matrix.
+
+Core contracts:
+- Absolute-to-relative path policy:
+  - scripts/styles/images referenced in a way that resolves in both root and designated subpath.
+- Route entry contract:
+  - direct route load resolves to SPA-like single-page entry (or safe fallback to root route equivalent).
+- Asset contract:
+  - all required assets available at deployment route prefix.
+- Reload contract:
+  - `Ctrl+R` / refresh re-initializes exactly once and continues to support `render_game_to_text` in under one frame.
+
+Failure modes addressed:
+- Broken `href`/`src` paths when deployed below root.
+- 404s for sprite or favicon under subpath.
+- Route drift after redeploy causing console errors.
+- Cache stale path assumptions between deploy runs.
+
+Error handling:
+- Missing route artifact:
+  - route failure emits explicit error marker and surfaces in smoke harness.
+- Broken relative path assumption:
+  - mark as critical mismatch and require route policy update.
+- Redeploy mismatch:
+  - fail checks, skip nonessential runs, and request route artifact remap.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/.github/workflows/deploy-pages.yml`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Deployment_Resilience.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Pages_Deployment.txt`
+
+Acceptance checks:
+- Route checks under root and `/NET_TOKENS_GAME/` return 200 for:
+  - `/`, `/styles.css`, `/game.js`, `/assets/sprites/ship.png`, `/favicon.ico`.
+- `index.html` loads without mixed-path errors in console.
+- Refresh/reload flow works from both root and subpath.
+- `window.render_game_to_text()` is callable after reload in both contexts.
+
+Non-goals:
+- Multi-page app routing overhaul.
+- Build pipeline migration to non-GitHub Pages platforms.
+- Server-side rendering changes.

@@ -1,0 +1,98 @@
+Component: Accessibility and Readability Governance
+Purpose:
+Keep the interface understandable at a glance and operable with predictable keyboard behavior for non-technical users, while preserving the modern visual direction.
+
+This component governs contrast, text hierarchy, focus visibility, and motion safety without changing gameplay rules.
+
+Scope:
+- UI text and control readability
+- Focus and keyboard access in canvas-adjacent command areas
+- Motion safety in reduced-motion contexts
+- Visual hierarchy consistency across themes and viewports
+
+Inputs:
+- DOM state:
+  - `#controls-panel`, `#controls-bottom`, `#controls-actions`, `#controls-objective`
+  - `#hud-*` nodes
+  - `#start-btn`, `#controls-toggle`
+- Render state:
+  - `state.mode`
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfile`
+  - `state.visual.visualProfileAuto`
+- Body attributes:
+  - `data-game-mode`
+  - `data-visual-preset`
+  - `data-motion-state`
+- User input:
+  - keyboard traversal events
+  - focus transitions on Tab/Enter/Arrow keys.
+
+Outputs:
+- Consistent readable hierarchy:
+  - title/hint -> action row -> telemetry/context.
+- Predictable focus affordance at command rails.
+- Reduced visual fatigue via safer motion cadence.
+- Reduced reliance on color-only meaning.
+
+Controls:
+- Text sizing and font weight tokens for command and metric content.
+- Contrast and stroke tokens for `is-critical`, `is-warning`, `is-ready`, `is-muted`, `is-digital`.
+- Focus ring visibility and focus-order rules in CSS.
+- Reduced-motion adaptation path for shell and animation layers.
+
+State:
+- No gameplay state mutation.
+- Ephemeral accessibility state:
+  - last focus source (keyboard vs pointer),
+  - current focus mode (`panel`, `actions`, `rail`),
+  - warnings for invalid/hidden focus targets.
+
+Behavior contract:
+- Focus:
+  - Tab must always enter an in-page interactive control set.
+  - focus rings must remain visible under modern/minimal motion constraints.
+- Readability:
+  - status/action text remains legible at 390x844.
+- Motion:
+  - prefers-reduced-motion and `data-motion-state="reduced"` force near-static decorative motion.
+- Spatial:
+  - no clipping of help/action text in fixed-height bottom rails.
+
+Decision and fallback:
+- If focus target disappears:
+  - move focus deterministically to nearest parent control container.
+- If text contrast fails:
+  - move to next safer token profile until deterministic recovery succeeds.
+- If ARIA state missing:
+  - log a single recoverable warning and continue; do not block gameplay.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Input_Navigation_Focus.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Controls_Overlay.txt`
+
+Acceptance checks:
+- All primary commands are keyboard-reachable in desktop and mobile layouts.
+- Bottom actions remain visible and readable without zoom.
+- Focus never becomes invisible after any key transition in active modes.
+- No key phrase depends only on color for meaning.
+- Reduced-motion preference keeps text and contrast stable.
+- No critical control text appears below 16px effective size at tested resolutions.
+
+Quality checks:
+- Contrast ratio checks for high-importance text against nearby backgrounds in captured modern/minimal modes.
+- Focus ring visibility checks in both normal and reduced-motion states.
+- Overflow checks on action labels and objective text at 390px width.
+
+Failure modes:
+- Keyboard dead-ends due to tabindex/DOM order mismatch.
+- Overcrowded action labels obscuring action semantics.
+- Motion glare reducing text contrast.
+
+Non-goals:
+- Full WCAG audit implementation across all external pages.
+- Audio/haptic accessibility additions.
+- Gameplay semantics changes.

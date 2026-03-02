@@ -1,0 +1,161 @@
+Repository Interface Contracts — NEWGAME
+
+Purpose
+- Define stable runtime/UI/deployment contracts that must remain valid during refactors, visual upgrades, and release operations.
+- Reduce regression risk by keeping machine-checkable expectations in one place.
+
+Scope and governance
+- Contract owners:
+  - Runtime: `game.js`
+  - UI shell: `index.html`, `styles.css`
+  - Orchestration: `scripts/open-game.sh`, Playwright harness scripts
+  - Deployment: `.github/workflows/deploy-pages.yml`
+- Severity:
+  - S0 (must not change without migration + evidence): API payload fields, HUD selector names, gameplay key behavior, deployment file set
+  - S1 (requires migration notes): theme tokens, debug output format, nonessential acceptance fields
+- Version:
+  - Current contract version: `1.0.0`
+  - Breaking changes require contract version bump and migration note
+
+1) Runtime public API contract
+- `window.render_game_to_text(): object` (typed payload returned)
+  - Availability: global after `game.js` bootstrap.
+  - Responsibility: deterministic runtime snapshot for automation and UI QA.
+  - Stability: stable top-level keys and required subfields.
+  - Required shape (S0 minimum):
+    - `version: string`
+    - `ts: number`
+    - `mode: "title" | "hub" | "mission" | "battle" | "result"`
+    - `state: object`
+      - `frame: number >= 0`
+      - `seed: number`
+      - `mission?: object`
+      - `battle?: object`
+      - `player?: object`
+      - `messages?: string[]`
+    - `ui: object`
+      - `metrics?: object`
+      - `brandAudit?: object`
+    - `assets?: object`
+      - `ready?: number`
+      - `missing?: number`
+      - `total?: number`
+      - `readyRatio?: number`
+  - Determinism requirement:
+    - repeated calls with no intervening state mutation should return stable payload shape/content for unchanged values.
+  - No-throw behavior:
+    - function should not throw in standard mode transitions.
+
+- `window.advanceTime(ms: number): void`
+  - Availability: global after `game.js` bootstrap.
+  - Responsibility: deterministic time stepping for smoke/replay.
+  - Contract:
+    - accepts finite non-negative millisecond number
+    - clamps pathological values into safe upper bound
+    - mutates only simulation time/state, not DOM contract definitions
+
+2) Keyboard/interaction contract
+- Allowed key surface:
+  - Global keys: `F`, `V`, `P`, `H`, `Escape`, `Tab`, `Enter`, `Space`, arrow keys, WASD/JKL where mapped.
+- Contract:
+  - key mapping is mode-aware and deterministic
+  - unknown keys are no-ops or safe fallback
+  - confirm/cancel actions are edge-aware where required
+  - directional navigation may vary by layout mode but must remain deterministic for a given mode/context
+- Keyboard safety:
+  - no key input may set out-of-range UI indices
+  - stale key-up/blur states are cleared
+  - repeated keydown without keyup must not accumulate unbounded intent
+
+3) DOM contract for sync engine
+- Required selectors:
+  - `#game-shell`, `#game-canvas`
+  - `#hud-mode-title`, `#hud-objective-title`, `#hud-objective-main`
+  - `#hud-mode-status`, `#hud-missions`, `#hud-threat`, `#hud-intro`, `#hud-objective`, `#hud-console`
+  - `#controls-panel`, `#controls-bottom`, `#controls-actions`, `#controls-objective`, `#controls-toggle`
+  - `#start-btn`, `#game-container`
+- Body data attributes used by visual sync:
+  - `data-game-mode`, `data-visual-preset`, `data-visual-tier`, `data-ui-tier`, `data-motion-state`
+- Contract:
+  - selectors written by runtime must exist before write
+  - no duplicate ids among contract nodes
+  - mode transitions update the contract nodes atomically per frame
+- Deprecated/deleted UI:
+  - `#controls-foot` and footer status strip nodes are removed and must stay removed unless reintroduced with matching runtime branch updates.
+
+4) Visual contract
+- Source of truth:
+  - `styles.css` custom properties and component selectors.
+- Contract:
+  - visual presets map predictably via body attributes
+  - tone shifts remain deterministic across mode transitions
+  - contrast/readability remain at least baseline for default profile
+- Modern/minimal profile constraints:
+  - limited glow/scanline density
+  - no sustained flicker during static states
+- Required observability:
+  - `ui.brandAudit` includes tone and profile data used by smoke checks.
+
+5) Deployment contract
+- Published artifact set:
+  - `index.html`, `game.js`, `styles.css`, `favicon.ico`, `assets/*`, `.github/workflows/*`
+- Contract:
+  - assets served through same path family (subpath-safe)
+  - no external runtime bootstrap dependencies
+  - no runtime secrets in bundle
+- Rollout expectation:
+  - deploy smoke can fetch:
+    - `/`
+    - `/styles.css`
+    - `/game.js`
+    - `/assets/sprites/ship.png`
+    - `/favicon.ico`
+
+6) Asset contract
+- Expected registry:
+  - all renderer keys referenced by game logic must map to manifest keys and sprite files.
+- Runtime fallback:
+  - vector fallback path is active when images missing
+  - gameplay logic, collision, and timers remain unchanged on fallback
+- Counter integrity:
+  - `assets.loaded + assets.missing === assets.total` for load status telemetry
+
+7) QA contract
+- Must exercise deterministic transition path:
+  - title -> hub -> mission -> battle -> result
+- Must keep final UI constraints:
+  - no duplicated/removed required nodes without contract migration
+  - objective and action visibility remains on-viewport
+- Required evidence for each large change:
+  - payload snapshot
+  - viewport smoke log
+  - console error check
+
+8) Error contract
+- Bootstrap failure:
+  - clear failure mode in console, no silent partial state
+- DOM contract miss:
+  - continue safely with degraded HUD updates
+  - warning emitted once per session
+- Payload parse failure:
+  - downstream tooling must treat as S1 contract violation and raise audit issue
+
+9) Validation and enforcement
+- Contract validation artifacts:
+  - `FINAL_BUILD_MANIFEST.json`
+  - `CURRENT_GAPS.txt`
+  - component specs in `final_build/`
+- Pre-change checklist:
+  - validate this contract before refactor merge
+  - run quick smoke for DOM and payload shape
+  - update `COMPONENT_*` docs if any IDs/contracts moved
+- Post-change requirements:
+  - if S0 contract changed, document migration and update acceptance tests
+
+Compatibility policy
+- Breaking changes:
+  - require explicit migration note in `CURRENT_GAPS.txt`
+  - version bump in this contract and linked component docs
+- Non-breaking changes:
+  - additive fields only, monotonic defaults, and no behavior inversion
+

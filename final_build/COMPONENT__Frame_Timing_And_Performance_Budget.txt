@@ -1,0 +1,118 @@
+Component: Frame Timing and Performance Budget
+Purpose:
+Keep the game deterministic while preserving responsiveness at higher load and preventing UI/render stalls across desktop and constrained devices.
+
+This component owns frame-rate expectations, input tick behavior, and render-pass budget controls without modifying gameplay outcomes.
+
+Inputs:
+- Runtime tick inputs:
+  - `state.frame`
+  - `state.lastFrameMs`
+  - RAF/canvas loop timing deltas
+- Visual/performance settings:
+  - `state.visual.renderQualityMode`
+  - `state.visual.scaleMode`
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfile`
+  - optional `state.visual.visualProfileAuto`
+- Asset/readiness state:
+  - `spriteStatus`
+  - vector fallback mode
+- Interaction:
+  - input frequency and key repeat behavior
+- Viewport:
+  - canvas size
+  - viewport dimensions and DPR
+  - reduced-motion preference.
+
+Outputs:
+- Stable frame loop execution with bounded drop behavior.
+- Gameplay simulation cadence remains deterministic under fixed `advanceTime`.
+- Predictable render budget:
+  - full frame draw completes within target envelope for normal mode.
+- Dynamic fallback:
+  - profile shifts to lighter quality when frame quality constraints indicate risk.
+
+State:
+- No gameplay rule mutations.
+- Timing state includes:
+  - `lastFrameMs`, `frameTimeBudget`, frame warnings counters
+  - `state.visual.frameWarnings` and limit logic.
+- Optional runtime diagnostics:
+  - perf counters for draw stage duration
+  - mode-specific post-process time slices.
+
+Core behaviors:
+- Deterministic cadence:
+  - when driven by `advanceTime(ms)`, state progression remains input/time deterministic.
+- Frame-guarded quality:
+  - if heavy mode/profile pushes budget, clamp pulses/effects and/or reduce motion.
+- Load-aware quality:
+ - `resolveVisualQualityMode()` uses frame pressure and auto-mode intent to select `quality/balanced/performance`.
+- No dropped mode transitions:
+ - mode changes are executed immediately even if perf warning is active.
+- Visual workload control:
+ - modern and minimal modes default to tighter post-processing pass.
+
+Performance budgets (initial policy):
+- Target budget envelope:
+  - normal desktop: 16.7ms per frame for 60 FPS target
+  - acceptable degradation: single-frame spikes allowed only under transition/capture
+ - warnings:
+  - repeated frame warning windows can trigger mild profile backoff
+- Warning thresholds:
+  - persistent large-frame warnings indicate over-budget shell/pulse activity.
+
+Quality fallback behavior:
+- If warning counters exceed threshold:
+  - reduce high-cost visual branches (noise, scanline complexity, particle intensity)
+  - disable non-critical micro-effects first
+  - preserve core draw and readability.
+- No auto-rollback of gameplay parameters (HP, damage, timers).
+
+Integration points:
+- `resolveVisualQualityMode()`:
+  - authoritative selection for runtime quality intent.
+- `applyVfxProfileOverrides()` (or equivalent):
+  - runtime cap of visual intensity.
+- `drawPostProcess()`:
+  - budget-aware branching and pulse gating.
+- Input loop:
+  - prevent repeated confirm/cancel processing from held keys without requiring deterministic state resets.
+
+Error and recovery:
+- High frame jitter detected:
+  - force deterministic fallback profile for the next N frames.
+- Recurrent rendering exceptions:
+  - degrade only the visual layer and keep state machine running.
+- Invalid timing values (NaN/delta spikes):
+  - sanitize delta and continue with safe delta envelope.
+
+Acceptance checks:
+- `advanceTime` replay loops remain deterministic with fixed input.
+- 1366x768/390x844 smoke captures complete without repeated dropped-frame lockups.
+- No frame-warning explosion in static title/hub states under modern/minimal preset.
+- No full frame stalls on battle impact bursts (visual-only path).
+- Frame budget counters reflect actual warnings via `render_game_to_text()` if exposed.
+- UX remains readable during perf downgrades.
+
+Observability:
+- Expose frame warning telemetry and active profile in debug output/diagnostic summaries.
+- Tie `frameWarnings` and profile shifts to reproducible seed-based repro cases.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+
+Cross-component consistency:
+- Aligns with:
+  - `COMPONENT__Visual_Dynamics.txt`
+  - `COMPONENT__Visual_Post_Process.txt`
+  - `COMPONENT__Deployment_Resilience.txt`
+  - `COMPONENT__Validation_And_Runbook` / `COMPONENT__QA_Harness_And_Runbook.txt`.
+
+Non-goals:
+- Rewriting the core architecture for multi-threaded rendering.
+- Adding WebGL/canvas alternative renderer.
+- Introducing gameplay scaling logic.

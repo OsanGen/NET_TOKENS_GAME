@@ -1,12 +1,18 @@
 Component: Local Launch Tooling
 Purpose:
-Provide a reliable local open/start flow for the game so browser and Playwright can connect consistently.
+Provide a deterministic and idempotent local run loop so tooling (developer browser + Playwright harness) can always connect.
+This component is the deployment reliability seam for local QA and must survive stale pid states, process reuse, and rapid restart cycles.
 
 Inputs:
 - Shell runtime with `bash`, `python3`, `curl`, and `open`.
 - Optional env vars:
   - `GAME_PORT` (default `5170`)
   - `GAME_HOST` (default `127.0.0.1`)
+- Optional workflow inputs:
+  - `AUTO_OPEN_BROWSER` (default `1`)
+  - `AUTO_VERIFY` (default `1`)
+  - `LAUNCH_RETRY_MAX` (default `12`)
+  - `LAUNCH_RETRY_DELAY_MS` (default `250`)
 
 Outputs:
 - Running static server process for workspace root.
@@ -16,21 +22,73 @@ Outputs:
   - `/tmp/astro_gauntlet_<port>.log`
 
 State:
-- `scripts/open-game.sh` checks PID file, validates that PID belongs to `python3 -m http.server` on the requested port, verifies active listener, then starts server if needed.
+- `scripts/open-game.sh` checks PID file, validates that PID belongs to `python3 -m http.server` on requested port, verifies active listener, and starts server if needed.
 - `scripts/open-game.sh` clears stale/reused PID files before launch decisions.
-- `scripts/stop-game.sh` kills tracked PID only when it is the expected http server process, otherwise it clears stale PID state.
+- `scripts/stop-game.sh` kills tracked PID only when it matches expected `python3 -m http.server` signature; otherwise it clears stale pid state.
+- `scripts/open-game.sh` emits resolved session id in log:
+  - URL
+  - port
+  - command fingerprint (script+args+cwd)
+  - pid source (`fresh-start` / `reused-running` / `reaped-and-restarted`)
+- `scripts/stop-game.sh` is idempotent: repeated calls do not produce errors or false negatives.
 
 Edge Cases:
-- Stale PID file with dead process: start script restarts cleanly.
-- Stale PID file with reused live process: start script ignores stale PID and starts correct server.
-- Missing PID file: stop script exits safely without failure.
-- Slow startup: start script retries readiness checks before reporting failure.
+- Stale PID file with dead process: script reaps pid and starts fresh.
+- Stale PID file with reused live process mismatch: start script ignores pid file and resolves correct server for host/port.
+- Missing PID file: stop script exits safely with warning tone and non-error status.
+- Slow startup: readiness checks retry with bounded backoff before erroring.
+- Multiple concurrently started instances:
+  - last writer lock can still operate safely on same pid file without corrupting active session.
+- Permission issues on `/tmp`:
+  - failure is surfaced with actionable error and exits non-zero.
+- Host mismatch (`0.0.0.0` vs `127.0.0.1`):
+  - URL emitted should match resolved bind/host context.
 
 Dependencies:
 - `/Users/abelsanchez/CODEX/NEWGAME/scripts/open-game.sh`
 - `/Users/abelsanchez/CODEX/NEWGAME/scripts/stop-game.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/ONE_COMMAND_DOC_AUDIT.sh` if invoked as smoke pre-check
+- Playwright harness run scripts relying on `5170`.
+
+Command Contracts:
+- `./scripts/open-game.sh [port] [host]`
+  - Starts server and prints URL
+- `./scripts/stop-game.sh [port] [host]`
+  - Stops only matching managed process
+- Optional manual smoke:
+  - `curl -fsS http://127.0.0.1:<port>/index.html`
+
+Lifecycle and recovery:
+- Open:
+  1. Resolve/normalize host+port.
+  2. If pid exists: validate process signature and socket ownership.
+  3. If invalid: remove pid file and continue.
+  4. If valid: skip spawn.
+  5. Otherwise spawn `python3 -m http.server`.
+  6. Retry readiness probe until listener replies.
+  7. Open browser tab/URL when configured.
+- Stop:
+  1. Resolve target pid file.
+  2. Validate process class.
+  3. Kill process with bounded wait and force-kill fallback only when required.
+  4. Clear pid/log artifacts.
+  5. Report completed cleanup with code.
+
+Observability & logs:
+- Logs are timestamped and include start/stop deltas.
+- Keep console output deterministic to support Playwright harness parsing.
+- When `AUTO_VERIFY=1`, run a local readiness ping before exit and print one-line health verdict.
 
 Acceptance Checks:
 - `scripts/open-game.sh` exits `0` and prints open URL.
 - `curl -I http://localhost:5170` returns `200`.
 - Playwright probe can `goto` the URL without `ERR_CONNECTION_REFUSED`.
+- Repeated open/stop (5 cycles) on same port leaves no leftover pid process.
+- PID belongs to expected executable before stop; if not, stop script refuses kill and records stale-cleanup only.
+- Startup under existing valid server returns without killing or replacing active process.
+
+Operational safeguards:
+- Never bind to privileged ports.
+- Always keep server root at repo root (`$(pwd)` at startup).
+- Keep launch scripts in executable-safe mode and readable by non-root accounts.
+- Do not inject credentials or remote endpoints into local launcher flow.

@@ -1,0 +1,70 @@
+Component: RNG and Seed Governance
+Purpose:
+Ensure all pseudo-random behavior is deterministic, reproducible, and tied to explicit seed lifecycle transitions so visual and gameplay outcomes can be replayed exactly for the same inputs.
+
+Scope:
+- Seed initialization and reseeding boundaries.
+- All random decision points in gameplay and visual effects.
+- Seed propagation across mode transitions and restart paths.
+- Replay parity impact of seeded randomness.
+
+Inputs:
+- Initial seed source at bootstrap/session start.
+- Deterministic seed overrides during replay scripts.
+- Replay/QA harness timeline progression and mode transitions.
+- Any seeded RNG helper in the runtime.
+
+Outputs:
+- Stable random stream state with deterministic consumption order.
+- Reproducible mission and battle outcomes for fixed seed + fixed input timeline.
+- Explicitly logged seed transitions at defined boundary events.
+
+State model:
+- Existing `state.seed` and any internal seed cursor/`rngState` fields.
+- No new gameplay fields unless already represented by engine RNG state.
+- Boundary-specific reseed rules are explicit and centralized.
+
+Rules:
+- The runtime must not consume entropy from non-deterministic sources during gameplay loops.
+- Every seeded operation must use the same RNG helper and advance consistently.
+- Mission/battle seeds should derive from documented transition rules only:
+  - initial seed,
+  - deterministic restart seed policy,
+  - allowed mode-specific seed advancement points.
+- `advanceTime(ms)` and rendering-only loops do not alter gameplay seeds.
+- Visual effect noise that is non-gameplay-critical should either be fully deterministic under test mode or marked as cosmetic-only and explicitly bounded.
+
+Failure modes addressed:
+- Non-replayable gameplay from ad-hoc `Math.random`.
+- Seed changes triggered by timing/render path.
+- Divergence between UI rendering runs with identical seed and timeline.
+- Implicit reseed during transition cleanup.
+
+Error handling:
+- Invalid seed input:
+  - fallback to safe default and emit one warning.
+- Seed underflow/overflow:
+  - normalize through deterministic clamping/modulo and continue.
+- RNG cursor desync:
+  - mark checkpoint mismatch, log seed state, and fail replay audit.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Core_Runtime.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Deterministic_Replay_Contract.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Lifecycle_Reset_And_Mode_Transitions.txt`
+
+Acceptance checks:
+- Two fixed-seed replays remain byte-identical in required checkpoints after identical input timelines.
+- Manual seed override produces expected divergent but deterministic outcomes.
+- Restart and mode transition paths keep seed continuity/boundary behavior unchanged per design.
+- No production path reads global/system randomness for gameplay decisions.
+
+Observability:
+- Include seed cursor/seed in debug logs at deterministic checkpoints.
+- Persist seed/mode checkpoints for replay artifacts.
+
+Non-goals:
+- Gameplay logic redesign or probability balancing.
+- Introducing alternate RNG backends without full replay migration.
+- UI-only decoration randomness without deterministic test mode.

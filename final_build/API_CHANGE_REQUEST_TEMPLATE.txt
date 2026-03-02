@@ -1,0 +1,80 @@
+API Change Request Template — NEWGAME
+
+Use this template before changing any runtime contract or DOM/API surface.
+
+1) Request ID
+- [unique id]
+
+2) Change summary
+- [What is changing]
+
+3) Request type
+- [Backward-compatible / Breaking / Internal-only]
+
+4) Affected public contract
+- Runtime APIs:
+  - `render_game_to_text` [change details]
+  - `advanceTime` [change details]
+- DOM surface:
+  - selector(s): [list]
+- Visual/input contract:
+  - keys and behavior impacted
+
+5) Domain impacted
+- Gameplay
+- UI/controls
+- Post-process visuals
+- Tooling/automation
+- Deployment/docs
+
+6) Problem solved
+- [rationale and expected business/user outcome]
+
+7) Risk assessment
+- User impact:
+- Backward compatibility impact:
+- Runtime stability risk:
+
+8) Detailed design
+- Files to change:
+- Data model impact:
+- Flow impact:
+
+9) Acceptance criteria (must pass)
+- Functional:
+  - [ ] title->hub transition preserved
+  - [ ] HUD selector presence maintained
+  - [ ] API response shape still consumable by automation
+- Visual:
+  - [ ] critical flows remain readable
+- Operational:
+  - [ ] no deploy artifact omissions
+
+10) Migration / compatibility plan
+- If breaking:
+  - fallback strategy
+  - temporary compatibility mapping
+  - deprecation window
+
+11) Validation plan
+- Manual QA:
+- Automation:
+- Screenshots/logs:
+
+12) Documentation updates
+- `final_build/CURRENT_GAPS.txt`
+- `final_build/BUILD_MAP.txt`
+- relevant `COMPONENT__*.txt`
+- any component-specific specs
+
+13) Go-live criteria
+- [ ] docs updated
+- [ ] smoke path passes
+- [ ] deployment rollback tested in plan
+
+14) Approver
+- [name]
+- [date]
+
+15) Rollback trigger
+- [conditions that require immediate revert]

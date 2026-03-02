@@ -1,0 +1,107 @@
+Component: Lifecycle Reset and Mode Transition Governance
+Purpose:
+Ensure mode transitions and state resets are deterministic and side-effect free, preventing lingering VFX/UI state from contaminating subsequent screens.
+
+This component owns transition boundary contracts only; it does not change gameplay mechanics.
+
+Scope:
+- Mode transitions:
+  - `title`, `hub`, `mission`, `battle`, `result`.
+- Reset boundaries for visual and UI state.
+- Session-level lifecycle and hard reset surfaces.
+
+Inputs:
+- Runtime state object (`state`) including:
+  - `state.mode`
+  - `state.frame`
+  - `state.seed`
+  - `state.visual` (pulse profiles, profile intent, transition state)
+  - `state.battle` (impact, turn, combat phase)
+  - `state.mission`, `state.ui`.
+- UI/render sync hooks:
+  - `syncExternalControlsUI()`
+- Input and key transition triggers (start, mission start, battle end, return to hub, restart).
+- Asset and canvas readiness from loader.
+
+Outputs:
+- Deterministic post-transition state envelope:
+  - no stale impact metadata
+  - no stale action index carryover
+  - no stale pulse state bleeding into next mode
+  - HUD remains synced with active mode.
+
+State model:
+- No new gameplay state persisted beyond existing `state` fields.
+- Transition-specific state fields and flags are reset deterministically per mode boundary.
+
+Transition contract:
+- Enter mode:
+  - compute destination-mode entry actions.
+  - clear non-transition metadata (`battleImpact*`, transient prompts, help throttles if stale).
+  - synchronize shell/profile attributes in one pass.
+- Exit mode:
+  - finalize mode-specific timers/effects.
+  - ensure all temporary overlays are either committed or fully cleared.
+
+Rules (strict):
+- All transient combat VFX markers:
+  - reset at non-battle entry and on combat queue completion.
+- Mode-specific UI overlays:
+  - reset only through mode entry points, not frame-by-frame drift.
+- Visual profile transitions:
+ - profile switching never mutates deterministic game mechanics.
+- Mission completion and mission restart:
+ - clear objective progress artifacts that are not persisted for next mission instance.
+
+Failure modes addressed:
+- Stale burst pulses in new battles.
+- Action index continuing from prior mode.
+- Help/console hints persisting when no longer relevant.
+- Modal/overlay state lingering into result screens.
+
+Error handling:
+- If transition input arrives during active confirm/cooldown:
+  - queue transition intent and apply at legal transition edge.
+- If transition preconditions invalid:
+  - keep state unchanged and log one-time warning.
+- If required cleanup field is missing:
+  - fallback to safe defaults and continue execution.
+
+Acceptance checks:
+- Deterministic transition replay:
+  - same seed + same input timeline produce same mode entry values across repeated runs.
+- `title→hub→mission→battle→result` with hard boundary checks:
+  - no stale battle impact artifacts in mission/hub after combat.
+- No action index carryover across mode changes.
+- Repeated quick restarts do not duplicate startup effects.
+- Shell/pulse/UI attributes always reflect current mode after transition.
+
+Observability:
+- Expose transition checkpoints through debug logs:
+  - `mode_transition` marker
+  - `reset: visual` marker
+  - `reset: ui` marker
+- Include transition timing in replay logs for deterministic diffing.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Core_Runtime.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Combat_Loop.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Controls_Overlay.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Validation_And_Runbook.txt` (or QA Harness equivalent)
+
+Implementation checkpoints:
+- Transition boundary checks should happen only in deterministic transition functions (mode entry/exit), not per-frame UI polling.
+- Reset fields are centralized to avoid distributed cleanup logic and reduce branch-specific drift.
+- Any future mode additions must define explicit reset contracts here and in `game.js` transition handlers before merge.
+
+Validation sequence:
+1) Run deterministic fixed-seed mode loops with repeated entry/exit.
+2) Compare render payload snapshots at each mode boundary.
+3) Confirm no persistent impact metadata across boundary.
+4) Confirm no duplicate startup pulses after restart.
+
+Non-goals:
+- Combat formula rework.
+- Networked multiplayer transitions.
+- Introducing new game modes.

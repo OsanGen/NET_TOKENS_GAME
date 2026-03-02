@@ -1,0 +1,75 @@
+Component: Fallback Rendering Policy
+Purpose:
+Define deterministic fallback behavior when raster assets are missing or delayed so the game remains visually stable, playable, and artifact-minimal without changing gameplay logic.
+
+Scope:
+- Sprite missing/malformed handling.
+- Vector fallback path governance.
+- Canvas draw-time substitution rules.
+- Fallback visibility and contrast verification.
+
+Inputs:
+- `state.assets` readiness counters.
+- Asset load outcomes (`ready`, `missing`, `total`, `readyRatio`).
+- Sprite lookup keys used by renderer.
+- Runtime mode and zoom/policy variables.
+
+Outputs:
+- Render path decision per asset request:
+  - Raster asset when ready.
+  - Deterministic fallback shape/mesh when missing.
+- Stable gameplay timing and collision unaffected by fallback choice.
+- UI visibility fallback indicators (if any) without impacting core controls.
+
+State model:
+- No gameplay state changes required.
+- Read-only use of existing render/asset metadata.
+- Fallback mode is transient and derived from asset status at draw time.
+
+Fallback decision contract:
+- If raster lookup succeeds:
+  - draw raster at mode-scaled size, preserving intended visual tone.
+- If raster lookup fails:
+  - render deterministic fallback primitive for that sprite key.
+  - keep fallback color/shape stable by key to avoid flicker.
+- If rendering context indicates low performance:
+  - reduce optional effect-heavy decoration before fallback escalation.
+
+Quality constraints:
+- Fallback visuals must remain readable at all supported resolutions.
+- Fallback should not introduce false hitbox cues (collision remains unchanged).
+- Repeated missing assets should not cause log spam.
+- No gameplay state updates tied to missing assets.
+
+Failure modes addressed:
+- Entire scene appears blank due to missing one key.
+- Sprite shape mismatch causing low-clarity visuals.
+- Runtime spam from repeated fallback warnings.
+- Flicker between fallback/raster during late asset load.
+
+Error handling:
+- Missing asset warning: one structured warning per unique key per session.
+- Unknown asset key: fallback to generic icon with safe neutral color.
+- Critical missing base asset set:
+  - continue with fallback and emit degraded-mode marker for QA.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Asset_Pipeline.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Asset_Content.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+
+Acceptance checks:
+- Missing-random-asset simulation does not crash render loop.
+- Core entities remain visible and distinguishable under fallback.
+- `render_game_to_text().assets` counters remain consistent with fallback usage.
+- No visual regression in collision geometry or control timing.
+
+Governance:
+- Missing assets are technical debt signals, not hard failures.
+- Any new art import that changes sprite key contracts must update Asset Pipeline matrix and this policy test scope.
+
+Non-goals:
+- Asset production pipeline upgrades.
+- Gameplay rebalance tied to sprite appearance.
+- External CDN dependency for runtime visuals.

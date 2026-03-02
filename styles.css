@@ -172,8 +172,8 @@ body.motion-reduced * {
   position: relative;
   z-index: 1;
   width: min(96vw, 1520px);
-  margin: 16px 0 18px;
-  padding: clamp(12px, 1.5vw, 20px);
+  margin: 10px 0 16px;
+  padding: clamp(10px, 1.3vw, 18px);
   border-radius: var(--radius-xl);
   border: 1px solid var(--surface-edge);
   background: var(--panel);
@@ -191,36 +191,6 @@ body.motion-reduced * {
   pointer-events: none;
   border: 1px solid rgba(17, 24, 39, 0.06);
   background: linear-gradient(130deg, rgba(255, 255, 255, 0) 12%, rgba(17, 24, 39, 0.04) 50%, rgba(255, 255, 255, 0) 86%);
-}
-
-.hero-band {
-  margin: 0 auto clamp(12px, 1.6vw, 22px);
-  max-width: 1320px;
-}
-
-.brand-kicker {
-  margin: 0;
-  font: 700 0.72rem/1 var(--font-display);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--active-accent);
-}
-
-.hero-band h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.6rem, 2.8vw, 2.4rem);
-  line-height: 1.05;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-
-.hero-subtext {
-  margin: 0;
-  max-width: 80ch;
-  font-size: clamp(0.84rem, 1.14vw, 0.95rem);
-  color: var(--ink-soft);
 }
 
 #play-layout {
@@ -762,14 +732,6 @@ body[data-game-mode='battle'] .hud-console-list li {
     padding-bottom: 16px;
   }
 
-  .hero-band {
-    text-align: center;
-  }
-
-  .hero-subtext {
-    max-width: none;
-  }
-
   #play-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -811,10 +773,6 @@ body[data-game-mode='battle'] .hud-console-list li {
 }
 
 @media (max-width: 560px) {
-  .hero-band h1 {
-    font-size: clamp(1.36rem, 9vw, 1.8rem);
-  }
-
   .hud-chip-row {
     gap: 0.24rem;
   }

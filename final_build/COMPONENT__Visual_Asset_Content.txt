@@ -1,45 +1,136 @@
 Component: Visual Asset Content
 Purpose:
-Deliver CogSec-compliant 64x64 sprite assets and keep gameplay readable while generation is pending.
+Own the art content generation and integration path for all visible world entities, while preserving gameplay values and deterministic behavior.
+The component’s business goal is visual confidence: spaceships and planets must read as real objects at normal desktop and mobile capture distances without changing movement, balance, or mission logic.
 
 Inputs:
-- Prompt manifest: `tmp/imagegen/astro-gauntlet-assets.jsonl` (24 entries).
-- Generator: `scripts/generate-imagegen-assets.sh`.
-- Imagegen CLI: `/Users/abelsanchez/.codex/skills/imagegen/scripts/image_gen.py`.
-- Env requirement: `OPENAI_API_KEY`.
+- Prompt manifest: `tmp/imagegen/astro-gauntlet-assets.jsonl` with fixed 24 entries.
+- Asset generator script: `scripts/generate-imagegen-assets.sh`.
+- Runtime imagegen CLI:
+  - `/Users/abelsanchez/.codex/skills/imagegen/scripts/image_gen.py`
+- Runtime env:
+  - `OPENAI_API_KEY` (required for generation)
+  - `IMAGEGEN_CONCURRENCY` (default 1 for reliability)
+  - optional deterministic seed override (`IMAGEGEN_SEED`, if used in future prompts)
+- Runtime base state:
+  - `state.visual.useVectorFallback`
+  - `state.visual.renderQualityMode`
+  - `VISUAL_SPRITE_SCALE`, `VISUAL_PLANET_SCALE`
 
 Outputs:
-- Regenerated PNG assets for:
-  - 24 sprite manifests from `tmp/imagegen/astro-gauntlet-assets.jsonl`,
-  - 16 alien entities (including the eight regenerated ones),
-  - astronaut,
-  - enemy,
-  - beacon,
-  - probe,
-  - planet node,
-  - ship.
-- 64x64 nearest-neighbor sprite files in `assets/sprites/`.
-- Runtime-visible sprite rendering that is large enough to make generated art legible in active gameplay scenes.
+- Updated asset bundle in `assets/sprites/`:
+  - 24 generated sprite files in 64x64 target footprint.
+  - deterministic filenames matching manifest keys.
+- Updated generation record:
+  - prompt usage summary
+  - generation success/fail counts
+  - manifest/sync coverage count
+- Runtime path outcome:
+  - `spriteRegistry` entries with resolved `ready`/`missing` state.
+  - `render_game_to_text().assets` counters and boolean readiness flags.
+- Human-visible outcome:
+  - ships and planets appear materially larger and readable under the same scale factors.
+  - rendered ships maintain coherent form (hull, cockpit, thruster, engine bloom where present in prompt) rather than dot-like blocks.
 
-Current Status:
-- Prompt manifest currently targets CogSec Pastel style locks:
-  - token palette only,
-  - thin INK outlines,
-  - flat 2D,
-  - no glow/heavy gradients,
-  - no 3D cues.
-- Live generation completed using provided `OPENAI_API_KEY` with low parallelism:
-  - `IMAGEGEN_CONCURRENCY=1`
-  - missing 8 prompts regenerated and synced successfully
-  - raw and synced outputs now both at 24 files.
+State model:
+- Manifest-driven expected keys:
+  - `assets/sprites/*.png` keys declared in `game.js`.
+- Runtime registry state:
+  - `spriteRegistry[key] = { image, status, error?, loadedAt? }`
+  - `spriteStatus = { total, loaded, missing, ready, pending }`
+- Runtime policy:
+  - `state.visual.useVectorFallback` defaults true until sprite readiness criteria are met for launch-critical keys.
+- Visual scaling state:
+  - `state.visual.spriteScaleMode` and scene render scale influence world size only.
 
-Runtime Fallback Strategy:
-- `state.visual.useVectorFallback` forces brand-safe vector rendering until regenerated sprites are available.
-- Existing sprite loader remains active and deterministic.
-- Runtime render sizing is decoupled from physics radii, allowing larger sprite presentation without changing gameplay collision or timing.
+Generation workflow:
+1. Prepare prompt file:
+   - `tmp/imagegen/astro-gauntlet-assets.jsonl` is the canonical batch list.
+   - prompts target token-based cohesive palette and low-chaos sci-fi profile.
+2. Run generator:
+   - `scripts/generate-imagegen-assets.sh` with low concurrency to avoid API throttling.
+   - output artifacts are produced into temporary staging paths first.
+3. Normalize assets:
+   - convert/resize to 64x64 while preserving nearest-neighbor intent for crisp edges where visual mode requires it.
+   - copy outputs into `assets/sprites/` on key match.
+4. Sync and verify:
+   - ensure manifest-key coverage is exact or intentionally partial with fallback behavior.
+   - update render counters in telemetry fields.
 
-Acceptance Checks:
- - After API key is set and generation is rerun with throttled concurrency, batch generation succeeds and syncs 24 sprite files.
-- Runtime can switch from vector fallback to generated sprites without logic changes.
-- All generated assets remain readable at 64x64 scale and palette-compliant.
-- In hub, mission, and battle views, entities and portraits are visibly larger than previous baseline and artwork details are distinguishable at a glance.
+Content requirements:
+- Visual style profile:
+  - OSAN-compliant tokenized color set.
+  - no heavy gradients if the target profile is modern/minimal.
+  - readable contrast at 64x64 preview scale.
+- Visual realism target:
+  - ship silhouettes must include readable geometric cues (nose, aft, cockpit).
+  - planet nodes should show visible shading/rings/feature lines without full painterly noise.
+- Technical constraints:
+  - no dependency on external model call at runtime.
+  - no gameplay logic dependency on exact image colors or dimensions.
+
+Integration contract:
+- `initializeSpriteRegistry()` sets up expected registry entries at startup.
+- Each key attempts direct `Image` load via resolved base URL path.
+- Missing images stay safe under `drawSpriteByKey()` vector fallback path.
+- No blocking behavior in gameplay logic on image load failure.
+- Art replacement from vector ↔ raster path does not affect collisions, hit tests, HP, cooldowns, mission gates, or RNG sequence.
+
+Scaling and readability strategy:
+- Readability is achieved through render scale constants, not through logic cheats:
+  - increase `VISUAL_SPRITE_SCALE` / `VISUAL_PLANET_SCALE` in render path,
+  - maintain collision radii and gameplay constraints unchanged,
+  - avoid temporary blur/noise hacks.
+- Large viewport objective:
+  - 1366x768: entities should occupy expected visible area in mission/battle
+  - 390x844: ships still discernible by shape and role (friend/enemy markers preserved).
+
+Quality and compliance checks:
+- Prompt/asset parity checks:
+  - key count must equal manifest count or explicit accepted delta.
+  - all filenames resolve to canonical runtime keys.
+- Visual pass checks:
+  - compare sprite sheet snapshots by sprite category (ship, planet, NPC, beacon/probe, icons).
+  - no pure-noise textures for flagship entities in new generation pass.
+- Gameplay invariance checks:
+  - no changes to `state.mission` transitions for same seed and input sequence.
+  - no frame or objective drift when swapping raster/vector mode.
+
+Edge cases:
+- Missing API key:
+  - generation blocked with explicit error; runtime unaffected due fallback.
+- Partial generation:
+  - partial coverage accepted with degraded but playable mode; HUD indicates asset readiness.
+- Corrupt file:
+  - treat as missing and continue with vector fallback.
+- Incompatible subpath hosting:
+  - base URL normalization ensures `assets/sprites` resolution under `/NET_TOKENS_GAME/`.
+- Path drift:
+  - if file names mismatch manifest keys, generation and sync should abort with manifest diff output.
+- DPR and scaling edge:
+  - no interpolation artifacts from oversized canvas upscales when `INTERNAL_RENDER_SCALE` is at baseline.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/generate-imagegen-assets.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/tmp/imagegen/astro-gauntlet-assets.jsonl`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css` (for sprite-dependent visual emphasis)
+- `/Users/abelsanchez/CODEX/NEWGAME/assets/sprites/*`
+
+Acceptance checks:
+- 24 generated files exist and load through `spriteRegistry` without duplicate/missing-key regressions.
+- Generated ship/planet sprites are visually larger and more readable than previous baseline with default UI scale.
+- Runtime can toggle vector fallback on demand without mission state impact.
+- No low-res “pixel soup” on ship visuals in 390px/1366px captures when fallback is off.
+- `render_game_to_text().assets.readyRatio` tracks completion and never drops during stable sessions.
+- No dependency on external runtime image CDN calls; all assets are local static.
+
+Debug / hardening checklist:
+- Verify manifest key list integrity and ordering hash.
+- Confirm generation script writes deterministic file names and refuses unexpected extras.
+- Confirm `spriteStatus.total = spriteStatus.loaded + spriteStatus.missing`.
+- Run visual QA pass:
+  - mission map (ship + planet node),
+  - battle with at least one player/enemy/target frame,
+  - hub movement around all active nodes.
+- Confirm no mission-completion regressions on generation/no-generation matrix (fallback vs raster path).

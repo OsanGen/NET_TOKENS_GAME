@@ -1,29 +1,128 @@
 Component: Brand Scene Engine
 Purpose:
 Enforce OSAN/CogSec pastel brand constraints consistently across all gameplay scenes.
+This component is the authoritative visual identity layer: scene selection, tone selection, and brand audit metadata while gameplay remains untouched.
 
 Inputs:
-- Token map (`BRAND_TOKENS`).
+- Static token map (`BRAND_TOKENS`).
 - Scene recipe map (`SCENE_RECIPES`).
-- Current mode + mission task for accent selection.
+- Runtime visual state:
+  - `state.visual.visualProfile`
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfileAuto`
+  - `state.visual.modeTransition`
+  - `state.visual.accentLead`
+  - `state.visual.contrastMode`
+  - `state.visual.brandModeBlend`
+- Runtime mode/task context:
+  - `state.mode`
+  - `state.mission.task`
+  - `state.mission.hostilePressure`
+- Accessibility signal:
+  - `prefers-reduced-motion`
+- External brand scope reference:
+  - `/Volumes/data/Online/OSAN Visual System v2 — CogSec Pastel (46).txt`
 
 Outputs:
-- Scene-safe palette application for title/hub/mission/result.
+- Scene-safe palette application for `title`, `hub`, `mission`, `battle`, `result`.
 - Single accent lead per scene via `pickAccentLead()`.
-- Brand metadata in text state (`ui.brand`, `ui.brandAudit`).
+- Brand metadata in text state:
+  - `ui.brand`
+  - `ui.brandAudit`
+- DOM-ready profile hooks:
+  - `data-visual-preset`
+  - `data-game-mode`
+  - `data-motion-state`
+  - `data-visual-tier`/`data-ui-tier`
+- Consistent color token use for render functions and shell styling.
 
 State:
 - `state.visual.accentLead`
 - `state.visual.contrastMode`
 - `state.visual.useVectorFallback`
+- `state.visual.paletteVersion`
+- `state.visual.brandWarnings`
+- `state.visual.brandModeBlend`
+- `state.visual.modeToneSignature` (computed scene signature)
+- `state.visual.pendingBrandAssertions` (dev-only audit flags)
 
-Rules Enforced:
-- White/FOG dominant fields.
-- INK for typography and outlines.
-- Accent discipline (single lead accent).
-- No glow and no heavy gradient effects.
+Brand invariants:
+- White/FOG must remain the dominant base visual field in normal UI mode.
+- INK reserved for readable structure and text separators.
+- One lead accent at a time, with thin secondary accents.
+- No glow/gradient overuse in `modern` and `minimal`; cinematic bloom only when explicitly selected and safe.
+- Brand selection is deterministic and replay-stable for identical mode/mission context.
+
+Scene resolution pipeline:
+- `resolveSceneToneForMode(mode)` returns base tone family for the current mode.
+- `resolveSceneAccentForContext(mode, missionTask, threatLevel)` merges:
+  - base scene accent
+  - mission/task semantic accent
+  - bounded threat-aware accent only when needed
+- `resolveVisualPresetKey()` and `resolveActiveVfxProfile()` gate tone intensity and motion.
+- `applyToneToScene()` pushes computed tone into scene draw calls and shell class contracts.
+- Tone is recalculated in draw/update cadence, not cached across asynchronous mode changes.
+
+Composition and render governance:
+- Drawers consume tone tokens only:
+  - background fill
+  - shell panel strokes
+  - status chip and button accents
+  - mission HUD indicators and threat markers
+- Reduced-motion mode forces static or low-frequency updates for animated tone elements.
+- `ui.brandAudit` includes:
+  - active mode
+  - active profile
+  - active lead token
+  - assertion booleans (`reducedMotion`, `sceneToneStable`, `contrastBand`, `tokenCoverageOk`)
+- Unknown/missing recipe fallback: deterministic neutral tone (`COG_BLUE`) with warning.
+
+Failure modes and controls:
+- Missing token references:
+  - fallback to last valid tone to avoid render flicker.
+  - append non-fatal warning to `state.visual.brandWarnings`.
+- Missing scene recipe:
+  - default to `title`-safe tone and log once.
+- Invalid mission/task values:
+  - force neutral accent without exception.
+- Palette saturation overrun:
+  - clamp at profile-defined saturation limits.
+- Transition conflict:
+  - blend factor prevents abrupt color pops during mode changes.
+
+Mode-specific mappings:
+- `title`:
+  - strongest CTA contrast and low ambient motion.
+- `hub`:
+  - high readability, stable board colors, restrained orbit accents.
+- `mission`:
+  - balanced narrative contrast and objective-first readability.
+- `battle`:
+  - threat-aware accenting with readability-first clamp and no unreadable saturation.
+- `result`:
+  - minimal motion, clear end-state hierarchy, neutral post-battle shell.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Post_Process.txt`
 
 Acceptance Checks:
-- Rendered scenes remain legible and token-consistent.
-- `ui.brandAudit` reports compliance booleans during runtime.
-- Future scene additions can select accent by recipe without color drift.
+- Token fidelity:
+  - every scene draws using declared tokens only.
+  - no undefined token fallback except deterministic defaults.
+- Determinism:
+  - same mode/task/seeds produce identical tone signature and `ui.brandAudit` values.
+- Reduced-motion compliance:
+  - scene tone motion decreases in `minimal` and reduced-motion state without structural layout loss.
+- Accessibility:
+  - text contrast remains readable at both desktop and mobile breakpoints.
+- Audit continuity:
+  - `ui.brandAudit` exists every frame and indicates active profile and scene tone.
+
+Quality and maintenance:
+- Keep color decisions in centralized recipes; avoid ad-hoc color literals in rendering functions.
+- Add scene-token regression checks into enterprise acceptance runbooks when adding new modes.
+- Track brand drift via periodic diff of token output from key mode transitions.
+

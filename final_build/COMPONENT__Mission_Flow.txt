@@ -8,17 +8,41 @@ Inputs:
 - Mission seed and task template from `makeMission`.
 - `input.space` for mission interactions.
 - Player/entity positions and per-frame deterministic updates.
+- Current mission phase mode from `state.mode`.
+- Movement envelope from `state.player`, `state.hub` transitions.
+- UI mission hint state:
+  - `state.ui.hint`
+  - `state.ui.autoHelpUntilFrame`
+- Battle bridge status:
+  - `state.battleActive`
+  - `state.mission?.enemyCount`
+- Visual profile:
+  - `state.visual.renderQualityMode`
+  - `state.visual.visualProfileAuto`
+- Time/sequence signals:
+  - `state.frame`
+  - `state.tick`
 
 Outputs:
 - Objective progress updates:
   - `targetCaptured`, `targetRequired`, `taskDone`, `done`.
 - Success transition through unified gate:
   - `if (targetDone && taskDone) endMission(true)`.
+- Exported completion payload via `render_game_to_text().mission`:
+  - `id`, `task`, `targetCaptured`, `targetRequired`, `taskDone`, `done`, `phase`.
+- HUD/UX intent:
+  - mission objective text and completion cues for external control surfaces.
 
 State:
 - `state.mission.task.id`: `collect | clear_wave | hold_sector | activate_beacon | escort_probe`.
 - `state.mission.extractionZone` for escort tasks.
 - `state.objective.current` fields for task and capture progress.
+- `state.mission.phase`: `setup | running | resolve | done`.
+- `state.mission.seedSignature`: deterministic replay key for objective generation.
+- `state.mission.progressByTask` runtime accumulator (counter + max).
+- `state.mission.blockedByBattleCooldown` guard preventing double-completion.
+- `state.mission.lastProgressAt` for anti-stale debug.
+- `state.mission.completeAtFrame` populated at first success.
 
 Task Rules:
 - `collect`: target captured count meets target required.
@@ -26,14 +50,105 @@ Task Rules:
 - `hold_sector`: hold progress reaches target value plus target capture.
 - `activate_beacon`: beacon activated with `Space` in range plus target capture.
 - `escort_probe`: probe attached and player overlaps extraction zone plus target capture.
+- All tasks are gated by `targetDone` unless explicitly mission-typed and mission variant states indicate explicit override.
+- Task progress updates are monotonic, and should never decrement.
+- Mission objective transitions preserve deterministic `makeMission` seed outputs.
+- Objective completion matrix:
+  - `completionGate = targetDone && taskDone`.
+  - Transition to `done` only on first frame where `completionGate === true`.
+  - Reset gate state on mission bootstrap and prevent retroactive re-entry.
+
+Task-phase contract:
+- `setup`: initialize objective counters, cache deterministic objective snapshot and mission seed signature.
+- `running`: evaluate target/task transitions only after all required predicates are ready.
+- `resolve`: lock in final objective text, prevent additional state mutation in mission counters.
+- `done`: publish final snapshot for UI and external telemetry; suppress duplicate `endMission` calls.
+
+Temporal control:
+- Input sampling occurs before mission rule evaluation so `Space` edge effects are respected.
+- Contact-based task transitions use `state.frame` and `state.lastProgressAt` to suppress duplicate increments in same frame.
+- `hold_sector` holds are edge-tolerant:
+  - entering range increments slowly only when position predicate remains true.
+  - leaving range decays by hold decay rules, never negative.
 
 Edge Cases:
 - No direct mission success shortcuts in probe entity update.
 - Beacon activation no longer bypasses unified completion gate.
 - Enemy neutralization uses live `input.space` and cooldown.
+- Task timers are not introduced; objective timers are only computed from spatial/contact events.
+- If mission payload payload is malformed/unknown, mission resolves as running with explicit `done:false` and logs warning.
+- If `state.mission.task.id` is unknown, task rules reject completion and continue deterministic fallback objective.
+- If player respawn/teleport re-enters extraction area, completion requires explicit state condition re-evaluation and single fire completion.
+- Escort task requires active target capture to be preserved through completion; no late target capture after task done.
+- `clear_wave` with no enemies at spawn should fail fast to explicit invalid mission state instead of instantly completing.
+- `hold_sector` must decay timer only through active hold window logic, not frame count alone.
+- `activate_beacon` requires both range and explicit interact input edge in same frame when cooldown allows.
+- Mission type missing/invalid:
+  - set `taskDone = false`, keep `done = false`.
+  - log warning and continue mission with fallback neutral objective copy.
+- If mission is resumed from paused state, do not reset `state.mission.lastProgressAt` unless full mission reentry happens.
+- Objective geometry invalid (missing extraction zone for escort):
+  - mission remains running; `completeAtFrame` must remain unset.
+
+Acceptance model:
+- Monotonicity:
+  - `targetCaptured` never decreases.
+  - `taskDone` transitions only false→true once per mission.
+- Idempotency:
+  - calling `endMission` twice in adjacent frames produces one completion event.
+- Replay safety:
+  - all objective transitions remain seed+input deterministic.
+- Safety under load:
+  - mission updates cannot block frame loop if objective entities are absent.
 
 Acceptance Checks:
 - Escort missions are reachable under player movement clamps.
 - Beacon missions can complete when in-range `Space` is used.
 - Clear-wave missions support practical enemy elimination with ion burst.
 - Objective payload remains consistent for Playwright assertions.
+- Progression deterministic checks:
+  - identical seed + same input timeline produces identical `state.mission` timeline snapshots.
+  - `targetDone` and `taskDone` become true in lockstep only on completion frame.
+- Mode/phase boundary checks:
+  - `clear_wave` requires both enemyClear and targetDone before `resolve`.
+  - `escort_probe` requires probeAttached + inExtraction + targetDone same frame window.
+- Boundary checks:
+  - `done` false when in-progress, and set once.
+- UX gating:
+  - mission start/resolve actions reflected in external controls without gameplay drift.
+  - no mission text flicker during mode transitions.
+- Completion safety:
+  - mission completion transitions once per mission.
+  - completion never triggers outside mission mode.
+- Replayability:
+  - mission seeds must reproduce same required counts and extraction geometry.
+- Visual parity:
+  - modern/minimal preset changes only affect presentation; they do not change task counters.
+- Debug visibility:
+  - expose mission counters through text payload for smoke checks:
+    - `render_game_to_text().mission.taskDone`
+    - `render_game_to_text().mission.targetCaptured`
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+
+Risk controls:
+- Do not alter mission IDs or required counts in mission templates without seed signature recalculation.
+- Keep mission acceptance logic in one shared branch to avoid divergent completion behavior.
+- Ensure completion checks run before HUD mutation to avoid stale text lag during transitions.
+
+Observability:
+- Add lightweight event tracing counters:
+  - `missionStartFrame`
+  - `missionGateAtFrame`
+  - `missionCompleteFrame`
+  - `missionTaskDoneFrame`
+- Expose these values in debug payload when `mission.mode === "mission"` for smoke scripts.
+
+Maintenance notes:
+- New mission task types must include:
+  - seed key
+- deterministic progress function
+  - objective payload fields in `render_game_to_text().mission`.
+- New task variants require acceptance checks added to the deterministic mission replay matrix.

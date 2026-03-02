@@ -1,0 +1,147 @@
+Component: Resolution & Clarity Pipeline
+Purpose:
+Own the visual crispness strategy that governs in-world scale, raster quality, and anti-grain behavior without changing gameplay or simulation outputs.
+
+The component exists to eliminate perceived blur by controlling:
+- internal logical resolution
+- final upscale policy
+- sprite/planet scale constants
+- smoothing policy per mode/profile
+- anti-flicker overlay policy in mission-critical screens.
+
+Scope:
+- Visual rendering quality only.
+- Does not modify hit detection, movement, combat math, RNG, or control semantics.
+
+Inputs:
+- Simulation surface constants:
+  - `SIM_W`
+  - `SIM_H`
+  - `INTERNAL_RENDER_SCALE`
+- Runtime visual state:
+  - `state.visual.renderQualityMode`
+  - `state.visual.scaleMode`
+  - `state.visual.visualProfile`
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfileAuto`
+- Sprite scale knobs:
+  - `VISUAL_SPRITE_SCALE`
+  - `VISUAL_PLANET_SCALE`
+- Drawing context parameters:
+  - `ctx.imageSmoothingEnabled`
+  - DPR and canvas dimensions
+- Profile-specific mode hooks from `resolveActiveVfxProfile()` and `resolveVisualQualityMode()`.
+
+Outputs:
+- Crisp final frame output in `#game-canvas`.
+- Stable geometric proportions for ships, enemies, and planets at standard desktop and mobile breakpoints.
+- Reduced texture grain/noise under modern profile.
+- Consistent readability with faster visual decoding and no apparent low-res interpolation artifacts.
+
+State model:
+- No persistent gameplay state.
+- Mutable draw-time state includes:
+  - effective render scale
+  - smoothing mode
+  - mode/quality overlay intensities
+  - active quality fallback selection (`quality` / `balanced` / `performance`)
+
+Behavior model:
+- Default for modern direction:
+  - `INTERNAL_RENDER_SCALE = 1`
+  - single-pass final composition with controlled smoothing
+  - increased entity visual scale to preserve legibility
+  - strict cap on scanline/noise overlays
+- On quality downgrade:
+  - lower smoothing cost path retained but geometry remains consistent
+  - overlay intensity and blur-like effects further reduced
+- On reduced motion:
+  - static or near-static post processing where grain/noise could accumulate perceptually
+
+Hard acceptance contracts:
+- No high-frequency full-screen grain in modern profile.
+- No perceptible low-frequency blur from repeated up/downsample operations.
+- Sprite and planet entities scale visibly larger than previous pass without gameplay collision side effects.
+- Impact VFX remains readable at 60 FPS in normal browser load for baseline mission scenes.
+
+Data flow:
+1) Simulation updates world actors in `game.js`.
+2) Draw pass renders scene to scene/offscreen buffers.
+3) Composition stage applies profile-aware scaling and smoothing.
+4) Post-process applies minimal overlays (or none) under selected quality profile.
+5) Result becomes final canvas output.
+
+Render architecture:
+- World scene render: entity geometry and sprites
+- Scene transfer: `resolvePostProcessSourceCanvas()` path
+- Draw composition: deterministic canvas fit into display canvas
+- Profile overlays: mode-specific and budgeted
+- Post-process stack:
+  - light tone wash when needed
+  - optional bloom/bleed
+  - noise/scanline only when profile allows
+
+Quality strategy:
+- Modern/Minimal:
+  - minimize noise + scanline
+  - clamp overlay alpha
+  - prefer readability over “effect density”
+- Cinematic/Neon:
+  - richer post-process layers allowed but still bounded by readability budgets
+
+Anti-regression budget:
+- Noise average alpha target ≤ 0.06 in modern/minimal when static.
+- Scanline alpha contribution ≤ 0.08 in non-cinematic profiles.
+- No persistent over-soft edges from mis-set smoothing with large scales.
+- No full-frame blur in final 200ms of non-combat transitions.
+
+Error handling:
+- Invalid scaling configuration:
+  - fallback to safe defaults
+  - continue render and log warning
+- Context unavailable:
+  - degrade to no smoothing branch and avoid post-process passes
+- Unsupported DPR:
+  - clamp to finite DPR path and avoid extreme pixel amplification
+- Sprite draw missing:
+  - vector fallback path keeps geometry visible
+
+Failure modes:
+- Grain persists despite profile:
+ - cause: legacy noise path not gated by profile or scale.
+ - effect: blurry retro look persists in modern mode.
+- Blurry ships:
+ - cause: fractional or incorrect scaling during `drawSpriteByKey`.
+ - effect: low detail and unreadable art.
+- Canvas geometry drift:
+ - cause: style-size and internal coordinate-size mismatch.
+ - effect: stretched or clipped gameplay frame.
+
+Validation strategy:
+- Static captures:
+  - 390x844 and 1366x768
+  - compare asset sharpness and edge contrast under title/mission/battle
+- Runtime quality matrix:
+  - modern/minimal default
+  - quality/performance override toggles
+- Mission loop smoke:
+ - start→hub→mission→battle for at least one complete cycle
+ - verify no sudden scaling pop on mode transitions
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/assets/sprites/*`
+
+Acceptance checks:
+- Ships and planets are visibly larger than baseline and remain readable at mission zoom.
+- Low-res appearance complaint no longer reproduces in modern profile captures.
+- Frame composition remains stable through mode transitions.
+- `window.render_game_to_text()` remains stable despite rendering quality changes.
+- `Visual Post Process` remains functional with this quality policy.
+- No visible grain regression in modern mode under reduced-motion settings.
+
+Non-goals:
+- Network-level image format changes.
+- Gameplay math or simulation speed changes.
+- Introduction of external render engines or WebGL migration.

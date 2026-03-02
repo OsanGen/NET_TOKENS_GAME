@@ -1,0 +1,143 @@
+Component: Input Navigation & Focus
+Purpose:
+Define deterministic control navigation and focus behavior for menu + action rail interactions so traversal is predictable, ergonomic, and does not leak focus outside active command surfaces.
+
+The component covers only interaction semantics and focus rendering, not combat outcomes or mode transitions.
+
+Inputs:
+- Active gameplay mode:
+  - `state.mode` from runtime
+  - `state.phase` and `state.inBattle`
+- Action source from sync layer:
+  - `getActiveActions()`
+  - `state.ui.helpVisible`
+  - `externalActionsForMode()`
+  - `resolveBattleActionsForMode()`
+- DOM focus state:
+  - `document.activeElement`
+  - `#controls-actions` / action nodes
+  - `#controls-toggle`
+  - `#controls-objective` optional focus targets
+- Modifier/input flags:
+  - keydown state for arrows / Enter / Space / Tab / Escape
+  - repeated key-hold timing
+
+Outputs:
+- Deterministic action selection index.
+- Deterministic focus target updates for bottom and side rails.
+- Consistent event handling path for:
+  - horizontal traversal in flat lists
+  - vertical traversal for nested or stacked contexts only
+  - confirm/cancel event emission.
+- No gameplay mutation from navigation keys alone.
+
+State:
+- Navigation runtime state:
+  - current action index
+  - traversal mode (`flat` | `nested`)
+  - last focus target in controls rail
+  - cooldown timestamps for repeated keypress suppression
+- Safety state:
+  - “blocked while help transition” state to prevent duplicate events under rapid keys
+
+Behavior contract:
+- Flat action rails (`#controls-actions`):
+  - Left/Right move within one visible rail.
+  - Tab should move into the action rail container, not skip visible controls.
+- Nested/below rail states (when nested popups/missions require it):
+  - Up/Down move inside nested rows only when the current context exposes them.
+  - Up/Down does not move the outer action cursor unless nested mode is active.
+- Global action resolution:
+  - Confirm uses Enter/Space.
+  - Cancel uses Escape where defined.
+  - Help toggle remains consistent through H and `#controls-toggle`.
+- Focus containment:
+  - Focus should remain within command rails while in active gameplay modes.
+  - Focus wraps predictably at bounds in each allowed axis.
+
+Mode-by-mode rules:
+- Title:
+  - focus targets are start and navigation rails only.
+- Hub:
+  - mission action rail uses left/right; objective text is non-focus.
+- Mission:
+  - movement keys prefer primary rail; nested hints use up/down only if opened.
+- Battle:
+  - move/attack actions remain a flat rail.
+  - quick-reselect is deterministic and one-index-at-a-time.
+- Result:
+  - focus policy may relax to full document fallback while preserving keyboard accessibility.
+
+Interaction flow:
+1) `syncExternalControlsUI()` updates rendered action array and selected state.
+2) On key event, navigation resolver inspects active mode and DOM context.
+3) Resolver computes candidate index, applies clamp/wrap rules.
+4) Resolver triggers action intent only once per confirm cycle.
+5) Resolver emits focus style updates (`data-selected`, `aria-*`, focused class).
+
+Determinism invariants:
+- Same mode/action list + same key timeline -> same index transitions.
+- Held keys do not produce duplicate confirm/cancel events.
+- No mode transition may preserve stale action index.
+- Traversal priority is axis-aware: left/right first, up/down second.
+
+Error handling:
+- Missing action nodes:
+  - keep action index at safe default and avoid crash.
+  - fallback focus remains on bottom rail container.
+- Duplicate IDs:
+  - first-match resolution and single warning per session.
+- Unexpected nested-depth mismatch:
+  - gracefully degrade to flat traversal.
+- Browser focus API unavailable:
+  - logic runs on selected index only; focus APIs are optional visual upgrades.
+
+Performance constraints:
+- O(n) traversal for action arrays.
+- No repeated full DOM scans during non-focus modes.
+- Reuse previous selected index when action set unchanged.
+
+Failure modes:
+- Arrow inversion:
+  - left/right reversed relative to visual order.
+- Tab skip:
+  - command rail bypassed due to incorrect focus ring order.
+- Confirm flooding:
+  - repeated keydown from key repeat triggers duplicated mode actions.
+- Focus trap mismatch:
+  - focus escapes UI and enters browser chrome unexpectedly.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+
+Acceptance checks:
+- Flat list traversal:
+  - Left/right moves predictably across all visible action chips.
+- Up/down behavior:
+  - only activates when nested context is active.
+- Tab behavior:
+  - does not skip side telemetry or bottom command rail.
+- Confirm/cancel under held keys:
+  - emits one action only per logical press.
+- Focus visuals:
+  - selected/hover states match active index with no jumps.
+- Mode transitions:
+  - action index is reset/rebound based on current available actions.
+- No gameplay corruption:
+ - same game state + same key stream yields same combat/mode results independent of key auto-repeat cadence.
+
+Validation plan:
+- 100-frame deterministic replay with:
+  - mix of flat + nested action contexts,
+  - down/up/left/right repeats,
+  - confirm/repeat pressure.
+- Validate no skipped nodes using selector snapshot on `#controls-actions` for active modes.
+- Verify help toggle path:
+  - H key and `#controls-toggle` both trigger identical visibility state and focus state.
+
+Non-goals:
+- Accessibility role overhaul.
+- New global keyboard shortcuts beyond existing set.
+- Gameplay command additions.

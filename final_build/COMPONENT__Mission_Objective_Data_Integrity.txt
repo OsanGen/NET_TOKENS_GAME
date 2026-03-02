@@ -1,0 +1,64 @@
+Component: Mission Objective Data Integrity
+Purpose:
+Keep mission objective generation, tracking, and completion logic synchronized with mission UI and replay contracts so objective-related gameplay and displays do not drift.
+
+Scope:
+- Mission object initialization and objective payload shape.
+- Objective progress updates and completion criteria.
+- Objective-to-HUD synchronization and termination edge cases.
+- Replay stability of mission state transitions.
+
+Inputs:
+- Mission seed and mission blueprint.
+- Objective events from gameplay loop.
+- Player/battle outcomes impacting mission condition set.
+- UI state sync calls.
+
+Outputs:
+- Deterministic mission `objective` and `objectiveProgress` states.
+- Accurate completion/termination flags at required thresholds.
+- Stable UI reflection for mission objective status and counters.
+
+State model:
+- Existing mission state under `state.mission` (and nested objective fields).
+- No additional gameplay mechanics fields.
+- Derived completion flags from existing event counters.
+
+Primary integrity rules:
+- Objectives are initialized once per mission entry.
+- Progress fields only mutate through validated mission events.
+- Completion criteria are evaluated consistently from objective data and game state.
+- HUD objective text updates from mission state in the same sync pass as other core HUD lines.
+- On mission end/restart:
+  - objective state transitions are normalized (completed/not completed reset as designed).
+
+Failure modes addressed:
+- Objective mismatch between internal logic and HUD text.
+- Completion flags that never clear on quick restart.
+- Objective payload corruption across fixed-seed replays.
+- Mission progress leaking from prior mission instance.
+
+Error handling:
+- Missing/invalid objective payload:
+  - fallback to default "no objective" state and log one warning.
+- Invalid progress update:
+  - ignore delta and keep prior safe value.
+- Mission schema mismatch:
+  - record warning, keep gameplay-safe sentinel, fail contract audit.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Mission_Flow.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Core_Runtime.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__UI_State_Sync_Integrity.txt`
+
+Acceptance checks:
+- Deterministic replay verifies objective progression with same seed/timeline.
+- Mission completion occurs only when all objective conditions are satisfied.
+- Objective UI updates are visible within one sync tick of state change.
+- Reset path clears stale objective metadata before new mission starts.
+
+Non-goals:
+- Mission content generation redesign.
+- Gameplay balancing or encounter strategy changes.
+- New objective data schema without migration.

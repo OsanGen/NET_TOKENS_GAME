@@ -1,0 +1,79 @@
+Component: Visibility and Page Lifecycle Governance
+Purpose:
+Control behavior when browser context changes (focus/blur, visibility, tab switching, background throttling) so the game loop and UI stay deterministic and recover predictably.
+
+Scope:
+- `document.visibilityState` and focus/blur handling.
+- Animation/loop throttling in background tabs.
+- Input suspension and stale key handling across focus transitions.
+- Safe restart of critical timers/state on tab re-entry.
+
+Inputs:
+- Browser lifecycle events:
+  - `visibilitychange`
+  - `focus` / `blur`
+  - `pagehide` / `pageshow`
+- Runtime mode and loop state.
+- Stored command/input hold state.
+
+Outputs:
+- Lifecycle state markers reflected in runtime state (paused/throttled/active).
+- Input held states reset on focus loss.
+- Deterministic recovery strategy when returning to active tab.
+
+State model:
+- Existing loop and input state in `game.js` remain primary.
+- Optional lifecycle flags for runtime behavior:
+  - `isWindowFocused`,
+  - `isPageVisible`,
+  - `isBackgroundPaused`.
+- No new gameplay mechanics introduced.
+
+Behavior contract:
+- On blur/pagehide:
+  - stop noncritical visual effects and input accumulation.
+  - preserve deterministic state snapshot.
+  - keep audio/video none.
+- On focus/pageshow:
+  - clear stale held keys, resume deterministic loop from persisted snapshot.
+  - re-sync HUD once on next frame.
+- On visibility throttling:
+  - clamp effect timers to avoid burst playback from time jump.
+- Background transitions are non-authoritative:
+  - do not auto-advance gameplay-critical state unexpectedly.
+
+Failure modes addressed:
+- Held key actions replaying after return causing accidental confirmation.
+- One-time mode transitions firing repeatedly after tab switches.
+- Visual effects "jumping" due to long background intervals.
+- Loop drift and frame budget spikes after tab revival.
+
+Error handling:
+- Missing lifecycle listeners or event errors:
+  - continue with defaults and emit one warning.
+- Invalid snapshot restore:
+  - safe rollback to last stable sync tick and continue.
+- Event storm:
+  - dedupe listeners and avoid repeated handler registration.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Key_Repeat_And_Throttle_Governance.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Startup_Bootstrap_Guardrails.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Lifecycle_Reset_And_Mode_Transitions.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Observability_And_Error_Strategy.txt`
+
+Acceptance checks:
+- Focus/blur regression smoke:
+  - issue a held confirm key, blur, refocus, verify no duplicate confirm.
+- Visibility-change smoke:
+  - resume from background without burst-mode jump in battle effects.
+- Deterministic replay:
+  - same inputs with visibility transitions remain replayable.
+- Recovery marker:
+  - `state` and HUD re-sync on re-focus in one frame.
+
+Non-goals:
+- Multi-tab synchronization.
+- Cross-window networking state propagation.
+- New OS-level lifecycle APIs.

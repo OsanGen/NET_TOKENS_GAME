@@ -1,6 +1,7 @@
 Component: Combat Loop
 Purpose:
 Deliver deterministic enemy pressure with responsive player attack/interact behavior.
+This component must keep combat math deterministic while making battle intent and menu traversal feel instantly controllable.
 
 Inputs:
 - Mission enemy template queue (`enemyQueue`, spawn cadence/timer).
@@ -13,17 +14,58 @@ Inputs:
   - `battleImpactBurst`
   - `battleImpactSeverity`
   - `battleImpactSide`
+- UI intent from:
+  - `state.ui.mode` / `state.phase`
+  - `resolveBattleActionsForMode()`
+  - `externalActionsForMode()`
+- Turn/round context:
+  - `state.turn`
+  - `state.phase`
+  - `state.playerPet` / `state.enemyPet`
+  - `state.battleLog`
+- Deterministic combat inputs:
+  - precomputed action/target ordering from mission seed
+  - action legality masks
+- Cooldown envelope:
+  - `state.player.shootCd`
+  - `state.player.invulnFrames`
+  - enemy turn timer and any status effects
+- Config source:
+  - `combatConfig` constants and enemy queue pace settings.
 
 Outputs:
 - Deterministic enemy spawn cadence from queued definitions.
 - Contact damage + invulnerability + knockback updates.
 - Ion burst enemy damage when `Space` is held in range.
 - Objective enemy count decrements on enemy neutralization.
+- Gameplay-safe action selection and selected-action index updates.
+- Stable battle timing metadata for HUD (`render_game_to_text().state`/`.ui` snapshot).
+- Visual hook payload update (`state.visual`) for impact post-process.
+- Turn ownership and action legality telemetry (`state.turnOwner`).
+- Deterministic battle completion marker:
+  - transition to mission only through explicit completion gate and not from UI edge noise.
 
 State:
 - Player combat flags: `hp`, `invulnFrames`, `shootCd`, `damageStreak`, `damageDecay`, `knockbackX/Y`.
 - Mission spawn flags: `enemyQueue`, `enemySpawnTimer`, `enemySpawnCadence`.
 - `combatConfig` tuning constants for pacing.
+- Selection state during battle UI:
+  - `battlePhase` (root / moves / switch / capture / resolve)
+  - `battleLayer` (which submenu is active)
+  - `selectedBattleAction` index and action length.
+- Deterministic counters:
+  - `state.frame` and mission seed drive spawn windows.
+  - `battleIndex` drives objective decrement and progression ordering.
+  - `state.turn` increments on completed battle turns only.
+  - `state.battlePhaseTick` increments per active combat frame only.
+- Visual bridge counters:
+  - `state.visual.battleImpactBurst`
+  - `state.visual.battleImpactSide`
+  - `state.visual.battleImpactSeed`.
+- Battle debug ledger:
+  - `combatDebug.attackSeq`
+  - `combatDebug.hitSeq`
+  - `combatDebug.turnChecksum`
 
 Behavior:
 - Enemy spawn is deterministic and mission-seed-driven.
@@ -34,17 +76,72 @@ Behavior:
   - attacker species tint seed
   - attack direction side
   - damage-tiered burst/severity
-- Battle pulses (`battle`, `camera`, `split`) are still queue-based and profile-safe.
-- Battle menu navigation is axis-agnostic:
-  - previous selection: Left or Up,
-  - next selection: Right or Down,
-  - applies to root, move, and switch layers for intuitive control parity.
+- Battle pulses (`battle`, `camera`, `split`) remain queue-based and profile-safe.
+- Battle menu navigation is axis-normalized to reduce confusion:
+  - default flat list traversal: Left/Right.
+  - fallback traversal: Up/Down when vertical layout semantics are active.
+  - confirm/cancel actions remain single-key (`Space`/`Enter` and `Escape`) to avoid accidental branching.
+  - traversal is validated per layer so nested context menus preserve expected order.
+- `syncBattleActionsFromState()` enforces consistent action array shape and clamps selection index after state changes.
+- `applyMove()` applies no rule changes (cooldowns, RNG gating, hp/range checks, and threat updates remain intact).
+- `advanceBattleWave()` handles progression only when remaining enemies or objectives transition through kill-eligible state.
+- `enterCombat()` and `exitCombat()` are idempotent for repeated frame updates in the same mode.
+- `spawnMissionEnemy()` and `tickMissionEnemies()` avoid mutating action state directly; they return pure state deltas to maintain replayability.
+- Hit processing does not mutate input objects; it consumes intent snapshot for each tick.
+- Turn resolution model:
+  - Player turn: execute selected legal action snapshot.
+  - Enemy turn: deterministic scripted enemy behavior based on wave state.
+  - Turn ownership flips only after one side resolves or timeout branch triggers.
+- Move-resolution safety:
+  - selected action is clamped to legal action list before execution.
+  - invalid target or zero-damage outcomes become no-op with warning marker, not crash.
 
 Edge Cases:
 - Empty queue means no spawn attempt.
 - Invulnerability blocks immediate repeated contact hits.
 - Cooldown (`shootCd`) prevents burst spam and keeps pacing readable.
 - Confirm/cancel behavior remains unchanged while expanding directional input options.
+- When no actions are legal (all disabled), selection stays on first legal index.
+- Rapid direction input (holding arrows) uses edge detection, not key repeat, for menu changes.
+- If battle entity list is empty mid-phase, state transitions to mission resolution without additional spawn.
+- If action list length changes mid-phase, selection is clamped and action label updates are atomic.
+- Spawn timer underflow is clamped and logged as low-priority warning only.
+- If battle starts with malformed enemy payload:
+  - warning emitted, combat continues as zero-spawn safe branch.
+- If both sides can hit in same frame:
+  - resolution order is deterministic by explicit phase priority, then entity index.
+- If player action list becomes empty:
+  - safe fallback path transitions to enemy action or mission-resolve branch.
+- If action produces immediate mission-completion:
+  - `exitCombat()` is applied once and battle state is reset for mission handoff.
+
+Mode guardrails:
+- Combat logic executes only while `state.mode === "battle"`.
+- Transition back to mission from battle always clears per-turn battle accumulators.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+
+Error handling strategy:
+- Guard all menu transitions with bounds checks; never let `selectedBattleAction` go NaN or negative.
+- Ignore invalid action indices instead of crashing when telemetry races occur.
+- If enemy spawn payload is malformed, ignore spawn with warning and continue mission tick.
+- Keep cooldown counters in safe numeric ranges; never propagate `NaN` into hp/frames.
+- On unexpected battle state inconsistencies, hard-reset to mission root action list and log via internal warning channel.
+- Turn/state checksum mismatch in replay should trigger warning and telemetry marker, not hard crash.
+
+Logging and diagnostics:
+- Log combat state transitions only in debug builds or when `window.DEBUG_COMBAT_FLOW` is true.
+- Add lightweight counters for:
+  - `spawnCount`
+  - `hitCount`
+  - `missCount`
+  - `movesResolved`
+- Expose counters in `render_game_to_text().state.battleDebug` for automated smoke diffing.
+- Preserve deterministic log shape between runs at same seed.
+- Add `combatDebug.sequenceFingerprint` (compact deterministic hash of frame, turn, enemy hp, player hp, selected action).
 
 Acceptance Checks:
 - Holding `Space` near enemy reduces enemy HP and can remove enemies.
@@ -53,3 +150,14 @@ Acceptance Checks:
 - In battle, `Fight/Switch/Capture` can be cycled with Left/Right as well as Up/Down.
 - Move and switch submenus can also cycle with Left/Right without breaking Enter/Space confirm.
 - Visual impact feedback appears after each attack with attacker-tinted, directional strike artifacts and scales by damage tier.
+- Confirm/cancel never reorders menu indices (selection is stable unless action list changes).
+- Directional traversal does not move focus outside active layer in nested battle menus.
+- Replay check: given identical mission seed and same input timeline, all combat outcome fields are stable.
+- Turn determinism check:
+  - same seed + same input timeline produces same `turn`, `selectedBattleAction`, and `battlePhase` sequences.
+- Completion safety:
+  - combat exits only through explicit mission-completion or `endBattle` path.
+- Timing safety:
+  - cooldown and invulnerability counters stay in bounded, non-negative ranges.
+- Stability:
+  - no negative hp, no NaN in hp/frames/positions.

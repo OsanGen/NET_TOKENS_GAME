@@ -1,0 +1,85 @@
+Runbook — NEWGAME Sequenced Operations
+
+Goal
+- Provide deterministic operational instructions for local development, QA, and deployment.
+
+Preflight checks
+- Confirm repository clean enough for the intended change scope.
+- Confirm Node modules installed for Playwright (`npm install` not required for plain run, only Playwright paths).
+- Confirm required ports are available (default local server port used by local launcher).
+- Confirm `index.html`, `game.js`, and `styles.css` are synchronized.
+
+Local development loop
+1. Start environment
+- Run local launcher script to start the server.
+- Open game page in browser.
+
+2. Visual smoke at startup
+- Verify title screen renders and no console-fatal errors appear.
+- Confirm HUD surfaces and canvas dimensions are visible and readable.
+
+3. Flow validation
+- Execute title → hub transition.
+- Execute lock/launch path to mission.
+- Trigger mission threat path and enter battle.
+- Resolve battle path and return to mission/result.
+- Return to hub from result.
+
+4. Controls and accessibility check
+- Validate action rail, side rail, and bottom action area layout across desktop and compact width.
+- Confirm keyboard controls behave as expected for action navigation.
+- Confirm reduced-motion safe behavior where applicable.
+
+5. Snapshot and log
+- Capture one screenshot per mode for evidence.
+- Capture `render_game_to_text()` output once per mode for regression baseline.
+
+Playwright-assisted smoke (deterministic loop)
+1. Run local Playwright client script.
+2. Validate step transitions and selector presence.
+3. Validate no selector breakage in changed DOM surfaces.
+4. Validate frame capture directory updates (`output/web-game` equivalent location).
+
+Asset refresh sequence
+1. Update image source prompts/inputs in imagegen temporary metadata path.
+2. Run generation script.
+3. Sync assets to `assets/` directory.
+4. Quick dry run mission/hub rendering to verify no missing texture references.
+5. Commit only once visuals are validated on target viewport set.
+
+Commit sequence
+1. Stage intended source + docs.
+2. Commit with focused message by scope.
+3. Validate `git status` reflects only intended deltas.
+
+Deploy sequence (GitHub Pages)
+1. Push commit to `main`.
+2. Ensure GitHub Pages workflow completes on `main`.
+3. Open deployed URL and confirm:
+   - page loads without 404 missing static files
+   - core UI is readable
+   - runtime APIs remain callable from console
+4. Record post-deploy screenshot.
+
+Rollback sequence
+1. Identify last stable commit.
+2. Hard revert or new corrective commit depending on risk.
+3. Re-run at least local boot + one mission smoke.
+4. Re-deploy corrected commit.
+
+Acceptance before handoff
+- All core mode transitions complete at least once.
+- No severe console exceptions during standard flow.
+- Visual overlays render and remain readable at target desktop and compact widths.
+- No stale noisy UI components remain in final active markup/styles.
+- `render_game_to_text` and `advanceTime` remain available.
+
+Continuous maintenance rhythm
+- After each UI edit:
+  - update `final_build/BUILD_MAP.txt`
+  - update affected `COMPONENT__*.txt`
+  - update `CURRENT_GAPS.txt`
+- Before each release:
+  - validate at least one reduced-motion capture
+  - validate local open/close loop for tooling scripts.
+

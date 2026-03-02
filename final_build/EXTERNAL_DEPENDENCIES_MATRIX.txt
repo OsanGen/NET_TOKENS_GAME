@@ -1,0 +1,39 @@
+External Dependencies Matrix — NEWGAME
+
+External dependency type | Dependency | Usage | Why it exists | Failure mode | Mitigation
+
+Runtime dependencies
+- None (runtime) | `game.js` has no external JS package imports | keeps the game fully static | None from package manager | self-contained runtime in browser
+
+Development dependencies
+- Playwright | `package.json` (`playwright: ^1.58.2`) | Browser automation in `web_game_playwright_client_local.js` | Local smoke/validation requires available package + browser binaries | Keep as dev dependency; avoid runtime coupling
+
+Environment tooling
+- bash | `scripts/open-game.sh`, `scripts/stop-game.sh` | local server launch/cleanup orchestration | shell mismatch or permission path issues | keep script logic simple and cross-shell compatible
+- python3 | local serve command and optional utility scripts | quick static local host | unavailable Python in environment | use Node server alternative if Python unavailable
+- lsof | process conflict detection in local tooling | avoid duplicate server instances | utility missing | degrade to documented manual port checks
+
+CI/platform dependencies
+- GitHub Actions runners | `.github/workflows/deploy-pages.yml` | deployment automation | runner outage or permission issues | rerun deployment / use local static hosting for validation
+- GitHub Pages service | deployment target host | public demo publication | publish delay / outage | validate from latest successful run logs before release notification
+
+Asset dependencies
+- `assets/` path structure | renderer loads sprite URLs | required for visual fidelity and gameplay readability | missing/renamed asset causes visual artifacts | maintain naming map and verify post asset changes
+
+Third-party/AI generation dependencies (optional)
+- image generation workflow scripts and provider tooling | `scripts/generate-imagegen-assets.sh`, `tmp/imagegen/` | optional art refresh | provider access/key availability | keep generated assets committed as primary runtime source; avoid runtime generation dependency
+
+Risk grading
+- High
+  - GitHub Pages artifact omissions
+  - stale local tooling PID / port lock
+- Medium
+  - Playwright version drift in automated capture
+  - python3/lsof missing in local dev machines
+- Low
+  - devDependency not used during production runtime
+
+Dependency hygiene rules
+- Do not introduce backend dependencies without a separate deployment architecture.
+- Do not add runtime package imports unless a package-level split strategy is documented.
+- Keep asset tooling optional for runtime portability.

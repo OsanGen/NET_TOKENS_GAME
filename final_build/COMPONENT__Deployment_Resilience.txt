@@ -1,0 +1,122 @@
+Component: Deployment & Resilience
+Purpose:
+Keep publishing and serving of the static game reliable, fast, and deterministic across:
+- local file testing
+- GitHub Pages deployment
+- subpath hosting
+- repeated release cycles.
+
+This component captures the operational path and failure handling from commit-ready output to runtime availability.
+
+Scope:
+- No gameplay or rendering changes.
+- No backend/runtime API changes.
+- No schema changes outside public deployment artifacts.
+
+Inputs:
+- Repository content:
+  - `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+  - `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+  - `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+  - `/Users/abelsanchez/CODEX/NEWGAME/assets/*`
+  - `.github/workflows/deploy-pages.yml`
+- Runtime environment:
+  - GitHub Actions runners
+  - CDN/static file availability
+  - branch policy for deployment entry (typically `main`)
+- Local tooling:
+  - `./scripts/open-game.sh`
+  - `./scripts/stop-game.sh`
+- Observability and acceptance:
+  - smoke scripts and render/API snapshots.
+
+Outputs:
+- Published deterministic static payload at expected path.
+- Stable `/index.html`, `/game.js`, `/styles.css`, `/assets/*` availability in deployment target.
+- Deployment smoke evidence: route availability and payload integrity.
+- No residual static debug path serving stale branding after migration.
+
+State:
+- No in-repo gameplay state.
+- Deployment state includes:
+  - workflow run status
+  - publish hash
+  - last successful artifact hash
+  - rollback marker.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/.github/workflows/deploy-pages.yml`
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/open-game.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/stop-game.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/ENTERPRISE_READINESS_SCORECARD.txt`
+
+Lifecycle:
+1) Build readiness check:
+  - confirm required files exist and no missing deployment-critical files.
+2) Artifact packaging:
+  - GitHub Pages deployment publishes repo root/static files only.
+3) Post-deploy smoke:
+  - GET checks for key endpoints (index/css/js/favicon/sprite root)
+4) Regression verification:
+  - ensure old legacy demo route does not accidentally serve active game branding.
+5) Rollback readiness:
+  - keep prior successful build reference and ability to restore previous publish.
+
+Failure handling:
+- Missing file in deployment set:
+  - fail fast with explicit smoke error and block release gating.
+- Broken route/path under subpath:
+  - adjust asset-relative paths or deployment base handling.
+- Asset 404 spikes:
+  - stop release gating and triage stale asset names/path encoding.
+- Stale workflow state:
+  - rerun workflow with clean checkout.
+- Runtime port or script startup issue:
+  - stop/start scripts cleanly and verify PID cleanup.
+
+Security and reliability controls:
+- No secret leakage in static artifacts.
+- No in-browser external fetch dependencies in baseline flow.
+- Strictly deterministic API surface for automation and QA.
+- Local launch scripts should not spawn duplicate long-lived processes.
+
+Visual continuity controls:
+- Deployment checks include visual smoke at key breakpoints:
+  - 1366x768 and 390x844
+  - title→hub→mission→result
+  - modern preset baseline.
+- Ensure shell/rail layout remains intact after publish.
+
+Acceptance checks:
+- Endpoints return HTTP 200:
+  - `index.html`, `game.js`, `styles.css`, `favicon.ico`, `assets/sprites/ship.png`
+- Smoke snapshots load without console-breaking network errors.
+- No 404s for relative path references under `/NET_TOKENS_GAME/` and root.
+- Render API capture available after deploy:
+  - `window.render_game_to_text` callable from browser console.
+- Visual shell/rail structure remains unchanged from local smoke for tested routes.
+- Deployment roll-back path documented and executable in under one run.
+
+Risk controls:
+- Branch mismatch (wrong publish branch) -> explicit gating before publish.
+- Stale cache risk -> cache-busting guidance in `assetVersion` updates when visual assets change.
+- Path mismatch under subpath -> absolute/relative path audits for deployment.
+- Workflow secret drift -> static config review before release.
+
+Rollback model:
+- Preserve previous successful artifact by re-running prior workflow run.
+- Keep deployment notes in release pulse document.
+- Confirm rollback does not alter gameplay behavior.
+
+Performance and operational SLO:
+- Load baseline:
+  - page loads without heavy script prelude.
+- Stability:
+  - no release blockers from missing endpoints.
+- Visual regression tolerance:
+  - no dramatic UI clipping or full-screen artifact change in smoke baseline.
+
+Non-goals:
+- Backend scaling or autoscaling (no backend service exists).
+- Runtime autosnapshot generation.
+- Dynamic CDN cache policy changes outside Pages config.

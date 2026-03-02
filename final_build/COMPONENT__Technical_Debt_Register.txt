@@ -1,0 +1,115 @@
+Component: Technical Debt Register
+Purpose:
+Track and prioritize concrete debt that directly increases risk to maintainability, reliability, and performance for this web game.
+
+This component is a governance surface: it records debt, assigns risk, and defines practical cleanup steps without changing gameplay behavior.
+
+Inputs:
+- Component specs in `final_build/`.
+- Source hotspots:
+  - monolithic `game.js` execution surface
+  - styling entropy in `styles.css`
+  - long-lived visual/API/UI coupling paths
+- QA and runtime evidence:
+  - recurring warnings
+  - repeated visual regressions
+  - test/script failures.
+
+Outputs:
+- Ranked debt backlog.
+- Refactor-safe cleanup sequence.
+- Risk-driven milestone list for minimal-touch, high-value rewrites.
+
+Scope:
+- No gameplay contract changes.
+- No new runtime architecture requirements.
+- No externalized dependencies beyond existing stack.
+
+Debt classes:
+1) Structural debt
+- `game.js` owns multiple bounded contexts (simulation, rendering, UI sync, visual post process, asset loading).
+- Consequence: difficult targeted changes, accidental cross-effects.
+- Acceptance path: establish clear interfaces and document boundaries (already partially defined in components).
+
+2) Contract debt
+- DOM node and selector coupling across render-synchronization logic.
+- Consequence: hard to refactor without UI breakage.
+- Acceptance path: maintain immutable contract files (`render_game_to_text`, selectors, and event surfaces).
+
+3) Visual debt
+- High effect density and legacy grain/noise paths still present in some presets.
+- Consequence: inconsistent quality by mode, user complaints of blur/noise.
+- Acceptance path: mode-gated profile enforcement and strict budgets.
+
+4) Workflow debt
+- Deploy and local-tooling assumptions hard-coded (ports/PID).
+- Consequence: brittle local/release process.
+- Acceptance path: idempotent scripts and explicit cleanup checks.
+
+5) Validation debt
+- Incomplete deterministic coverage for all branches after UI pass changes.
+- Consequence: regressions in controls, navigation, and rendering.
+- Acceptance path: hard QA runbook coverage matrix and seed-lock replays.
+
+6) Security debt
+- No runtime telemetry and no obvious secret handling in game bundle.
+- Consequence: still limited, but operational hardening needs continuity.
+- Acceptance path: periodic audit checks for unknown network loads and hardcoded credentials.
+
+Risk taxonomy:
+- P0 - blockers for release:
+  - missing API contract nodes
+  - broken deployment routes
+  - repeated deterministic replay failures
+- P1 - release quality risks:
+  - focus/keydown regressions
+  - blurred visuals/low-resolution artifact loops
+  - missing fallback behavior on partial assets
+- P2 - maintainability risks:
+  - duplicated logic across mode branches
+  - inconsistent shell/rail behavior on narrow viewports
+
+Prioritization rubric:
+- Score each debt item with Impact × Frequency × Effort.
+- Priority = high impact, high frequency, low effort first.
+- Keep top quartile active each sprint.
+
+Debt cleanup pattern:
+1. isolate
+2. decouple
+3. harden
+4. verify
+5. remove legacy branches
+6. archive rationale in `CURRENT_GAPS`/risk notes.
+
+Detection methods:
+- Static scan:
+  - repeated selectors in multiple files
+  - TODO markers tied to rendering/UI coupling
+- Deterministic runtime smoke:
+  - regression recurrence in known failing paths
+- UX signal:
+  - repeated user-reported pain points in same symptom area.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/BUILD_MAP.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+
+Acceptance checks:
+- each debt entry has one owner, reason, and mitigation step.
+- no debt item remains “open” without owner and deadline-style next action.
+- each P0/P1 item linked to a concrete `CURRENT_GAPS` entry.
+- no cleanup action changes public gameplay API.
+
+Closure policy:
+- close a debt item only when both conditions are met:
+  - measurable acceptance evidence updated
+  - behavior compatibility checks remain passing.
+
+Non-goals:
+- full rewrite of `game.js` into separate modules.
+- external dependency migration.
+- adding analytics platform.

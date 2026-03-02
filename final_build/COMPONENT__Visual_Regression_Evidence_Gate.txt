@@ -1,0 +1,78 @@
+Component: Visual Regression Evidence Gate
+Purpose:
+Define and enforce deterministic visual artifact capture for regressions so UI/scene regressions are detected before deployment while preserving gameplay contract stability.
+
+Scope:
+- Screenshot baseline management across viewport, preset, mode, and seed.
+- Diff tolerances and acceptance thresholds for visual drift.
+- Evidence retention and artifact naming for traceability.
+- Lightweight smoke verification in CI-like local runs.
+
+Inputs:
+- Deterministic inputs:
+  - mode sequence (`title`, `hub`, `mission`, `battle`, `result`)
+  - seed IDs
+  - viewport sizes (`390x844`, `768x`, `1366x768`)
+  - visual profile (`modern`, `minimal`, `neon`, `cinematic`)
+  - timing checkpoints (`t=0`, transition markers, key action moments)
+- Runtime sources:
+  - rendered frame bitmap from browser harness.
+
+Outputs:
+- Stable screenshot artifacts for each checkpoint.
+- Diff reports (pass/fail + metric summary).
+- Regressions linked to specific seed/profile/mode checkpoints.
+
+State model:
+- No new gameplay state.
+- Metadata-driven evidence registry stored outside runtime state:
+  - baseline IDs, diffs, thresholds, acceptance pass flags.
+
+Artifacts and contracts:
+- Baseline format:
+  - deterministic filename convention with run metadata.
+- Diff metrics:
+  - structural mismatch score
+  - pixel-level delta ratio
+  - optional perceptual hash distance
+- Evidence retention rule:
+  - keep latest + last stable baseline per (mode, profile, viewport, seed bucket).
+
+Failure modes addressed:
+- Visual drift hidden by non-deterministic animations.
+- False positives due to non-reproducible capture conditions.
+- Missing baseline for active regression run.
+- Diff threshold drift masking real defects.
+
+Operational rules:
+- Capture only in deterministic checkpoints (after mode settle and input idling).
+- Use fixed warm-up frame count before snapshot.
+- Normalize non-visual sources:
+  - stable HUD text timestamps where possible.
+  - deterministic profile/mode attributes set before capture.
+
+Error handling:
+- Missing baseline:
+  - auto-label as "baseline-missing" and generate new baseline only with explicit approval flag.
+- Noisy capture environment:
+  - mark run unstable and skip strict diff if reproducibility preconditions fail.
+- Corrupt image artifact:
+  - fail run and request re-capture.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Deterministic_Replay_Contract.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Perceptual_Regression_Metrics.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Repository_Interface_Contracts.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__QA_Harness_And_Runbook.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/SEQUENCED_RUNBOOK.txt`
+
+Acceptance checks:
+- Same seed+timeline+viewport produce identical baseline hashes for frozen checkpoints.
+- New changes require diff pass before being accepted when threshold is exceeded.
+- No regressions in critical checkpoints (battle hit/impact moments + mode transitions).
+- Baseline coverage includes both compact and desktop viewports for all four modes plus battle.
+
+Non-goals:
+- Changing gameplay logic.
+- Introducing heavy image-processing stack into runtime.
+- Automated visual redesign without explicit human review.

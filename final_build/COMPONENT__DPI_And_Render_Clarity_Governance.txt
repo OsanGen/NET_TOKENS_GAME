@@ -1,0 +1,75 @@
+Component: DPI and Render Clarity Governance
+Purpose:
+Own display scaling and canvas rendering contracts so gameplay visuals stay crisp on high-DPI and low-DPI displays while preserving deterministic simulation behavior.
+
+Scope:
+- Canvas resolution pipeline (`width`/`height` DOM attributes vs CSS layout size).
+- Device pixel ratio behavior and optional internal render scale control.
+- Global anti-blur and smoothing policy.
+- Render-size consistency checks across viewport and deployment environments.
+
+Inputs:
+- Display characteristics:
+  - devicePixelRatio, viewport width/height, browser zoom behavior.
+- Runtime settings:
+  - internal scale flags (e.g. `INTERNAL_RENDER_SCALE` equivalent),
+  - quality mode/preset.
+- Mode context:
+  - `title`, `hub`, `mission`, `battle`, `result`.
+
+Outputs:
+- Stable render resolution envelope:
+  - deterministic canvas backing resolution computed from viewport + DPR policy.
+- Crispness policy:
+  - explicit image smoothing state and optional scale clamping.
+- Clarity telemetry:
+  - snapshot checks over standardized resolutions and DPR profiles.
+
+State model:
+- No new gameplay state fields required.
+- Uses existing visual/render controls for scaling policy.
+- Render scale decisions are transient and mode-safe.
+
+Rules:
+- The canvas backing resolution must map to physical pixels using deterministic DPR handling.
+- CSS size remains layout-driven; backing-size may exceed CSS size for clarity.
+- Internal scale is bounded:
+  - no unnecessary downscale on high-DPI devices unless performance policy requires.
+- Smoothing policy:
+  - deterministic default for sprite-heavy scenes and UI compositing.
+- Scaling changes on mode changes or window resize are applied at safe points only.
+
+Failure modes addressed:
+- “Blurry” visuals from mismatched backing and display dimensions.
+- Pixel stretching due to fallback scaling after hot resize.
+- Subtle clarity drift from toggling presets or entering battle.
+- Excessive memory/perf due to unbounded DPR scaling.
+
+Error handling:
+- Missing canvas reference:
+  - log startup warning and skip frame scaling update.
+- Invalid dimensions:
+  - clamp to minimum safe dimensions and continue.
+- Excessive DPR in constrained mode:
+  - degrade to capped scale and emit performance-clarity marker.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Frame_Timing_And_Performance_Budget.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Resolution_Clarity.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Dynamics.txt` (or nearest visual behavior component)
+
+Acceptance checks:
+- 390x844, 560x844, 768px, and 1366px smoke runs show no visible blur introduced by DPR mismatch.
+- Deterministic screenshots at fixed frame markers match within an acceptable visual diff envelope for same seed/timeline.
+- Resize and rerender do not produce one-frame stretch artifact.
+- Internal scale policy change does not alter gameplay state or input semantics.
+
+Observability:
+- Emit render-metric checkpoints with viewport, DPR, backing size, CSS size, and scale multiplier.
+- Track per-mode visual quality deltas when auto-scale caps are applied.
+
+Non-goals:
+- Changing gameplay logic or collision geometry.
+- Rebuilding renderer to WebGL/CANVAS2D replacement.

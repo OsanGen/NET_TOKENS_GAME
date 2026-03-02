@@ -1,0 +1,134 @@
+File-to-Feature Matrix — NEWGAME
+
+Conventions
+- Feature: user-visible or operational capability.
+- Ownership: primary file(s) and module.
+- Verification: exact check needed.
+
+1) Boot + lifecycle
+- Feature: app bootstrap and runtime startup
+- Files:
+  - `index.html`
+  - `game.js`
+  - `styles.css`
+- Verification:
+  - page loads without blocking console errors
+  - mode enters title and render loop starts
+
+2) Title flow
+- Files:
+  - `game.js`
+  - `index.html`
+  - `styles.css`
+- Verification:
+  - title panel renders and start state initializes
+  - keyboard start action transitions to hub
+
+3) Hub flow
+- Files:
+  - `game.js`
+  - `styles.css`
+- Verification:
+  - lock timer/orbit visuals visible
+  - launch path reaches mission
+
+4) Mission flow and objectives
+- Files:
+  - `game.js`
+  - `index.html`
+  - `styles.css`
+- Verification:
+  - objective text updates as expected
+  - mission completion/fail gates enforced
+
+5) Combat loop
+- Files:
+  - `game.js`
+- Verification:
+  - action selection/turn state updates
+  - battle transitions and damage effects applied
+  - no gameplay logic regressions after visual-only edits
+
+6) Visual post-process and VFX
+- Files:
+  - `game.js`
+  - `styles.css`
+- Verification:
+  - effect burst stays readable and bounded
+  - reduced-motion/minimal mode still stable
+
+7) HUD and controls sync
+- Files:
+  - `index.html`
+  - `styles.css`
+  - `game.js`
+- Verification:
+  - objective/title/action text syncs each frame
+  - action rail and bottom bar remain in viewport
+
+8) External API exposure
+- Files:
+  - `game.js`
+- Verification:
+  - `window.render_game_to_text()` callable in console
+  - `window.advanceTime(ms)` advances simulation deterministically
+
+9) Visual assets
+- Files:
+  - `assets/*`
+  - `scripts/generate-imagegen-assets.sh`
+  - `tmp/imagegen/*`
+- Verification:
+  - required sprites present by name
+  - renders scale and clarity for ship/planet objects
+
+10) Local launch/ops
+- Files:
+  - `scripts/open-game.sh`
+  - `scripts/stop-game.sh`
+- Verification:
+  - start and stop multiple times without port/process residue
+
+11) Automation
+- Files:
+  - `web_game_playwright_client_local.js`
+  - `package.json`
+  - `package-lock.json`
+- Verification:
+  - standard flow can be driven and captured
+  - no selector/contract mismatch after UI updates
+
+12) Deployment
+- Files:
+  - `.github/workflows/deploy-pages.yml`
+- Verification:
+  - static artifact includes required runtime files
+  - public page renders after push
+
+13) Documentation and build map
+- Files:
+  - `final_build/BUILD_MAP.txt`
+  - `final_build/ARCHITECTURE_DATA_FLOW.txt`
+  - `final_build/COMPONENT_INDEX.txt`
+  - `final_build/COMPONENT_DEPENDENCY_DAG.txt`
+  - `final_build/CURRENT_GAPS.txt`
+  - relevant `COMPONENT__*.txt`
+- Verification:
+  - docs reference actual files and recent changes
+  - gaps list includes status + next action
+
+14) Security/reliability assertions
+- Files:
+  - `final_build/SECURITY_AND_RELIABILITY_ASSERTIONS.txt`
+- Verification:
+  - checklist reviewed during release and after major edits
+
+Cross-feature boundary notes
+- `game.js` is shared runtime authority across almost all gameplay + visual features; DOM and styles are consumers of its state.
+- Asset and deployment files are support functions; failures there do not alter core logic but can block runtime usability.
+
+Test mapping
+- Core gameplay features: manual flow + Playwright smoke.
+- Visual/UX features: viewport matrix checks (desktop + compact widths).
+- Operations features: local scripts + workflow run.
+- Documentation quality: post-change audit of `final_build` ownership consistency.

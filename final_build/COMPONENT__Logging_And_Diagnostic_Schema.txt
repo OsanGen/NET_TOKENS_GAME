@@ -1,0 +1,85 @@
+Component: Logging and Diagnostic Schema
+Purpose:
+Define a strict logging schema and diagnostic contract for game startup, inputs, state transitions, rendering, and recoverable faults to make production incidents reproducible and actionable.
+
+Scope:
+- Log taxonomy for bootstrap, lifecycle, input, render, mode transition, asset, and warning events.
+- Severity levels and routing (console-only, session summary, smoke-run assertions).
+- Structured fields required for deterministic postmortem and regression analysis.
+
+Inputs:
+- Runtime event producers:
+  - bootstrap/initialization steps.
+  - user input handlers.
+  - mode transitions and state updates.
+  - render/update loop checkpoints.
+  - asset loading callbacks.
+- QA harness and runbook readers.
+
+Outputs:
+- Canonical log records with deterministic fields:
+  - event type, severity, timestamp/frame, mode, seed, and context payload.
+- Optional one-time warning suppression behavior.
+- Session summary markers for run-level visibility.
+
+State model:
+- Does not add gameplay state.
+- Keeps temporary in-session diagnostic counters:
+  - marker counts, warning dedupe IDs, suppression hits.
+- Non-persistent unless session logging persistence is explicitly enabled.
+
+Event schema (required fields):
+- `event` (string): machine-parseable event id.
+- `severity` (enum): `debug`, `info`, `warn`, `error`, `safety`.
+- `ts` (number): monotonic timestamp.
+- `frame` (number): current frame.
+- `mode` (enum): mode at emission.
+- `seed` (number): current seed.
+- `message` (string): human short text.
+- `context` (object): optional machine context.
+
+Logging categories:
+- `BOOT`: API registration, render loop start, shell selectors found/missing.
+- `INPUT`: confirmed key events, blocked/ignored events, held-key state transitions.
+- `STATE`: mode transitions, lifecycle resets, replay checkpoints.
+- `VISUAL`: preset changes, motion-state transitions, effect clamps/suppression.
+- `ASSET`: image/sprite status, fallback engagements, readiness counters.
+- `FAULT`: recoverable failures and explicit fallback actions.
+
+Governance rules:
+- No direct `console.log` for structured events where a schema wrapper exists.
+- Every `error`/`safety` event includes `context` with stable identifiers.
+- Repeated same-source warnings are deduplicated once per session unless context changed.
+- Log volume limits:
+  - non-action noise events must be suppressed after one emission per key.
+- `render_game_to_text()` should include log summary counters for last run window.
+
+Failure modes addressed:
+- Undiagnosed regressions due to unstructured logging.
+- Warning spam masking actionable faults.
+- Missing timing/severity data for seeded replay incidents.
+- Duplicate messages obscuring deterministic event order.
+
+Error handling:
+- Logging function should tolerate missing optional context fields.
+- In logging failures, fail open without blocking gameplay:
+  - emit once to fallback path and continue.
+- For malformed log context:
+  - sanitize context, record fallback marker.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Observability_And_Error_Strategy.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Frame_Timing_And_Performance_Budget.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+
+Acceptance checks:
+- Structured logs are emitted for all category milestones in smoke scenarios.
+- Duplicate warning suppression works for at least five consecutive identical recoverable faults.
+- One log snapshot around a controlled fault can be replayed into deterministic triage.
+- No gameplay behavior changes from logging activation or category toggles.
+
+Non-goals:
+- Remote telemetry transport integration.
+- Log aggregation platform migration.
+- Game mechanics changes for AI/combat/system balancing.

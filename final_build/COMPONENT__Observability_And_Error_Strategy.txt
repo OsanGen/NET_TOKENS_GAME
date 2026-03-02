@@ -1,0 +1,131 @@
+Component: Observability and Error Strategy
+Purpose:
+Make runtime behavior visible enough to debug regressions quickly while keeping telemetry lightweight and non-intrusive.
+
+This component owns the in-repo visibility surface around errors, recoverable fallbacks, and QA-facing invariants used for gameplay safety and visual diagnosis.
+
+Scope:
+- Client-only logging and fallback discipline.
+- No gameplay math changes.
+- No external telemetry pipeline introduction.
+
+Inputs:
+- Runtime events from `game.js`:
+  - initialization milestones
+  - asset load completion
+  - mode transitions
+  - action/intent handling
+  - VFX scheduling and errors
+- API surface:
+  - `window.render_game_to_text()`
+  - `window.advanceTime(ms)`
+- DOM coupling state:
+  - sync selectors for control/action HUD
+  - shell/data attributes
+- Execution context:
+  - `prefers-reduced-motion`
+  - URL and path mode (root/subpath)
+
+Outputs:
+- Human-readable diagnostics for QA/dev debugging.
+- Deterministic fallback behavior when recoverable conditions occur.
+- Stable game loop despite non-fatal failures.
+
+State:
+- No gameplay state mutation.
+- Volatile diagnostic state:
+  - one-time warnings for repeated missing selectors
+  - per-session counters for load/API failures
+  - optional trace flags for control and input hotspots.
+
+Error taxonomy:
+- Recoverable:
+  - missing DOM nodes referenced by `syncExternalControlsUI()`
+  - missing or late sprite asset loads
+  - optional preset/profile parse mismatches
+- Semi-fatal:
+  - selector shape drift for critical S0 nodes
+  - malformed input bursts causing repeated confirm/cancel attempts
+- Fatal:
+  - state corruption that cannot be reconciled in place
+  - unhandled exceptions in render/update loop
+
+Fallback behavior:
+- DOM missing node:
+  - skip only external paint for that node.
+- Sprite missing:
+  - stay in vector fallback path with gameplay unchanged.
+- Input jitter:
+  - suppress repeat-confirm on keydown repeat windows.
+- Profile parse edge case:
+  - apply safe default profile and continue.
+
+Logging strategy:
+- Console outputs remain single-layer:
+  - init summary
+  - fallback fallback summary
+  - deterministic error markers for first occurrences
+- No log spam:
+  - cap recurring warnings per signature.
+- QA mode:
+  - optional structured snapshot marker when smoke harness runs.
+
+Logging hooks:
+- Startup:
+  - startup path + critical file availability
+- Render sync:
+  - `syncExternalControlsUI()` health and selector mismatch
+- Input:
+  - key action resolution path for debug tracing
+- Combat:
+  - VFX pulse queue state and impact metadata lifecycle
+- Assets:
+  - `spriteStatus` and fallback transitions.
+
+Error contract and contracts to preserve:
+- Game must continue rendering on recoverable faults.
+- No gameplay state mutation from logging side effects.
+- Public API contract (`render_game_to_text`, `advanceTime`) unchanged.
+- DOM failures should be observable without taking down the loop.
+
+Observability outputs in text snapshot:
+- Include `render_game_to_text().versioning` and operational summary:
+  - `mode`, `modeTransition`, `frame`
+  - `assets.readyRatio`
+  - `ui.metrics` and mission counters
+  - selected action context
+- Optional counters for:
+  - warning counts by type
+  - dropped selectors count (non-fatal)
+  - queue overrun indicators.
+
+Acceptance checks:
+- Missing selectors:
+  - one warning, graceful UI degradation, no crash.
+- Sprite fallback:
+  - gameplay remains interactive and visual output stays coherent.
+- Excessive repeated warnings:
+  - capped by category.
+- Render failures:
+  - caught and reported, loop remains alive when safe.
+- API stability:
+  - `render_game_to_text()` and `advanceTime(ms)` remain stable after recoverable faults.
+- Testability:
+ - logs can be tied to fixed replay traces in deterministic smoke.
+
+Non-goals:
+- Server-side observability or external log aggregation.
+- User-visible analytics data pipeline.
+- Automated exception remediation.
+
+Risk controls:
+- Keep warnings structured and short so console remains signal-rich.
+- Avoid sensitive data in diagnostics.
+- Never expose internal exception stacks to users by default.
+- Ensure observability controls do not alter action timing.
+
+Dependency map:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__QA_Harness_And_Runbook.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`

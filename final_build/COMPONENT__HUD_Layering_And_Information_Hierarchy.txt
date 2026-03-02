@@ -1,0 +1,76 @@
+Component: HUD Layering and Information Hierarchy
+Purpose:
+Maintain readable, non-noisy HUD composition by defining strict layering, priority, and persistence rules for mission, battle, and status text so users can parse the game state immediately.
+
+Scope:
+- HUD panel and control card layering order.
+- Priority rules for objective, threat, mission context, and controls.
+- Text density constraints for compact layouts.
+- Visual emphasis and de-emphasis of secondary information.
+
+Inputs:
+- Mode (`title`, `hub`, `mission`, `battle`, `result`).
+- Mission state:
+  - active objectives, threat level, launch/cooldown hints.
+- Battle state:
+  - turn owner, last action, impact feedback.
+- Visual profile and motion mode (modern/minimal/neon/cinematic, reduced-motion).
+
+Outputs:
+- Deterministic DOM text precedence:
+  - primary objective/status first, then contextual hints, then diagnostics.
+- Layer ordering:
+  - scene/canvas visual base, HUD panel, action/controls, ephemeral impact overlays.
+- Readability guarantees:
+  - key action paths and navigation labels stay visible in viewport.
+
+State model:
+- No gameplay state changes.
+- Existing HUD state fields drive presentation state.
+- Optional render-time hierarchy flags:
+  - "compactMode", "emphasisLevel", "overflowSuppressed".
+
+Rules:
+- Primary layer:
+  - mode title, objective, active mission context.
+- Secondary layer:
+  - threat meter, mission counts, status micro-notices.
+- Tertiary layer:
+  - optional help hints, debug-like text, noncritical console notes.
+- Tertiary layer is suppressed under:
+  - mobile width,
+  - reduced-motion,
+  - high-noise visual mode.
+- Any mode transition must re-evaluate and remap hierarchy once; no frame-by-frame reflow drift.
+
+Failure modes addressed:
+- Overlapping HUD blocks obscuring primary action targets.
+- Action hints stealing visual weight from live game state.
+- HUD overflow on compact screens.
+- Conflicting priorities between objective and mode prompts.
+
+Error handling:
+- Missing DOM fields:
+  - show fallback placeholders in primary layer and keep layout stable.
+- Overflow risk:
+  - gracefully collapse tertiary text and trim repeated tokens.
+- Invalid hierarchy input:
+  - fallback to default ordering and record warning once.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Responsive_Viewport_Integrity.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Controls_Overlay.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Accessibility_And_Readability_Governance.txt`
+
+Acceptance checks:
+- Visual smoke at 390x844 and 1366x768 shows primary mission information first and unobscured.
+- No key action is hidden behind secondary/tertiary text.
+- Mode transitions preserve a deterministic HUD order and no duplicate primary labels.
+- On mobile and reduced-motion, tertiary text collapses without affecting core actions.
+
+Non-goals:
+- Gameplay logic and mission scripting changes.
+- New typography system adoption.
+- External UI framework migration.

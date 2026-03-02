@@ -1,0 +1,107 @@
+Component: Responsive Viewport Integrity
+Purpose:
+Guarantee that the redesigned interface remains readable and complete across mobile and compact desktop viewports without clipping UI, hidden controls, or awkward wrapping.
+
+This component governs layout breakpoints, scale hierarchy, and control density for `visual + gameplay + controls` together.
+
+Scope:
+- Pure layout and presentation behavior.
+- No gameplay logic or simulation contract changes.
+
+Inputs:
+- Viewport geometry:
+  - device width/height
+  - DPR
+- Shell/CSS contracts:
+  - `#play-layout`
+  - `.command-shell`
+  - `.command-stage`
+  - `#game-shell`
+  - `#game-canvas`
+  - `#controls-panel`
+  - `#controls-bottom`
+  - `#controls-actions`
+  - `#controls-objective`
+- Visual profile state:
+  - `data-game-mode`
+  - `data-visual-preset`
+  - `data-motion-state`
+- Runtime state:
+  - active mode (`state.mode`)
+  - active rail content length.
+
+Outputs:
+- Stable two-rail layout behavior:
+  - right telemetry rail fits within viewport in normal desktop widths
+  - bottom command rail remains visible and non-overlapping
+- No overflow in the 390x844 and 1366x768 targets.
+- Consistent touch target and focusable control sizes at narrow widths.
+
+State:
+- No gameplay state mutation.
+- Layout state is derived from CSS media-query selection at paint time.
+
+Behavior model:
+- Desktop baseline:
+  - side telemetry rail + bottom action rail are both visible.
+  - canvas remains primary focal area.
+- Narrow desktop/tablet (~980px and below):
+  - controls rail compresses before fallback.
+  - side panel and bottom rail become stacked/compact without overlap.
+- Mobile:
+  - action chips become single-row-aware and avoid multi-line overflow.
+  - objective and hint text wraps with controlled ellipsis strategy.
+- Reduced motion or compact profile:
+  - decorative shell movement reduced; spacing remains deterministic.
+
+Acceptance checks:
+- At 390x844:
+  - no horizontal scrolling caused by shell or controls
+  - no vertical spill where controls disappear below viewport
+  - command rail remains interactive
+- At 1366x768:
+  - no clipped shell ornaments
+  - side rail remains fully readable
+- 390px to 768px:
+  - two-pane behavior transitions predictably
+  - action rail does not overlap HUD labels
+
+Design constraints:
+- Keep minimum tap target sizes safe for touch.
+- Prefer reducing typography/spacing over hiding controls.
+- Preserve gameplay canvas as first visual priority.
+- Keep action strips and HUD text single-source from existing IDs for contract stability.
+
+Failure modes:
+- Unbounded `max-width` or fixed heights causing overflow.
+- Controls compressing below touch-safe size.
+- Side rail disappearing under heavy rail content.
+
+Error handling:
+- Missing rail elements:
+  - continue rendering canvas and telemetry fallback; do not block.
+- Unexpected extremely-small viewport:
+  - force compact layout branch with tightened spacings and smaller controls.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Shell_Wrapper.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Controls_Overlay.txt`
+
+Validation workflow:
+1) Run fixed layout smoke at 390x844, 560px, 768px, 1366px.
+2) Validate selector availability and action rail visibility.
+3) Validate no clipped content for control labels.
+4) Verify focus order is preserved in each layout branch.
+5) Capture pre/post changes and compare artifact-free transitions.
+
+Non-goals:
+- Reworking mission/combat logic.
+- Full responsive framework migration.
+- Dynamic component framework rewrite.
+
+Quality metrics:
+- `viewport-overflow: 0` for all critical selectors.
+- no hidden/hidden-style-dependent controls in active modes.
+- action rail and objective text remain discoverable at 390px.

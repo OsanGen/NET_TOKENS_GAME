@@ -1,0 +1,72 @@
+Component: Style Token Ownership and Usage Governance
+Purpose:
+Keep visual styling disciplined by ensuring all premium UI values come from declared token layers and that inline/legacy overrides are tracked, limited, and periodically purged.
+
+Scope:
+- Token taxonomies in `styles.css` (`:root` / host-level custom properties).
+- Component-level token consumption by selectors.
+- Hardcoded color/value exceptions.
+- Token drift caused by mode/preset updates and seasonal theme swaps.
+
+Inputs:
+- `styles.css` token declarations and consumer selectors.
+- `index.html` structural classes and IDs.
+- Visual state attributes (`data-visual-preset`, `data-motion-state`, etc.).
+
+Outputs:
+- Stable visual token registry for shell, HUD, controls, effects, and overlays.
+- Audit artifacts that classify:
+  - used tokens,
+  - unused tokens,
+  - hardcoded legacy values.
+- Reduced risk of visual entropy from ad hoc overrides.
+
+State model:
+- No gameplay state impact.
+- Deterministic token map maintained as documentation and smoke policy.
+
+Governance rules:
+- Core visuals must reference token variables first (except explicit exceptions list).
+- Allowed hardcoded exceptions:
+  - text antialiasing, image URLs, transparent placeholders where unavoidable.
+- Token categories must include:
+  - surface, border/glow, threat, text, accent, alert, motion, backdrop.
+- Preset-specific tokens can extend base tokens but may not redefine unsupported base tokens.
+- In one mode/preset switch, token reads must be resolved through attribute gates, not direct duplication.
+
+Failure modes addressed:
+- Visual inconsistency from forgotten token migration.
+- Hidden color/contrast regressions due to one-off hardcoded values.
+- Dead tokens accumulating with obsolete visual branches.
+- Copy/paste overrides bypassing the design system.
+
+Error handling:
+- Missing token:
+  - fallback to closest safe semantic token and log warning.
+- Hardcoded policy violation:
+  - flag as debt item and classify by file/selector.
+- Conflicting token names:
+  - canonicalize to preferred naming and log migration note.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Preset_Governance.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Brand_Compliance_And_Palette_Governance.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Responsive_Viewport_Integrity.txt`
+
+Acceptance checks:
+- Token audit verifies all mission/hub/battle UI-critical selectors consume token-backed values.
+- Hardcoded color count for core selectors stays below threshold and exception-only.
+- Preset switch at runtime changes only token source layer, not raw value definitions.
+- No unreferenced token families for 3 consecutive iterations of current design state.
+
+Operational checks:
+- Quarterly or each major visual refactor:
+  - run token ownership audit.
+  - record exception table updates.
+  - remove at least two dead tokens where safe.
+
+Non-goals:
+- Full design system rewrite.
+- Color accessibility audit outside existing contrast gates.
+- Non-visual gameplay behavior adjustments.

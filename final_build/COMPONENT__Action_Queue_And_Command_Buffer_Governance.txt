@@ -1,0 +1,77 @@
+Component: Action Queue and Command Buffer Governance
+Purpose:
+Keep command intake and execution order deterministic when multiple inputs arrive rapidly, without changing gameplay rules or enabling command loss.
+
+Scope:
+- Input command capture buffer lifecycle in `game.js`.
+- Frame-to-frame action dispatch boundaries.
+- Transition-safe queue draining during mode changes.
+- Command de-duplication policy when duplicate valid inputs occur in one frame window.
+
+Inputs:
+- Raw keyboard events (`keydown`, `keyup`).
+- UI mode context (`title`, `hub`, `mission`, `battle`, `result`).
+- Control focus context (flat rail, nested list, confirmation stage).
+- Frame timing and elapsed delta.
+
+Outputs:
+- Deterministic command queue order.
+- One action commit per frame per command family unless explicitly repeatable.
+- Clean queue reset at safe transition points.
+
+State model:
+- Existing command queue fields or equivalent input staging structures in `state`.
+- Per-frame dispatch counters (derived or existing) for determinism checks.
+- No new gameplay balancing state introduced.
+
+Rules:
+- Capture:
+  - enqueue valid command tokens with timestamp/frame marker.
+- Dispatch:
+  - consume queue in FIFO order at frame tick boundaries.
+- Coalescing:
+  - coalesce high-frequency non-idempotent repeats when required.
+- Completion:
+  - clear one-shot commands once consumed to avoid drift under fast repeat.
+- Transition:
+  - purge transient queue entries on mode transitions and restart/reload paths.
+
+Failure modes addressed:
+- Lost or duplicated command execution under rapid input bursts.
+- Commands firing after context change.
+- Queue growth due to held key not clearing.
+- Inconsistent command order across fixed seeds.
+
+Error handling:
+- Malformed command token:
+  - drop token with single warning and continue.
+- Full queue / saturation:
+  - backpressure by dropping lowest-priority repeated input and logging warning.
+- Stale commands on invalid context:
+  - drop safely and preserve queue hygiene.
+
+Observability:
+- Track queue depth and dropped-command events by seed/mode in debug logs.
+- Include queue snapshot around mode transitions for replay diffing.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Deterministic_Replay_Contract.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Core_Runtime.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Key_Repeat_And_Throttle_Governance.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+
+Acceptance checks:
+- Deterministic seed replay:
+  - two runs with same command burst sequence produce identical action ordering and outcomes.
+- Burst stress smoke:
+  - rapid directional/confirm inputs do not alter intended final action index.
+- Mode-switch smoke:
+  - no stale command executes immediately after mode change.
+- Queue health:
+  - bounded queue depth and no infinite growth across 500-frame test.
+
+Non-goals:
+- Input remapping UX.
+- Game mechanic redesign.
+- Adding asynchronous networked command replication.

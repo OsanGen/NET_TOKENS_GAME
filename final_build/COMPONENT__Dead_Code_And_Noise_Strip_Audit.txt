@@ -1,0 +1,101 @@
+Component: Dead Code and Noise-Strip Audit
+Purpose:
+Identify and remove non-functional/unused code paths, stale selectors, and obsolete visual chrome that no longer serve gameplay or accessibility.
+
+This component is the cleanup governance layer for the complaint classes:
+- "looks the same"
+- "too much noise"
+- "UI clutter"
+- "unused controls shown"
+
+Scope:
+- Static/static-like analysis plus deterministic runtime verification.
+- No feature additions.
+- No gameplay contract changes.
+
+Inputs:
+- Source files:
+  - `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+  - `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+  - `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- Runtime state:
+  - active selectors observed in DOM snapshots
+  - style rules actually exercised in smoke captures.
+- QA fixtures:
+  - current deterministic selector coverage baseline
+  - key screenshots and viewport states.
+
+Outputs:
+- Dead code registry with concrete remediation actions.
+- List of hard deletions vs guarded removals.
+- Audit matrix of unused nodes/effects and risk level.
+
+Inputs to audit:
+- CSS rulesets with no matching DOM node for N consecutive runs.
+- JS branches not exercised by deterministic smoke matrix.
+- DOM IDs/classes referenced only by stale code.
+- "Noise strip" classes and sections not tied to active UX decisions.
+
+Behavior model:
+- Static pass:
+  - parse for CSS selectors by class/ID.
+  - cross-reference with runtime/DOM snapshots and JS references.
+- Dynamic pass:
+  - run baseline mode flow and record selector coverage.
+- Decision matrix:
+  - Hard delete if never used and no external contract dependence.
+  - Guarded migration if used only by legacy/hidden branch.
+  - Keep if external integrator depends on it or if contract uncertain.
+- Visual-noise cleanup:
+  - remove decorative strips/footers not used for gameplay or controls.
+  - keep only one authoritative action strip and one actionable HUD context path.
+
+Error handling:
+- If uncertain ownership found:
+  - keep path temporarily with TODO + risk note.
+- If hard delete would break screenshot path:
+  - rollback in branch and classify as "blocked debt" with proof.
+
+Acceptance criteria:
+- No stale selector remains in smoke-critical mode flow:
+  - every retained ID/class in styles has observed usage or explicit contract reason.
+- Confirmed dead code candidates are documented with:
+  - location, owner component, impact, and action.
+- Hard delete candidates for visual noise are either removed or fenced behind debug flag.
+- `#controls-foot`, `.status-strip`, and any duplicated footnote noise strip variants removed from final markup and CSS.
+- `current build and QA scripts` remain green after removal.
+
+Risks:
+- Over-pruning may remove external integration points unexpectedly.
+- False-positive in selector coverage if dynamic generation occurs outside smoke path.
+- Styling order issues if dead rule removal changes cascade unexpectedly.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Controls_Overlay.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Technical_Debt_Register.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__QA_Harness_And_Runbook.txt`
+
+Verification workflow:
+1) Take baseline snapshots for title/hub/mission/battle at required viewports.
+2) Cross-match CSS and DOM coverage.
+3) Produce deletion list with confidence score (high/medium/low).
+4) Remove only high-confidence noise/legacy entries.
+5) Re-run QA harness smoke and update gap statuses.
+
+Acceptance metrics:
+- Number of orphan selectors reduced by at least 50% after one cleanup pass.
+- No new S0 selector diff failures.
+- Visual noise complaint checklist shows:
+  - no duplicate bottom noise bars
+  - no stale footer hints
+  - no hidden full-screen grain overlays in default modern.
+
+Non-goals:
+- Rewriting gameplay state machine.
+- Changing mission/combat logic.
+- Introducing runtime config servers.
+
+Hard deletion rule:
+- For each entry in this audit, provide a "why not use" rationale before removal.
+- If rationale is incomplete, default to keep and annotate for later cleanup.

@@ -1,0 +1,197 @@
+Component Index — NEWGAME
+
+1) Component: Core Runtime Engine
+- File(s): `game.js`
+- Purpose: Deterministic game simulation, mode orchestration, input handling, and frame updates.
+- Inputs:
+  - Keyboard/input events
+  - Time delta from animation loop
+  - Mode state and internal timers
+  - Player/enemy/objective initialization metadata
+- Outputs:
+  - Mutated canonical gameplay state
+  - Frame render instructions
+  - State snapshots via `render_game_to_text()`
+  - Gameplay progression across title/hub/mission/battle/result
+- State:
+  - mode, tick, time, seed
+  - player state, enemy state, mission state, objective counters
+  - combat state and turn/action context
+  - visual state flags used for render behavior
+- Edge cases:
+  - Unknown mode fallback
+  - invalid input under current mode
+  - zero/negative deltas in advance time path
+- Dependencies:
+  - DOM nodes in `index.html` for sync + canvas
+  - Sprite files in `assets/`
+  - presentation tokens expected from `styles.css`
+- Acceptance checks:
+  - Title to mission loop runs with stable mode transitions
+  - Victory/failure gates remain deterministic
+  - Public API remains callable and side-effect-safe
+
+2) Component: Visual Post-Process
+- File(s): `game.js`, `styles.css`
+- Purpose: tone shaping, pulse effects, battle strike visuals, reduced-motion guardrails.
+- Inputs:
+  - gameplay state changes
+  - pulse metadata and visual profile flags
+  - user input for preset/profile toggles
+- Outputs:
+  - post-process overlays, glow/scanline/particle cues
+  - battle impact visuals and motion-safety scaling
+- State:
+- local render-time VFX state
+  - current burst values
+  - profile/motion intensity gates
+  - optional reduced-motion override flags
+- Edge cases:
+  - reduced-motion mode mismatch
+  - pulse clipping at high values
+  - overlay stacking after rapid battle hits
+- Dependencies:
+  - core gameplay outputs from `game.js`
+  - CSS tokens and transitions from `styles.css`
+- Acceptance checks:
+  - readable overlays under normal, reduced and minimal profiles
+  - no frame corruption when burst values are near max
+
+3) Component: Controls Overlay
+- File(s): `index.html`, `styles.css`, `game.js`
+- Purpose: Display mission HUD, action rail, bottom command panel, and dynamic objective/status text.
+- Inputs:
+  - synchronized game state from `game.js`
+  - profile/motion mode from state flags
+- Outputs:
+  - updated DOM values for `#hud-*`, `#controls-*`, action hints
+- State:
+  - visibility and placement assumptions from layout state
+  - external layout mode assumptions (rail/bottom split)
+- Edge cases:
+  - missing/renamed DOM nodes
+  - viewport overflow or mobile clipping
+  - control text wrapping in compact layouts
+- Dependencies:
+  - sync call-sites in `game.js`
+  - styles in `styles.css`
+  - shell containers in `index.html`
+- Acceptance checks:
+  - no spill outside viewport in desktop/mobile
+  - mode hints and objective text always present and legible
+
+4) Component: Brand Scene Engine
+- File(s): `game.js`
+- Purpose: manage scene recipes, visual identity tone, and brand token usage across states.
+- Inputs:
+  - mode/scene transition events
+  - mission/scene seed and progression
+- Outputs:
+  - selected scene recipes
+  - ambient color and framing directives for renderer
+- State:
+  - current scene id
+  - accent token and tone set selections
+- Edge cases:
+  - recipe missing and fallback color set handling
+  - mode jumps skipping expected scene handoff
+- Dependencies:
+- `styles.css` token expectations
+  - CSS variables for tonal consistency
+- Acceptance checks:
+  - single cohesive visual identity across all modes
+  - no invalid token reference to undefined palette keys
+
+5) Component: Asset Pipeline
+- File(s): `assets/*`, `scripts/generate-imagegen-assets.sh`, `tmp/imagegen/*`
+- Purpose: manage sprite and background art inputs used by gameplay rendering.
+- Inputs:
+  - art prompts and generation metadata in `tmp/imagegen/*`
+  - local generation tooling execution
+- Outputs:
+  - sprite files under `assets/sprites/*`
+- State:
+  - generated file set and last update state
+- Edge cases:
+  - missing sprite files for expected ids
+  - dimension mismatch vs render scale assumptions
+- Dependencies:
+  - local shell + image tools
+  - runtime loader reads in `game.js`
+- Acceptance checks:
+  - all required sprite names exist and render correctly
+  - no hard fail when assets are missing (graceful fallback path)
+
+6) Component: Local Launch Tooling
+- File(s): `scripts/open-game.sh`, `scripts/stop-game.sh`
+- Purpose: deterministic local iteration via lightweight local server lifecycle.
+- Inputs:
+  - local env and chosen port
+- Outputs:
+  - running server process
+  - cleanup of stale PID state
+- State:
+  - cached server PID file
+- Edge cases:
+  - stale PID file after forced close
+  - port conflict from prior sessions
+- Dependencies:
+  - shell commands `lsof`, `python3`, browser binary where configured
+- Acceptance checks:
+  - single start/stop cycle works repeatedly
+  - script never orphan-locks port across reruns
+
+7) Component: Validation Loop
+- File(s): `web_game_playwright_client_local.js`
+- Purpose: automated smoke and capture of deterministic flows.
+- Inputs:
+  - exposed API and DOM contract from runtime
+- Outputs:
+  - status logs and screenshot evidence
+- State:
+  - script-runner step state
+- Edge cases:
+  - selector drift if DOM contracts change
+  - timing flakiness under heavy frame load
+- Dependencies:
+  - Playwright in `package.json`
+- Acceptance checks:
+  - can reproduce title->hub->mission->battle->result flow
+  - screenshots/log snapshots reflect expected UI structure
+
+8) Component: Pages Deployment
+- File(s): `.github/workflows/deploy-pages.yml`
+- Purpose: publish static artifacts to GitHub Pages.
+- Inputs:
+  - repository content (`index.html`, `game.js`, `styles.css`, `assets/*`)
+  - main branch trigger or dispatch event
+- Outputs:
+  - deployed static site URL
+- State:
+  - GitHub artifact and deployment state in GitHub Actions
+- Edge cases:
+  - artifact missing required files
+  - action permission/network failures
+- Dependencies:
+  - GitHub Actions runners and Pages
+- Acceptance checks:
+  - deployment succeeds from main
+  - public page loads without missing-file errors
+
+9) Component: Spec / Build Registry
+- File(s): `final_build/*.txt`, `progress.md`, `CURRENT_GAPS.txt`
+- Purpose: maintain architecture, gap tracking, component specs, and rollout context.
+- Inputs:
+  - source changes and implementation decisions
+- Outputs:
+  - up-to-date living design and architecture documentation
+- State:
+  - pending gaps, resolved items, pending blockers
+- Edge cases:
+  - stale component specs after refactors
+  - gap tracker without next action and status
+- Dependencies:
+  - editing and maintenance discipline from this repo’s process
+- Acceptance checks:
+  - all completed work items reflect in relevant component docs
+  - unresolved items are explicit and actionable

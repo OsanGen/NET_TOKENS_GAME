@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "project": "NEWGAME",
+    "version": "unreleased",
+    "generated_by": "final_build documentation update",
+    "last_updated": "2026-02-28",
+    "timezone": "America/New_York"
+  },
+  "component_inventory": [
+    {
+      "name": "index.html",
+      "owner": "Frontend Shell",
+      "criticality": "high",
+      "interfaces": [
+        "DOM surface"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "styles.css",
+      "owner": "Visual Design",
+      "criticality": "high",
+      "interfaces": [
+        "Visual tokens",
+        "Responsive classes"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "game.js",
+      "owner": "Core Runtime",
+      "criticality": "critical",
+      "interfaces": [
+        "render loop",
+        "mode transitions",
+        "public APIs"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "web_game_playwright_client_local.js",
+      "owner": "Validation",
+      "criticality": "medium",
+      "interfaces": [
+        "Playwright runner",
+        "contract verification"
+      ],
+      "status": "active"
+    },
+    {
+      "name": ".github/workflows/deploy-pages.yml",
+      "owner": "Operations",
+      "criticality": "high",
+      "interfaces": [
+        "Static deployment",
+        "artifact generation"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "scripts/open-game.sh",
+      "owner": "Operations",
+      "criticality": "medium",
+      "interfaces": [
+        "Local launch",
+        "process lifecycle"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "scripts/stop-game.sh",
+      "owner": "Operations",
+      "criticality": "medium",
+      "interfaces": [
+        "Local cleanup",
+        "PID management"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "final_build",
+      "owner": "Documentation",
+      "criticality": "high",
+      "interfaces": [
+        "Handoff",
+        "architecture map",
+        "gap tracking"
+      ],
+      "status": "active"
+    }
+  ],
+  "risk_metrics": [
+    {
+      "risk": "DOM contract drift",
+      "severity": "high",
+      "owner": "Frontend + Core Runtime",
+      "mitigation": "selector registry, startup assert, doc alignment"
+    },
+    {
+      "risk": "Frame regression under effects",
+      "severity": "medium",
+      "owner": "Visual Post Process",
+      "mitigation": "bounded effects and reduced-motion gates"
+    },
+    {
+      "risk": "Deployment artifact omissions",
+      "severity": "high",
+      "owner": "Operations",
+      "mitigation": "pre-deploy required file checks"
+    },
+    {
+      "risk": "Asset mismatch",
+      "severity": "medium",
+      "owner": "Asset Pipeline",
+      "mitigation": "asset manifest checks and visual smoke verification"
+    }
+  ],
+  "documentation_metrics": {
+    "files_count": 0,
+    "required_contract_docs": [
+      "BUILD_MAP.txt",
+      "ARCHITECTURE_DATA_FLOW.txt",
+      "CURRENT_GAPS.txt",
+      "COMPONENT_DEPENDENCY_DAG.txt"
+    ],
+    "docs_status": "living"
+  },
+  "notes": [
+    "Set docs_status to stale if any file in required_contract_docs is not updated with current architecture changes.",
+    "Set file count and additional metrics from external CI/reporting pipelines."
+  ]
+}

@@ -1,16 +1,40 @@
 Component: Hub Flow
 Purpose:
 Provide deterministic ship-hub navigation with clear planet selection and launch-lock behavior.
+Hub flow must provide a legible “navigation cockpit” experience: stable world topology, deterministic target ordering, and no accidental visual noise from transient overlays.
 
 Inputs:
 - Player hub movement.
 - Seeded planet list from `generateHub(seed)`.
 - `Space` edge input near a planet.
+- Pointer-independent lock logic based on distance + facing thresholds.
+- View mode and visual quality profile:
+  - `state.mode`
+  - `state.visual.vfxPreset`
+  - `state.visual.renderQualityMode`
+- Mission seed and mission seed-lock window from:
+  - `state.seed`
+  - `state.seedState`
+- Mission selection contract from `state.hubMissions`.
+- Scene timing:
+  - `state.timeScale`
+  - `state.frame`
+- Ship/player position and movement params:
+  - `state.shipX`, `state.shipY`
+  - `state.shipRadius`
+  - `state.shipSpeed`
 
 Outputs:
 - `planetLockId` + `planetLockTimer` update lifecycle.
 - Mission start when lock timer completes while player remains in proximity.
 - Hub render with route links, readable labels, and launch prompts.
+- `render_game_to_text().hub` snapshot for capture-driven QA:
+  - `focusedPlanetId`
+  - `lockProgress`
+  - `missionReady`
+  - `planetCount`
+  - `shipCoords`
+- Route board action availability to external controls via `syncExternalControlsUI()`.
 
 Visual Behavior:
 - Route nodes render in a board-like layout with simplified grid density, directional links, and focus halos.
@@ -19,12 +43,22 @@ Visual Behavior:
 - Mission/task details remain in the dedicated route board panel and external HUD, not on every node.
 - Planet nodes are now rendered with in-canvas spherical shading/ring detail rather than flat card-driven presentation.
 - Hub ship marker is rendered with a dedicated vector glyph (hull gradient, cockpit, and thruster highlights) to read as an actual spacecraft.
+- Planet glyphs and route edges scale with viewport-safe multipliers so nodes remain identifiable in low-DPR and small-width captures.
+- Node labels are intentionally short and always prioritize the name + lock progress token.
+- Orbital links avoid full-screen crossing lines using angle-aware path order and simple segment crossing checks.
+- Lock state communicates through color ramp + ring pulse rather than heavy fill overlays.
+- A lightweight mission board pulse indicates `readyToLaunch` without consuming large HUD space.
 
 State:
 - `state.hubs`: four seeded planets around centered hub anchor.
 - `state.planetLockId`: current locked planet id or `null`.
 - `state.planetLockTimer`: countdown frames before launch.
 - `state.visual`: scene-level branding and accent metadata used by post-process render effects.
+- `state.hubLayoutSeed` and per-seed derived `hubNodeState` cache.
+- `state.hubLockCooldown` to avoid immediate re-locking after launch failure.
+- `state.hubActionHintCooldown` for UI hint timing and anti-flash.
+- `state.selectedMissionId` for mission handoff determinism.
+- `state.activeMission` while transition is queued.
 
 Layout Rules:
 - Deterministic nodes are generated from `seed()` with per-index fan angles and radii.
@@ -33,12 +67,33 @@ Layout Rules:
 - Route order is computed by angle around center to produce readable looped links.
 - Focus/lock tags are clamped to board bounds and rendered as short chips only when needed.
 - Planet and ship glyphs are always visible regardless of sprite readiness; hub readability does not depend on sprite files loading.
+- Route rendering avoids nodes beyond safe inner bounds when `state.visual.scaleMode` is `"compact"` to preserve action rail room.
+- Distance threshold for lock eligibility:
+  - `HUB_LOCK_RADIUS = max(baseLockRadius, baseLockRadius * uiScaleMultiplier)`
+- Focus transition is hysteresis-based to prevent jitter:
+  - enter focus at `enterRadius`, exit at `exitRadius` with margin.
+- Lock timer only increments when all of the following hold:
+  - focused planet exists
+  - mission board has actions
+  - player remains in lock window
+  - not in reduced-motion-only frame-block mode
 
 Edge Cases:
 - Leaving proximity during lock cancels timer and requires re-lock.
 - Hub returns from result reset lock state cleanly.
 - Start button is hidden outside title mode to prevent accidental overlay clutter.
 - Compact tags must remain on-screen even when focused nodes are near edges.
+- If all planets become invalid/out-of-sync for current seed, route falls back to first seeded planet deterministically.
+- If seed-derived positions collide repeatedly, the solver should still cap iterations and keep geometry deterministic.
+- On rapid input jitter while near multiple planets, focus selection must be stable for at least two frames.
+- If mission metadata for a planet is missing, planet remains selectable but cannot launch until metadata resolves (or stub mission is generated).
+- Mission launch while already transitioning is ignored to avoid duplicate `missionMode` flips.
+- In reduced-motion/minimal profile, lock feedback remains non-animated and uses discrete state changes only.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
 
 Acceptance Checks:
 - Player can lock and launch every visible planet deterministically.
@@ -48,3 +103,19 @@ Acceptance Checks:
 - Focused mission hints remain deterministic via route board panel and HUD without mutating global RNG.
 - Lock messages and countdown match behavior in text state.
 - Planet nodes and ship marker remain readable at a glance as physical objects (not abstract dots/triangles) on both desktop and mobile viewport captures.
+- Visual and gameplay lock parity:
+  - lock timer increments exactly when `distance <= entryRadius` and `planetMissionUsable` is true.
+  - no launch trigger when locked planet has missing/invalid mission payload.
+- Hub progression determinism:
+  - same seed + same movement yields same launch target and same mission path.
+- Transition stability:
+  - launch transition leaves no residual lock pulses in non-hub modes.
+- Accessibility:
+  - lock and route text remain visible under `prefers-reduced-motion`.
+- Performance:
+  - Hub scene render pass remains O(N) for nodes + O(N^2) only for deterministic short-edge pair checks with N=4 default.
+
+Logging/telemetry:
+- Emit deterministic debug marker when lock starts/stops and when launch is triggered.
+- Track `hubTick` counters for mission lock start, cancel, launch attempt, and final transition.
+- Expose counters in `render_game_to_text().debug.hub` for smoke-run diffing.

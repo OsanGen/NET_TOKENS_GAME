@@ -1,0 +1,215 @@
+Architecture Data Flow — NEWGAME (Strict Specification)
+
+Purpose
+- Define deterministic state transitions, event streams, and observable outputs for maintenance handoff.
+- Provide explicit schemas for integrations that depend on runtime behavior.
+
+Scope
+- Client-only game runtime (`game.js`) plus browser shell (`index.html`) and stylesheet (`styles.css`).
+- Local automation and deployment support documents are included as consumers/integrators.
+
+1) Runtime event stream
+
+1.1 Boot events
+- `boot`
+  - trigger: browser loads `index.html` and executes `game.js`
+  - inputs: DOM nodes (`#game-shell`, `#game-canvas`, control panel IDs)
+  - outputs:
+    - `window.render_game_to_text` exposed
+    - `window.advanceTime` exposed
+    - `mode = "title"`
+    - first render tick scheduled
+
+1.2 Input events
+- `keydown`
+  - sources: keyboard event handlers in `game.js`
+  - routed by active mode
+  - examples:
+    - `F` -> fullscreen toggle
+    - `V` -> visual preset cycle
+    - `P` -> profile cycle
+    - `H` -> overlay visibility toggle
+    - nav keys -> focus and action selection
+    - action keys -> attack/confirm/cancel depending mode
+  - output:
+    - input intent flags updated in state
+    - one or more state branches executed on next `update`
+
+1.3 Timer/time-slice events
+- `update(dt)`
+  - trigger: animation frame loop
+  - updates:
+    - timers, cooldowns, mission counters
+    - transition conditions
+    - combat resolution windows
+  - output:
+    - mutated canonical state
+    - derived HUD values (mode title, objective, hint text)
+
+1.4 Render events
+- `render()`
+  - reads canonical state
+  - outputs:
+    - canvas frame
+    - post-process pass
+    - control sync writes to DOM
+
+1.5 API events
+- `render_game_to_text()`
+  - output object: text snapshot of current state and UI context
+  - consumers: local Playwright scripts, diagnostics, automation.
+- `advanceTime(ms)`
+  - input: integer ms
+  - output: progressed deterministic state as if `ms` elapsed
+
+2) Mode state machine
+
+- `title`
+  - entry: startup and from result timeout
+  - output UI:
+    - start prompt
+    - no combat/action HUD
+  - transitions:
+    - action Start -> `hub`
+- `hub`
+  - entry: mission ready
+  - output UI:
+    - lock timer status, orbit visuals, launch target info
+  - transition:
+    - launch action -> `mission`
+  - failure outputs:
+    - fallback to title on unrecoverable lock/time invalid path (if enforced)
+- `mission`
+  - entry: post-launch
+  - output UI:
+    - objective panel
+    - interactive action text and mission hints
+  - transition:
+    - threat condition -> `battle`
+    - objective complete -> `result`
+- `battle`
+  - entry: threat/contact resolved
+  - output UI:
+    - side controls
+    - attack/defense effects
+  - transitions:
+    - defeat/victory branch -> `mission`
+  - effect outputs:
+    - impact pulses/masks/rings (visual only)
+- `result`
+  - entry: mission resolved
+  - output UI:
+    - completion/failure summary
+  - transition:
+    - timed/back action -> `hub`
+
+3) State schema (authoritative fields)
+
+3.1 Mode state fields
+- `mode`
+  - type: string enum
+  - values: `title | hub | mission | battle | result`
+- `time`, `tick`
+  - type: number
+  - purpose: progression and animation timing
+- `seed`
+  - type: number
+  - purpose: deterministic determinism source
+
+3.2 Player/entity fields
+- `player`
+  - includes positional and gameplay stats used by mission and battle
+- `enemies[]`
+  - hostile units with HP/state/opponent metadata
+- `objects[]`
+  - mission props, pickups, interactables
+- `mission`
+  - objective metadata and gating thresholds
+
+3.3 Combat fields
+- `battle`
+  - attacker/defender references, selected action index, turn owner
+- `attackResult`
+  - damage, source species/side, result class
+- `battleImpactColor`, `battleImpactSeed`, etc.
+  - visual-only payload metadata
+
+3.4 Visual fields
+- `visual`
+  - `profile`, `preset`, `vfxProfile`, `motionFlags`
+- `pulses`
+  - transient intensities for post-process and effects
+- `visualProfileAuto`
+  - reduced-motion and profile-aware intensity gate
+
+4) Output surfaces and schemas
+
+4.1 DOM-bound output (`syncExternalControlsUI`)
+- `#hud-mode-title`
+- `#hud-objective-title`
+- `#hud-objective-main`
+- `#controls-actions`
+- `#controls-panel` / `#controls-bottom`
+  - updated each render from state and mode context.
+
+4.2 Canvas output
+- main scene + entity layer
+- combat lane + overlay
+- battle effect pass + reduced-motion safe substitutions
+
+4.3 Snapshot output (`render_game_to_text`)
+- object/string payload for deterministic QA/automation
+- includes:
+  - mode
+  - objectives
+  - actor key stats
+  - control visibility/state summary
+
+5) External consumers and contracts
+
+- `web_game_playwright_client_local.js`
+  - loads page
+  - uses control selectors and HUD text fields
+  - triggers API methods for controlled stepping
+
+- Manual QA
+  - browser visual inspection
+  - key sequence checks for transition integrity
+
+6) Failure handling and fallback
+
+- Missing DOM node
+  - fallback: guard reads/writes where possible
+  - risk if selector missing -> stale HUD sync path
+- Unknown mode
+  - fallback to safe default or guarded transition
+- Invalid action in mode
+  - ignored or rerouted based on current mode policy
+- Excessive VFX/overlay intensity
+  - clamped by amplitude checks in render pass
+
+7) Performance-sensitive data paths
+
+- per-frame state diff + render workload
+- per-frame DOM text sync
+- per-hit battle FX burst creation
+- reduced-motion mode must cap effect counts and durations
+
+8) Configuration surfaces
+
+- Visual profile/mode flags are runtime state, not compile-time constants.
+- Future config knobs can be centralized in one visual object:
+  - intensity caps
+  - profile durations
+  - reduced-motion behavior thresholds
+
+9) Governance update trigger
+
+Any changes affecting this data flow must update:
+- `final_build/BUILD_MAP.txt`
+- `final_build/CURRENT_GAPS.txt`
+- relevant component docs:
+  - `COMPONENT__Core_Runtime.txt`
+  - `COMPONENT__Combat_Loop.txt`
+  - `COMPONENT__Visual_Post_Process.txt`
+  - `COMPONENT__Controls_Overlay.txt`

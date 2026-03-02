@@ -100,6 +100,74 @@ Acceptance Checks:
 - `render_game_to_text` includes `ui.brandAudit` with live tone/visual profile metrics.
 - Playwright smoke path executes with no `errors-*.json` output after script steps.
 
+Determinism controls:
+- One source of randomness: `state.rng` and deterministic derivations (`spawnRngFromState`, `pickFromSeed`) at call boundaries.
+- Mission and combat randomness must be consumed in a stable order; any refactor must preserve consume sequence.
+- Transition timing and pulse lifetimes are frame-based with deterministic clamp logic.
+- `advanceTime(ms)` is the primary deterministic stepping API for test reproducibility.
+
+Mode-transition contract:
+- `setMode(nextMode)` is the authoritative finite-state transition.
+- `startModeTransition(toMode, durationFrames)` writes blend metadata only; state ownership remains in `setMode`.
+- Transition IDs increment monotonically and are compared to invalidate stale transition callbacks.
+- Any transition into `result` should:
+  - cancel pending battle lock states
+  - clear battle impact visuals
+  - queue HUD/console summary in one frame.
+- `resetMissionState` and `startMission` should never run on top of unresolved pending transitions.
+
+Input model and safety:
+- `keydown/keyup` pipeline:
+  - maps both arrow and WASD/JKL; ignores repeated keydown for edge-only controls.
+  - supports action repeats via `input.*` hold where gameplay requires continuous behavior (e.g., `input.space`).
+- `keyUp` always clears transient edges (`*Edge`) to avoid phantom confirm/cancel.
+- Blur/visibility events clear non-persistent edges and pause visual-only timers where safe.
+
+Performance and timing:
+- `loop(now)` uses fixed-step accumulator; if browser stalls beyond maximum delta, integration should cap to avoid unstable catch-up.
+- Avoid per-frame allocations in hot update paths (`hudNodes` cache, sprite renderers, and object pooling).
+- No setInterval loops in runtime except optional external tooling (keeps deterministic progression).
+- Heavy effects branches (`particle`, `noise`, `chromaticBleed`) are profile-gated.
+
+Error and hard-failure strategy:
+- Non-blocking runtime faults:
+  - unknown mode: fallback to title + warning.
+  - invalid mode-specific function: log and noop transition.
+  - missing DOM refs: continue simulation + degrade to non-interactive HUD mode.
+- Blocking faults:
+  - canvas unavailable (0x0): skip draw path, log explicit message, keep state updates paused.
+  - malformed payload in `window.gameState` getter: restore canonical defaults.
+- Recovery strategy:
+  - `resetGame()` should be safe even when called during combat transitions.
+  - `window.gameState` remains read-only by convention; runtime does not trust external mutation.
+
+Observability:
+- Smoke telemetry from `render_game_to_text()` should include at least:
+  - `state.mode`, `state.frame`, `state.seed`
+  - `state.transitionProgress` if transitioning
+  - `state.visual.motionState`
+  - `state.messageCount`
+- Optional debug flag:
+  - `window.DEBUG_RUNTIME_LOOP`: when true, emit deterministic frame-level heartbeat every N frames.
+- Ensure console noise is deduplicated (same warning printed once per session when possible).
+
+Failure-mode checklist:
+- Transition race:
+  - if mode changes twice in one frame, ensure newest mode wins and stale transition UI callbacks are ignored.
+- Replay mismatch:
+  - same seed + same input script + same advanceTime intervals must produce stable `render_game_to_text()` snapshots.
+- Browser resize storm:
+  - repeated resize should not recreate display canvases; should only recompute CSS dimensions and scaling.
+- Input desync:
+  - stale keydown state after tab-switch/focus-loss should auto-clear non-persistent hold/edge flags.
+- Sprite/asset failures:
+  - missing visual assets must never break state stepping or transition logic.
+
+Risk controls for refactors:
+- Keep runtime and render concerns separated so rendering tweaks do not touch gameplay mutation.
+- Centralize any new mode handling through `setMode` and avoid inline mode checks.
+- Avoid changing loop timing constants without updating `ENTERPRISE_TEST_MATRIX`.
+
 Maintenance Notes:
 - Dead runtime helpers were removed in this pass:
   - `normalizeModeTransition`

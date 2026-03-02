@@ -1,0 +1,167 @@
+Component: Visual Shell Wrapper
+Purpose:
+Define the deterministic shell and stage composition around the playable canvas, including command chrome, responsive frame constraints, and OSAN-compliant visual boundaries that are controlled through CSS tokens and body attributes.
+
+The component is non-gameplay and guarantees a stable visual structure for:
+- command shell geometry (`.command-shell`, `.command-stage`)
+- canvas framing (`#game-shell`, `#game-canvas`)
+- decorative ornaments that do not alter simulation
+- control rail placement boundaries so HUD and actions never spill below the fold.
+
+Primary responsibilities:
+- Render and maintain a fixed shell hierarchy in `index.html`:
+  - full-page shell container
+  - split play layout container
+  - stage/canvas wrapper and outer chrome layers
+  - right telemetry rail and bottom action rail containers
+- Translate visual state to shell state through body attributes and CSS tokens.
+- Enforce viewport-safe geometry for all modes (title, hub, mission, battle, result).
+- Keep decorative layers from consuming gameplay-space or obstructing input targets.
+
+Inputs:
+- DOM anchors and shell hierarchy from `index.html`.
+- Visual metadata from `game.js`:
+  - `state.mode`
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfileAuto`
+  - `state.visual.visualProfile`
+  - `state.visual.modeTransition`
+- Runtime shell state:
+  - `body[data-game-mode]`
+  - `body[data-visual-preset]`
+  - `body[data-visual-tier]`
+  - `body[data-ui-tier]`
+  - `body[data-motion-state]`
+- Browser viewport and DPR from CSS/JS layout calculations.
+- Static CSS tokens in `styles.css`.
+
+Outputs:
+- Shell and stage DOM contract:
+  - stable command shell bounds
+  - readable canvas box inside shell
+  - consistent action and telemetry rail placement
+- Visual state is visible without gameplay logic change:
+  - same game mechanics, different chrome behavior
+- Deterministic layout across mode changes and profile toggles.
+
+State:
+- No gameplay mutation.
+- No runtime storage beyond layout calculations and style class/data updates.
+- State is derived per frame (or at sync points) from `game.js` sync events.
+
+Component boundaries:
+- Owns:
+  - semantic wrapper structure in markup
+  - shell/orbital ornament style states
+  - responsive container spacing
+  - z-index and pointer events around the canvas and controls
+- Does not own:
+  - mission logic
+  - combat math
+  - API contracts (`render_game_to_text`, `advanceTime`)
+  - asset loading and simulation state
+
+Behavior model:
+- At app start:
+  - shell root exists before first frame
+  - shell uses the default visual preset as token source
+- During each render tick:
+  - shell attributes reflect current mode/preset/tier/motion
+  - wrappers remain stable and do not recreate; only style state changes
+- On mode transitions:
+  - shell state transitions through data attributes and token classes
+  - canvas stage retains frame size contract and only content changes
+- On profile toggles (`V`, `P` paths):
+  - no structural markup changes; only shell/ornament token mapping updates
+
+Core layout contracts:
+- Desktop:
+  - canvas shell remains dominant center region
+  - right rail remains bounded within viewport width
+  - action rail remains visible below canvas while preserving play-space
+- Mobile (`<= 980px` and `<= 560px`):
+  - stack to prevent overflow
+  - bottom rail and telemetry rail remain touch-friendly and non-overlapping
+  - shell ornaments and gradients degrade to static non-obstructive states
+
+Data flow:
+1) `game.js` emits authoritative state and body attributes during sync.
+2) CSS receives attributes/tokens and resolves preset-specific geometry.
+3) Browser paint applies shell composition and decorative accents.
+4) Control rails are available for user interaction without entering gameplay container.
+
+Control-flow:
+- `syncExternalControlsUI()` sets `body` attributes.
+- `styles.css` consumes attributes and token variables.
+- Layout engine only adjusts classes/variables, never tick simulation values.
+- Shell render remains independent from mission/battle outcomes.
+
+Error handling:
+- Missing shell nodes:
+  - fallback to base browser flow
+  - game loop continues from `game.js`
+  - debug output records missing shell contract node once per session
+- Overscan/over-height risk:
+  - clamp and collapse rail spacing by responsive tokens
+- Motion-heavy state toggles:
+  - `prefers-reduced-motion` and `body[data-motion-state="reduced"]` switch to near-static shell treatments
+
+Key DOM contract:
+- Required shell IDs/classes:
+  - `#play-layout`
+  - `#game-shell`
+  - `#game-canvas`
+  - `.command-shell`
+  - `.command-stage`
+  - `#controls-panel`
+  - `#controls-bottom`
+  - `.controls-actions`
+  - `.shell-ornament`
+  - `.shell-ornament-left`
+  - `.shell-ornament-right`
+- Optional quality indicators:
+  - `.controls-bottom`, `.controls-objective`
+- Removed legacy:
+  - `#controls-foot`
+  - `.status-strip`
+
+Token and preset interactions:
+- Preset tokens in `:root` and `body[data-visual-preset]` control:
+  - ambient gradients
+  - shell scan rates
+  - frame halo intensity
+  - CTA micro-motion
+  - action rail contrast and spacing
+- `data-motion-state="reduced"` disables high-amplitude shell animation.
+
+Performance constraints:
+- No per-frame DOM reconstruction.
+- Shell class/data updates are cheap and idempotent.
+- Ornament layers stay GPU-friendly (small number of pseudo layers, bounded blur).
+
+Acceptance checks:
+- No horizontal overflow at launch and during mode transitions.
+- Action and telemetry rails remain inside viewport on both 390x844 and 1366x768 captures.
+- Decorative ornaments do not block canvas hit-testing.
+- Shell style remains deterministic under same preset+mode combos.
+- Switching `V` and `P` updates shell states within one sync cycle.
+- Reduced-motion mode retains structure with minimal motion without visual collapse.
+- Removed legacy noise strips are fully absent from DOM and CSS.
+- `window.render_game_to_text()` remains unchanged and capture-compatible.
+
+Failure modes:
+- Layout spill:
+  - cause: uncontrolled fixed sizing or missing max-height clamps.
+  - effect: controls overflow page and lose legibility.
+- Preset desync:
+  - cause: stale body attributes.
+  - effect: wrong palette and spacing branch.
+- Node drift:
+  - cause: wrapper depth mismatch between CSS and markup.
+  - effect: action rail detaching from canvas.
+
+Non-goals:
+- Gameplay balance and balance-affecting values.
+- New API endpoints.
+- Server-side rendering.
+- Dynamic canvas resizing logic beyond shell-bound layout constraints.

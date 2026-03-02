@@ -101,12 +101,21 @@ Brand + CSS interface:
 - Styles for all visible surfaces live in `styles.css`:
   - `.page-shell`, `.hero-band`, `.command-shell`
   - `#game-shell`, `#game-canvas`, `.shell-ornament`
-  - `.controls-panel`, `.hud-panel`, `.hud-chip`, `.hud-badges`, `.controls-actions`, `.status-strip`
+  - `.controls-panel`, `.hud-panel`, `.hud-chip`, `.hud-badges`, `.controls-actions`, `.controls-bottom`
   - `#start-btn`, `.is-critical`, `.is-warning`, `.is-ready`, `.is-muted`, `.is-digital`
 - CSS now follows CogSec pastel rules:
   - White/Fog field first.
   - INK borders for structure.
   - one micro-accent color per mode via body attributes.
+
+Render quality control and anti-blur strategy:
+- Full-size source rendering: internal scene is drawn at logical design resolution and scaled once at final composition; this removes multi-pass upsample/box-filter jitter.
+- Smoothing policy is mode-aware:
+  - `visualQualityMode === "performance"` can enforce nearest-neighbor for low-power devices.
+  - `visualQualityMode === "quality"` enables bilinear-like smoothing for planets, ships, and UI chrome while avoiding sub-pixel drift.
+- `INTERNAL_RENDER_SCALE` reset to `1` is the primary de-noise lever by preventing internal over-resolution interpolation before display.
+- Sprite and planet scaling is front-loaded in `VISUAL_SPRITE_SCALE` / `VISUAL_PLANET_SCALE`; no post-process blur/soften stages are used as a substitute for small art.
+- `drawPostProcessChromaticBleed()` is explicitly muted under `modern` / `minimal`; when enabled in other modes it uses capped alpha and narrow radius to avoid low-frequency haze.
 
 Reduced-motion safety:
 - JS clamp in `drawPostProcess()` plus body dataset binding (`data-motion-state`) for all critical overlays.
@@ -158,6 +167,9 @@ Acceptance checks:
 - Preset cycling and reduced-motion state are visibly reflected in DOM attributes and in CSS shells.
 - Modern preset frame rendering is substantially cleaner vs previous versions (no grain shimmer, no heavy glows, no busy overlay clutter).
 - Modern branch must show zero flicker/shimmer/jitter artifacts under baseline gameplay and fixed-viewport captures.
+- Visual artifact parity check:
+  - For identical seed/input at `INTERNAL_RENDER_SCALE=1`, repeated captures remain visually consistent under modern profile.
+  - No extra visual processing layers should reintroduce blur/low-frequency haze after profile switch.
 - Battle strike impact visuals are now two-part:
   - directional lane streak
   - flash ring + radial wash + deterministic sparklets
@@ -169,3 +181,52 @@ Acceptance checks:
   - text contrast remains readable in major panels at default settings.
 - External API remains stable (`render_game_to_text` and `advanceTime` unchanged).
 - Motion intensity visibly lowers for reduced-motion context while layout/readability stay intact.
+
+Quality + anti-regression metrics:
+- Grain budget:
+  - modern/noise profile should keep average per-frame noise alpha below `0.06`.
+  - scanline alpha contribution should not exceed `0.08` on non-cinematic profiles.
+- Blur budget:
+  - no intentional post-process blur-like expansion in modern/minimal profiles.
+- Spatial budget:
+  - overlays must preserve text/readout regions and avoid full-frame opaque covers.
+- Temporal budget:
+  - modern profile overlays should avoid >2 major pulses in any 0.4s interval.
+- Artifact budget:
+  - no persistent moiré-like flicker while in static title/hub states.
+
+Debug/diagnostic checkpoints:
+- Visual noise regression check:
+  - Confirm no intentional full-screen noise texture or scanline alpha >0.08 in modern/minimal profiles.
+  - Validate `frameWarnings` does not emit persistent high-contrast flicker during static menu states.
+- Low-resolution diagnosis check:
+  - Ensure `canvas.style.width/height` matches viewport container aspect fit before device pixel ratio multiplication.
+  - Ensure sprite draw coordinates are not fractional in modern quality mode unless smoothing is intentional.
+- Battle VFX visibility check:
+  - Confirm `battleImpactBurst` is reset each mode transition.
+  - Confirm `battleImpactSide` updates on attacker lane and never persists into non-battle turns.
+- Profile-switch verification:
+  - verify `data-visual-preset` and `data-ui-tier` attributes always reflect cycle state after HUD update and after `P`/`V` key toggles.
+
+Mode-specific visual acceptance:
+- Title:
+  - static shell, readable start target, no menu flicker.
+- Hub:
+  - route labels and ship node readable with no blur halo.
+- Mission:
+  - objective text/chips remain readable across profiles.
+- Battle:
+  - strike VFX appears under 100ms of hit and decays within 0.35s.
+- Result:
+  - restrained effects with stable summary frame and no leftover impact remnants.
+
+Regression matrix:
+- Seed-paired visual parity:
+  - replay same seed across modern/minimal presets and compare:
+    - grain presence
+    - ship/planet edge contrast
+    - impact VFX readability
+- Device buckets:
+  - 1366x768, 1024x768, 390x844 captures with no regressions.
+- Transition stress:
+  - mode transitions and profile switches do not cause overlay alpha spikes.

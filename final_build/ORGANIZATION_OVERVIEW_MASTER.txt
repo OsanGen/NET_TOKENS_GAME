@@ -1,0 +1,159 @@
+New Game Repository — Master Organization Overview
+
+This document is the single broad entry-point map for architecture, ownership, and operational context.
+
+1) Repository map
+
+Runtime & UI
+- `index.html`
+- `styles.css`
+- `game.js`
+
+Tooling
+- `scripts/open-game.sh`
+- `scripts/stop-game.sh`
+- `scripts/generate-imagegen-assets.sh`
+- `web_game_playwright_client_local.js`
+
+Deployment
+- `.github/workflows/deploy-pages.yml`
+
+Assets
+- `assets/`
+
+Support
+- `package.json`
+- `package-lock.json`
+- `output/`
+- `tmp/`
+- `progress.md`
+- `final_build/`
+
+2) Authoritative interfaces
+- Browser runtime entry: `index.html -> styles.css -> game.js`
+- Runtime API:
+  - `window.render_game_to_text()`
+  - `window.advanceTime(ms)`
+- UI contract IDs/classes used by runtime sync:
+  - `#game-shell`, `#game-canvas`
+  - `#controls-panel`, `#controls-bottom`, `#controls-actions`
+  - `#hud-mode-title`, `#hud-objective-title`, `#hud-objective-main`
+
+3) Core system responsibilities
+- Gameplay simulation: `game.js`
+- Presentation/layout: `index.html`, `styles.css`
+- Visual effects: `game.js`, `styles.css`
+- HUD sync: `game.js` + `index.html` + `styles.css`
+- Local run and lifecycle: `scripts/open-game.sh`, `scripts/stop-game.sh`
+- Playwright validation path: `web_game_playwright_client_local.js`, `package.json`
+- Deploy pipeline: `.github/workflows/deploy-pages.yml`
+- Art/texture supply: `assets/`, `scripts/generate-imagegen-assets.sh`, `tmp/imagegen/`
+- Architecture and governance: `final_build/*`
+
+4) Execution graph (high level)
+- User starts app through browser load of `index.html`
+- `index.html` mounts UI and loads `game.js`
+- Runtime handles input, updates state, renders frame, updates external controls
+- Playwright/automation can consume exposed API methods
+- GitHub Pages publishes static artifacts when main is pushed
+
+5) Build system and dependencies
+- Runtime has no third-party JS dependencies
+- Dev dependency is Playwright for local automation
+- Shell tooling depends on local system binaries (`bash`, `python3`, `lsof`)
+- CI depends on GitHub-hosted runner capabilities and Pages
+
+6) Critical assumptions
+- DOM IDs/classes used by sync are stable
+- Gameplay correctness is inside `game.js` and should remain source of truth
+- `game.js` is deterministic enough for `render_game_to_text` + `advanceTime` contracts
+- Visual polish changes must not mutate gameplay branches
+
+7) Data and control boundaries
+- State is in-memory; no server state
+- Inputs flow into state update, then into render and DOM sync
+- Mode-specific behavior gates action intent
+- Post-process changes are output-only and do not alter battle math
+
+8) What to read first (new maintainer path)
+- `final_build/BUILD_MAP.txt` (full architecture)
+- `final_build/ARCHITECTURE_DATA_FLOW.txt` (data/event contracts)
+- `final_build/COMPONENT_INDEX.txt` (component ownership)
+- `final_build/COMPONENT_DEPENDENCY_DAG.txt` (dependencies)
+- `final_build/CURRENT_GAPS.txt` (what is unresolved)
+- `final_build/CURRENT_GAPS.txt` entries for status + next action
+
+9) Mandatory update rules
+- Any mode/UI/API change must update:
+  - `final_build/CURRENT_GAPS.txt`
+  - impacted `COMPONENT__*.txt`
+  - `final_build/BUILD_MAP.txt`
+  - relevant validation docs in `final_build/`
+
+10) Default risk priorities
+- Contract breakage (DOM/API) is highest
+- Mode transition regressions are second
+- Visual readability/performance regressions are third
+- Asset pipeline mismatch is fourth
+- Local orchestration friction is lowest (but tracked)
+
+11) Reference docs index
+- `final_build/BUILD_MAP.txt`
+- `final_build/ARCHITECTURE_DATA_FLOW.txt`
+- `final_build/COMPONENT_INDEX.txt`
+- `final_build/COMPONENT_DEPENDENCY_DAG.txt`
+- `final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+- `final_build/FILE_TO_FEATURE_MATRIX.txt`
+- `final_build/SEQUENCED_RUNBOOK.txt`
+- `final_build/DEPLOYMENT_PROCEDURE_WITH_ROLLBACK.md`
+- `final_build/SECURITY_AND_RELIABILITY_ASSERTIONS.txt`
+- `final_build/EXTERNAL_DEPENDENCIES_MATRIX.txt`
+- `final_build/TECH_DEBT_LOG.md`
+- `final_build/CODEPATH_DIAGRAMS.md`
+- `final_build/MAINTENANCE_ROADMAP_ISSUES_FIRST.md`
+- `final_build/SCALING_AND_PERFORMANCE_BUDGET.md`
+- `final_build/ENTERPRISE_TEST_MATRIX.md`
+- `final_build/LINEAGE_AND_CHANGE_LOG.md`
+- `final_build/GAP_CLOSE_LOG.md`
+- `final_build/ARCHIVAL_ROLLUP_CHECKLIST.md`
+- `final_build/MASTER_SPEC_INDEX.csv`
+- `final_build/MASTER_SPEC_INDEX.md`
+- `final_build/CHANGE_RISK_MATRIX.csv`
+- `final_build/ENTERPRISE_OPERATING_PROC.md`
+- `final_build/COMPLETE_GLOSSARY.txt`
+- `final_build/ARCHITECTURE_METRICS_TEMPLATE.json`
+- `final_build/RELEASE_ACCEPTANCE_DASHBOARD.md`
+- `final_build/ENTERPRISE_READINESS_SCORECARD.md`
+- `final_build/CODEX_DEPENDENCY_EXPORT.yaml`
+- `final_build/GLOSSARY_TO_COMPONENT_LINKS.md`
+- `final_build/INDEX_LINK_VERIFICATION.md`
+- `final_build/REPO_TOUR.md`
+- `final_build/FINAL_BUILD_MANIFEST.json`
+- `final_build/ENTERPRISE_HANDFOFF_PACKAGE.txt`
+- `final_build/ENTERPRISE_QUICK_TAKEOVER_CARD.md`
+- `final_build/ENTERPRISE_RELEASE_PULSE_TEMPLATE.md`
+- `final_build/ONE_COMMAND_DOC_AUDIT.sh`
+- `final_build/MISSING_DOC_ALERTS.md`
+- `final_build/DOC_DEPRECATION_INDEX.md`
+- `final_build/GENERATE_DOC_DASHBOARD.js`
+- `final_build/DOC_COVERAGE_AUDIT.md`
+- `final_build/API_CHANGE_REQUEST_TEMPLATE.txt`
+- `final_build/CURRENT_GAPS.txt`
+- `final_build/COMPONENT__Core_Runtime.txt`
+- `final_build/COMPONENT__Combat_Loop.txt`
+- `final_build/COMPONENT__Visual_Post_Process.txt`
+- `final_build/COMPONENT__Controls_Overlay.txt`
+- `final_build/COMPONENT__Asset_Pipeline.txt`
+- `final_build/COMPONENT__Visual_Asset_Content.txt`
+- `final_build/COMPONENT__Pages_Deployment.txt`
+- `final_build/COMPONENT__Hub_Flow.txt`
+- `final_build/COMPONENT__Mission_Flow.txt`
+- `final_build/COMPONENT__Brand_Scene_Engine.txt`
+- `final_build/COMPONENT__Local_Launch_Tooling.txt`
+
+12) Recommended next update
+- Keep all component docs synchronized with the final Build Map after each commit
+- After each redesign, run:
+  - quick local boot check
+  - one deterministic gameplay flow check
+  - one reduced-motion visual check

@@ -1,0 +1,90 @@
+Component: Startup Bootstrap Guardrails
+Purpose:
+Own the startup path so the game boots deterministically, fails predictably, and never enters an unrecoverable partial state during asset loading or initial DOM/API registration.
+
+Scope:
+- Initial script bootstrap (`game.js` load order)
+- Mandatory global API registration (`render_game_to_text`, `advanceTime`)
+- Initial state seed/viewport/language initialization
+- Initial DOM synchronization and startup warning surfacing
+
+Inputs:
+- Browser startup events:
+  - DOM ready / script load completion.
+- Runtime assets:
+  - sprite manifest and image availability.
+- Host constraints:
+  - query parameters, local file vs HTTP deployment context, reduced-motion preference.
+
+Outputs:
+- A fully initialized state graph with stable top-level mode (`title`) before first render tick.
+- Registered deterministic global APIs.
+- Consistent body shell attributes (`data-game-mode`, `data-visual-preset`, `data-motion-state`).
+- Structured startup diagnostics:
+  - missing asset warning
+  - missing selectors warning
+  - fallback path selection
+
+State model:
+- Existing `state` object only; no new gameplay schema.
+- Bootstrap guard state (transient):
+  - `bootComplete`, `bootstrapWarnings`, `assetReadiness`.
+- Warnings are bounded, deduplicated, and non-blocking unless hard-fail conditions occur.
+
+State transitions:
+1) Pre-init:
+  - verify required selectors or mark startup warning.
+  - initialize random seed + frame/time baseline.
+2) API register:
+  - attach `window.render_game_to_text`, `window.advanceTime`.
+3) Runtime attach:
+  - bind event listeners once.
+  - initialize HUD/control sync loop.
+4) Post-init:
+  - render first frame.
+  - clear temporary bootstrap spinner/loading marker if present.
+
+Error handling:
+- Hard fail:
+  - critical JS parse/runtime errors abort normal run and emit clear startup marker.
+- Soft fail:
+  - missing non-critical selectors continue in degraded mode with warning marker and safe-null writes.
+- Asset misses:
+  - use vector/fallback assets and continue without gameplay logic changes.
+- Listener collisions:
+  - avoid duplicate listeners by idempotent binding and optional teardown before rebind.
+
+Failure modes:
+- Duplicate bootstrap from hot reload or repeated script injection.
+- Silent API registration ordering issues.
+- Missing shell selectors creating undefined sync writes.
+- Startup warnings hidden by console-only surfacing and no visual cue.
+
+Edge cases:
+- Opening game from non-root path (subpath deployments).
+- Opening in low-memory mobile contexts where initial asset reads are slow.
+- Reduced-motion and low-refresh contexts changing tone defaults.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+
+Acceptance checks:
+- First render completes with mode `title` and `bootComplete=true`.
+- `window.render_game_to_text` and `window.advanceTime` exist immediately after init.
+- Single bootstrap run does not duplicate event listeners or global API registration.
+- Missing selectors produce one-time warning only and continue render loop in fallback-safe manner.
+- No unhandled errors from boot path during normal local and `/NET_TOKENS_GAME/` subpath starts.
+
+Operational checks:
+- Run startup smoke in both fresh and rapid reload scenarios.
+- Validate startup log markers are present once per session and include clear root-cause if degraded mode is entered.
+- Keep this component in sync with any HTML/script loader changes.
+
+Non-goals:
+- Gameplay loop optimization.
+- Full accessibility redesign.
+- New rendering architecture.

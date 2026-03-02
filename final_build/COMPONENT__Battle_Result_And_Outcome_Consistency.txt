@@ -1,0 +1,69 @@
+Component: Battle Result and Outcome Consistency
+Purpose:
+Guarantee consistent transition and payload behavior from combat completion through result state, preventing drift, duplicate finish states, and UI desync after battle end.
+
+Scope:
+- Battle completion detection and transition into `result`.
+- Result state payload (`win/loss/score/messages`) integrity.
+- Result screen UI synchronization and timing.
+- Restart / replay readiness after result.
+
+Inputs:
+- Battle state (turns, hp, victory conditions).
+- Battle action outcomes (damage, status, turn transitions).
+- Mode transitions and start/restart events.
+- Render loop synchronization point.
+
+Outputs:
+- Deterministic terminal battle outcome fields:
+  - winner determination
+  - completion timestamp/frame
+  - post-battle stats/summary text
+- Clean result-mode entry with coherent HUD and control visibility.
+- Reset-safe handoff to next mission/start flow.
+
+State model:
+- Existing battle state fields under `state.battle`.
+- Result payload is derived from final battle and mission context.
+- No new gameplay mechanics added.
+
+Rules:
+- Transition to result occurs exactly once per battle completion event.
+- Outcome data is derived from committed battle state, not late UI-only values.
+- While in result:
+  - battle VFX and transient combat metadata are suppressed or cleared.
+  - start/restart controls remain deterministic and responsive.
+- On restart:
+  - battle result caches clear and battle state reinitialized for next flow.
+
+Failure modes addressed:
+- Double transitions to result on repeated completion checks.
+- Stale combat effects persisting in result state.
+- Incorrect winner/score rendering despite deterministic state.
+- Replay mismatch due to asynchronous result-screen timing.
+
+Error handling:
+- Missing battle completion context:
+  - hold in battle and emit one warning.
+- Result payload inconsistency:
+  - fallback to safe neutral summary and continue.
+- Late transitions:
+  - ignore duplicate completion event once result already entered.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Combat_Loop.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Mission_Flow.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Lifecycle_Reset_And_Mode_Transitions.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__UI_State_Sync_Integrity.txt`
+
+Acceptance checks:
+- Deterministic replay with fixed seed confirms single result transition and identical outcome fields.
+- Battle result mode displays coherent summary and action availability.
+- Restart/re-entry clears result carryover and reinitializes battle metadata.
+- No battle VFX or transient combat flags remain active in result mode.
+
+Non-goals:
+- Combat balancing and tactical AI changes.
+- Multi-outcome score systems without migration.
+- External achievements/integration layer.

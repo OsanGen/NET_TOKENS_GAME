@@ -1,0 +1,77 @@
+Component: Key Repeat and Throttle Governance
+Purpose:
+Define deterministic keyboard repeat and hold behavior so UI navigation is predictable across devices and does not generate duplicate actions during held keys.
+
+Scope:
+- Per-mode keypress interpretation for `Arrow`, `Tab`, `Enter`, `Space`, confirm/cancel keys, and action shortcuts.
+- Held-key throttling and repeat windows.
+- Distinguishing intentional repeats from accidental key-hold spam.
+
+Inputs:
+- Browser keyboard events:
+  - `keydown`, `keyup`
+- Runtime mode/context:
+  - current mode and active control focus context.
+- Runtime timing:
+  - frame tick and elapsed time.
+- Existing config:
+  - any action delay/repeat constants in input handling.
+
+Outputs:
+- Deterministic action stream:
+  - one navigation/confirm/cancel action per intentional key cycle.
+- Repeat suppression:
+  - repeated `keydown` events while a key is held do not queue duplicate high-level actions unless explicitly allowed.
+- Action cooldown markers:
+  - transient throttle windows per key or action family.
+
+State model:
+- Per-key held state map (`down`/`up` and last-accepted timestamp).
+- Action-specific cooldown trackers for confirm and traversal paths.
+- Existing input queue plus deterministic intent markers.
+- No gameplay state fields added.
+
+Core policy:
+- `keydown` handling:
+  - ignore duplicates while key remains in held state unless repeat semantics are explicitly enabled.
+- `keyup` handling:
+  - clears held state and releases throttle.
+- Confirm/cancel:
+  - edge-triggered by default to avoid repeat-triggered double-confirm.
+- Navigation keys:
+  - can be repeat-enabled in mission-combat contexts if explicitly intended, with bounded repeat rate.
+- Mode boundaries:
+  - clear held-state map at mode transitions to avoid sticky key bleed.
+
+Failure modes addressed:
+- Multiple confirms/cancels from key auto-repeat.
+- Stuck key state after focus loss or tab away.
+- Different behavior between browsers with different keyboard repeat rates.
+- Navigation drift from mixed keydown/up events.
+
+Error handling:
+- Unknown key codes:
+  - ignored (safe no-op).
+- Keyup without keydown:
+  - safe clear of guarded state only.
+- Focus/visibility loss:
+  - release all held keys to prevent accidental actions on return.
+- Repeated event bursts:
+  - cap queue growth and emit bounded warning.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Input_Navigation_Focus.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Controls_Overlay.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+
+Acceptance checks:
+- Held key repeat for confirm/cancel emits exactly one action unless explicitly configured otherwise.
+- Up/down navigation remains deterministic in 100-frame fixed input timelines.
+- Mode transitions clear stale held states and remove duplicate actions after return.
+- No queue overflow under synthetic rapid keydown bursts.
+
+Non-goals:
+- Control remapping UI.
+- Accessibility input remapping for external devices.
+- Gameplay balancing or turn-order changes.

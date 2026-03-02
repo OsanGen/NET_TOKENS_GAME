@@ -1,0 +1,81 @@
+Component: Visual Preset Governance
+Purpose:
+Manage the visual preset/profile behavior as a configuration surface only, without gameplay coupling, to keep appearance changes deterministic, accessible, and low-risk.
+
+Scope:
+- Preset definitions (`modern`, `minimal`, `neon`, `cinematic`) and active profile selection.
+- Profile intent/auto transitions (`data-visual-preset`, `data-visual-tier`, `data-ui-tier`).
+- Motion policy binding (`data-motion-state`) and reduced-motion behavior.
+- Contracted integration with shell, HUD styling, and non-core VFX layers.
+
+Inputs:
+- User controls:
+  - `V` preset cycling, `P` profile toggling.
+- Auto rules:
+  - frame-time/perf pressure, reduced-motion preference, active mode.
+- Runtime state:
+  - mode, visual state, motion settings, performance signals.
+- External preferences:
+  - optional persisted user preference / first-seen defaults.
+
+Outputs:
+- Body-level visual attributes for CSS variant mapping:
+  - `data-visual-preset`, `data-visual-tier`, `data-ui-tier`, `data-motion-state`.
+- Deterministic visual surface mapping from profile + mode.
+- Optional profile event marker for QA observability.
+
+State model:
+- No changes to gameplay state logic.
+- Visual state stores selected profile and profile auto flags in existing visual state structure.
+- Deterministic defaults:
+  - known profile names and bounded range checks.
+
+Control policy:
+- Preset selection is deterministic and reversible.
+- Auto profile downgrades only reduce motion/noise, never alter gameplay outcomes.
+- Profile transitions occur at safe boundary points (mode changes / major state resets), not mid-frame random jumps.
+
+Failure modes addressed:
+- Profile name mismatch causing fallback-to-default behavior.
+- Motion intensity overpowering clarity in non-premium modes.
+- Preset switch causing inconsistent HUD/body attribute sync.
+- Unbounded profile flags surviving mode transitions.
+
+Acceptance criteria:
+- Cycling presets updates only visual attributes and CSS output.
+- Same seed + timeline under different visuals keeps deterministic gameplay snapshots.
+- Reduced-motion state enforces restrained motion while preserving HUD readability.
+- Profile reset/restore behavior matches mode boundary contract and does not bleed between runs.
+
+Error handling:
+- Unknown preset or malformed profile:
+  - safe fallback to `modern` plus one warning.
+- Illegal combination (e.g., tier out-of-range):
+  - clamp to nearest valid and continue.
+- Unsupported reduced-motion transitions:
+  - fallback to static-safe class set without throwing.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Shell_Wrapper.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Repository_Interface_Contracts.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+
+Validation protocol:
+- Preset cycle smoke: verify all four presets map to expected attribute values and no runtime JS errors.
+- Visual parity: gameplay output parity remains invariant under preset changes.
+- Reduced-motion smoke: profile and reduced-motion states coexist without jitter regressions.
+- Regression check after preset changes:
+  - selectors remain stable,
+  - no missing body data attributes,
+  - no stale preset attribute retention after restart.
+
+Observability:
+- Record body attribute changes with seed + mode context in run logs.
+- Capture snapshots per preset for quality reviews.
+
+Non-goals:
+- Gameplay formula or combat logic refactor.
+- New theme engine migration or external theme framework.

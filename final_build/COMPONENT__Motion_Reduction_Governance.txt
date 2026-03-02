@@ -1,0 +1,93 @@
+Component: Motion Reduction Governance
+Purpose:
+Own the game-wide policy for motion intensity, animation budgets, and reduced-motion behavior so visual effects stay premium without harming readability or accessibility.
+
+Scope:
+- Global motion profile flags:
+  - `data-motion-state`, reduced-motion profile selection, and optional auto-downgrade behavior.
+- Per-component animation budgets for:
+  - HUD transitions
+  - battle impact effects
+  - scene transition pulses
+- Safety controls for users with motion sensitivity and low-performance environments.
+
+Inputs:
+- Runtime flags:
+  - `state.visual.visualProfileAuto`
+  - `state.visual.performanceWarning` (or equivalent) indicators
+  - environment preference (`prefers-reduced-motion`).
+- Mode context:
+  - active mode (`title`, `hub`, `mission`, `battle`, `result`) and combat activity.
+- Event triggers:
+- profile key input (`V`, `P`)
+  - major state transitions (mode entry/exit)
+  - user-triggered reduced-motion fallback requests.
+
+Outputs:
+- Stable visual mode state:
+  - body attribute updates to enforce static or reduced motion states.
+- Deterministic duration/easing envelopes for animated effects.
+- Graceful fallback to static or low-motion variants under constraints.
+
+State model:
+- Reuses existing visual state fields (`data-motion-state`, profile metadata).
+- No new gameplay state persisted.
+- `state.visual.motionBudget` (or equivalent) tracks temporary clamped intensity and auto-restore policy.
+
+Core policy rules:
+- Dynamic effects are allowed only when:
+  - reduced-motion is off,
+  - performance budget is green,
+  - and active effect is within per-mode budget.
+- Reduced motion mode disables:
+  - high-frequency looped glow flicker,
+  - rapid pulse oscillation,
+  - micro-noise textures.
+- Scene-level transitions keep single-tween entry/exit with bounded duration.
+- Battle strike effects remain visible but clamp to:
+  - low particle count,
+  - lower alpha,
+  - shorter decay.
+
+Failure modes addressed:
+- Motion overload causing motion sickness/readability drop.
+- Battery/perf drop from unbounded CSS/Canvas animation.
+- Effects persisting after preference changes.
+- Stale high-motion mode after mode transitions.
+
+Edge cases:
+- Preference toggled during battle:
+  - transition immediately to safe motion envelope without resetting gameplay.
+- Rapid repeated profile key presses:
+  - idempotent state apply and deduplicated updates.
+- Entering compact viewport:
+  - optional stricter cap for pulse and blur intensity.
+
+Error handling:
+- Missing motion preference from environment:
+  - fallback to "safe" default static profile.
+- Contradictory flags (reduced + high-intensity profile):
+  - resolve to reduced and log one warning.
+- Unsupported CSS motion token:
+  - fallback to CSS default values and keep JS state consistent.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Preset_Governance.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Frame_Timing_And_Performance_Budget.txt`
+
+Acceptance checks:
+- Reduced-motion preference yields a visibly static-safe HUD and battlefield within one mode tick.
+- Toggling motion-sensitive mode mid-session changes animation state within 1 render cycle.
+- No effect stack exceeds defined max duration/intensity budget in mission and battle checks.
+- Motion flags are reset deterministically on mode transitions where applicable.
+
+Observability:
+- Log motion state transitions with source (`user-toggle`, `prefers-reduced-motion`, `auto-cap`).
+- Capture frame-budget + readability correlation when auto-cap triggered.
+
+Non-goals:
+- New animation framework adoption.
+- Gameplay combat/logic changes.
+- Per-user profile persistence backend.

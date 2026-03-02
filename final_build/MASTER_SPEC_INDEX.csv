@@ -1,0 +1,29 @@
+file,component,owner,acceptance_check,last_modified_source
+index.html,UI shell,Frontend/Controls,Title/hub/mission/battle DOM targets render and sync correctly,working tree
+styles.css,Visual system,Frontend/Controls,Panels/effects render with readable layout across desktop/mobile,working tree
+game.js,Core Runtime,Game Core,Mode transitions and APIs remain deterministic,working tree
+web_game_playwright_client_local.js,Validation,QA,Smoke path can traverse core modes and capture output,working tree
+scripts/open-game.sh,Local tooling,Operations,Local server starts cleanly and opens expected page,working tree
+scripts/stop-game.sh,Local tooling,Operations,Stops server and reclaims PID cleanly,working tree
+scripts/generate-imagegen-assets.sh,Asset tooling,Art pipeline,Regenerates and syncs assets without altering runtime contract,working tree
+.github/workflows/deploy-pages.yml,Deployment,Ops,Pages publish includes required artifacts,working tree
+assets/,Asset content,ArtOps,All required sprite references resolve for hub/mission/battle,working tree
+final_build/BUILD_MAP.txt,Architecture,Documentation,Provides full repo architecture and dependency map,working tree
+final_build/ARCHITECTURE_DATA_FLOW.txt,Architecture,Documentation,Captures event/state transitions and output surfaces,working tree
+final_build/COMPONENT_INDEX.txt,Component model,Documentation,Lists ownership and acceptance for each component,working tree
+final_build/COMPONENT_DEPENDENCY_DAG.txt,Component model,Documentation,Shows file/module coupling and critical edges,working tree
+final_build/REPOSITORY_INTERFACE_CONTRACTS.txt,API governance,Documentation,Defines runtime and DOM/API contract boundaries,working tree
+final_build/EXTERNAL_DEPENDENCIES_MATRIX.txt,Risk governance,Documentation,Lists operational and platform dependencies with mitigations,working tree
+final_build/SECURITY_AND_RELIABILITY_ASSERTIONS.txt,Security,Documentation,Captures runtime and reliability failure assertions,working tree
+final_build/SEQUENCED_RUNBOOK.txt,Operations,Documentation,Defines preflight, smoke, deploy, rollback sequence,working tree
+final_build/DEPLOYMENT_PROCEDURE_WITH_ROLLBACK.md,Ops,Documentation,Defines release + rollback acceptance workflow,working tree
+final_build/CODEPATH_DIAGRAMS.md,Architecture,Documentation,Contains code-path and sequence diagrams for onboarding,working tree
+final_build/COMPONENT__Core_Runtime.txt,Component spec,Documentation,Spec includes purpose/state/edge cases/acceptance,working tree
+final_build/CURRENT_GAPS.txt,Gaps,Documentation,Tracks open/blocked/in-progress items with actions,working tree
+final_build/MAINTENANCE_ROADMAP_ISSUES_FIRST.md,Roadmap,Documentation,Prioritizes issue-first maintenance actions,working tree
+final_build/SCALING_AND_PERFORMANCE_BUDGET.md,Performance,Documentation,Defines frame/effect budgets and scaling policy,working tree
+final_build/ENTERPRISE_TEST_MATRIX.md,QA,Documentation,Cross-feature test matrix for functional/visual/regression checks,working tree
+final_build/LINEAGE_AND_CHANGE_LOG.md,History,Documentation,Records meaningful change milestones and rationale,working tree
+final_build/GAP_CLOSE_LOG.md,Gaps,Documentation,Tracks closed gaps with evidence and date,working tree
+final_build/ARCHIVAL_ROLLUP_CHECKLIST.md,Process,Documentation,Defines release archival preservation criteria,working tree
+final_build/ENTERPRISE_HANDFOFF_PACKAGE.txt,Operations,Documentation,Defines enterprise takeover posture and priorities,working tree

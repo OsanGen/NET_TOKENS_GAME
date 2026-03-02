@@ -1,0 +1,72 @@
+Component: UI State Sync Integrity
+Purpose:
+Ensure runtime state and DOM presentation remain synchronized in a deterministic way across mode transitions and dynamic updates.
+
+Scope:
+- HUD/action/control synchronization routines.
+- Required selector population and content fidelity.
+- Sync scheduling and fallback behavior when DOM contracts are incomplete.
+- Prevent stale UI text and desync between `state` and rendered panels.
+
+Inputs:
+- State snapshots (mode, mission, battle, player, threats, profile).
+- Render cadence and frame index.
+- User action/result of `syncExternalControlsUI` calls.
+
+Outputs:
+- Deterministic UI node content reflecting runtime state.
+- Stable attribute sync (`data-game-mode`, `data-visual-preset`, etc.).
+- Warning or fallback for missing selectors with no hard crash.
+
+State model:
+- No new gameplay state.
+- Existing sync and render state fields (e.g., pending DOM update state).
+- Optional internal consistency flags for last-synced `state.frame`/`mode`.
+
+Synchronization contract:
+- On mode entry and per frame, apply updates through existing sync pipeline.
+- For each required HUD/control node:
+  - if selector exists, update text/visibility/class/attributes.
+  - if missing, skip safely and emit one warning.
+- Action labels and objective text updates are atomic per sync cycle.
+- No partial writes when required grouped fields are missing.
+
+Failure modes addressed:
+- Stale objective/mode text while state has advanced.
+- DOM contract drift causing null dereference or partial updates.
+- Race-like flicker from repeated sync passes with inconsistent source state.
+- Out-of-order HUD updates after mode transitions.
+
+Error handling:
+- Missing selector:
+  - emit single-warning marker and continue remaining syncs.
+- Invalid content values:
+  - sanitize and fallback to safe placeholder.
+- Repeated sync failures:
+  - rate-limit warnings and maintain prior safe UI state.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Repository_Interface_Contracts.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Accessibility_And_Readability_Governance.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+
+Acceptance checks:
+- Mode transition smoke confirms:
+  - `#hud-mode-title`, `#hud-objective-title`, `#hud-objective-main`, `#controls-actions`
+  - update correctly on first frame of new mode.
+- Sync smoke with missing node simulation:
+  - no crash and one warning per missing selector family.
+- Fixed-seed replay:
+  - no UI-content divergence visible in key checkpoints when state is identical.
+- No stale action index/callout text after mode resets.
+
+Observability:
+- Sync checkpoints include last-updated fields and frame counters.
+- Record desync misses for offline triage.
+
+Non-goals:
+- Rewriting UI architecture/framework.
+- Gameplay state model redesign.
+- Automatic external DOM injection.

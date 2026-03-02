@@ -1,0 +1,23 @@
+name: doc-audit
+
+on:
+  push:
+    paths:
+      - 'final_build/**'
+  pull_request:
+    paths:
+      - 'final_build/**'
+  workflow_dispatch:
+
+jobs:
+  audit-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run final-build document audit
+        run: bash final_build/ONE_COMMAND_DOC_AUDIT.sh
+
+      - name: Generate documentation dashboard
+        run: node final_build/GENERATE_DOC_DASHBOARD.js
+

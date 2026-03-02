@@ -1,0 +1,85 @@
+Component: Deterministic Replay Contract
+Purpose:
+Define the deterministic replay contract that keeps the game state and UX outputs reproducible across reruns for the same seed and input timeline, while keeping replay tooling isolated from gameplay behavior.
+
+Scope:
+- Seed/state initialization.
+- Input timeline execution.
+- Contracted snapshotting through `render_game_to_text()`.
+- Time advancement semantics via `advanceTime`.
+
+Inputs:
+- Seed inputs:
+  - `state.seed`, optional deterministic seed override, and restart seed path.
+- Timeline inputs:
+  - ordered key events or scripted timeline commands.
+  - optional frame cadence (ms step).
+- Runtime mode context:
+  - current `state.mode` and in-flight mission/battle queues.
+
+Outputs:
+- Reproducible state transitions:
+  - same mode order for same seed/timeline.
+  - same `state.frame`, `state.seed`, and HUD payload across repeated runs.
+- Replay artifacts:
+  - deterministic logs and screenshots/JSON snapshots for fixed checkpoints.
+
+State model:
+- Existing state shape unchanged (`state` from `game.js`).
+- Replay metadata lives outside gameplay state:
+  - seed, input sequence, timestamps, and expected checkpoint vectors.
+- No gameplay balancing parameters are added.
+
+Contract invariants:
+- Determinism:
+  - identical seed + identical input timeline yields bit-identical checkpoint fields.
+- Boundary safety:
+  - input events outside valid action ranges are dropped or normalized deterministically (not random).
+- Step fidelity:
+  - `advanceTime(ms)` with equal total elapsed time and event ordering yields same checkpoints.
+- Failure isolation:
+  - replay harness failures do not mutate production state except expected deterministic transition paths.
+
+Hardening checks:
+- Fixed-seed suite:
+  - minimum 2 seeds, minimum 3 timelines:
+    - title→hub→mission
+    - mission→battle
+    - full title→hub→mission→battle→result.
+- Snapshot parity:
+  - confirm `render_game_to_text()` snapshot fields that are required by S0 contract are equal at each marker.
+- Drift checks:
+  - action index parity, mission progression flags, and battle actor state parity are preserved.
+- Timeout and jitter handling:
+  - deterministic harness tolerates real-time jitter by using fixed-time stepping.
+
+Error handling:
+- Seed missing or invalid:
+  - fail-fast with explicit diagnostic plus deterministic fallback seed only when explicitly allowed by test mode.
+- Timeline parse error:
+  - reject timeline and abort harness run with event index in report.
+- Non-deterministic divergence:
+  - classify as regression, stop replay, capture full state diff artifacts.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Core_Runtime.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__QA_Harness_And_Runbook.txt`
+
+Acceptance checks:
+- Replaying the same deterministic timeline twice yields identical:
+  - `state.mode`, `state.frame`, `state.seed`, `state.mission`, `state.battle`
+  - required `render_game_to_text()` payload fields.
+- Replay harness exits with explicit failure reason for any non-deterministic branch.
+- Regression findings are logged and linked to timeline + seed pair.
+
+Operational notes:
+- Use this component before any gameplay visual refactor to prevent silent behavior drift.
+- Keep seeds and timelines versioned alongside evidence logs to preserve long-term bisectability.
+
+Non-goals:
+- Player-facing save/load UX.
+- Networked deterministic synchronization.
+- Gameplay balancing changes.

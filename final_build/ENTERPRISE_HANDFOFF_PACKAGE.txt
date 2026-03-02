@@ -1,0 +1,97 @@
+Enterprise Handoff Package — NEWGAME
+
+Owner intent
+- Enable a new maintainer to take over development, refactor, scaling, and hardening with minimum reorientation time.
+
+Executive snapshot
+- Runtime stack: single-file browser game engine (`game.js`) with static HTML/CSS shell.
+- Deployment model: GitHub Pages from `main` branch workflow.
+- Integration style: pure frontend, deterministic loop, no backend APIs.
+- Primary constraints: avoid regressions in gameplay while continuing visual modernization.
+
+Top risks to address first
+1) Coupled core architecture in `game.js` (hard to scale/refactor safely).
+2) Runtime/DOM contract fragility (single selector drift can break HUD and automation).
+3) Monolithic visual and post-process logic in same file as gameplay.
+4) Asset scaling and resolution consistency across viewport/DPI classes.
+5) Missing structured logs/telemetry for incident tracing.
+6) Local tooling portability (Port, PID, tool availability).
+
+Recommended immediate actions (first 30 days)
+- Freeze gameplay contracts:
+  - lock stable behavior for `render_game_to_text` and `advanceTime`.
+  - create lightweight integration test flow (automated smoke around mode transitions).
+- Isolate UI selectors:
+  - introduce selector constants in a single module file while preserving behavior.
+- Stabilize visual scaling:
+  - define viewport-based render scale policy matrix and thresholds.
+- Add artifact checks:
+  - pre-publish checklist for required static files and selector presence.
+
+Scaling plan (60 days)
+- Decompose `game.js` into:
+  - simulation core
+  - render orchestration
+  - post-process/effects
+  - UI synchronization
+- Introduce explicit state slices:
+  - gameplay state, scene state, visual state, UI state.
+- Add observability hooks:
+  - debug counters for state transitions and battle outcomes.
+- Standardize Playwright flows with schema-based assertions.
+
+Security and enterprise readiness
+- Maintain static front-end model while improving:
+  - CSP-oriented script/style hygiene
+  - runtime hardening for unexpected key input/invalid states
+  - deterministic startup validation and contract assertions.
+- Keep secret-free runtime policy and never store keys in client files.
+
+Ownership map for quick transfer
+- Immediate owner: gameplay and mode logic
+  - `game.js`, `final_build/COMPONENT__Core_Runtime.txt`
+- Visual system owner:
+  - `styles.css`, `final_build/COMPONENT__Visual_Post_Process.txt`
+- UI owner:
+  - `index.html`, `styles.css`, `final_build/COMPONENT__Controls_Overlay.txt`
+- Deployment owner:
+  - `.github/workflows/deploy-pages.yml`, `final_build/COMPONENT__Pages_Deployment.txt`
+- Tooling owner:
+  - `scripts/*.sh`, `final_build/COMPONENT__Local_Launch_Tooling.txt`
+- Validation owner:
+  - `web_game_playwright_client_local.js`, `final_build/SEQUENCED_RUNBOOK.txt`
+
+Operational playbook (high confidence path)
+- Always run through these three checkpoints after each release:
+  - functional checkpoint: title→hub→mission→battle→result
+  - visual checkpoint: desktop + compact layout, reduced-motion mode
+  - deploy checkpoint: Pages publish + smoke load
+- If any checkpoint fails:
+  - revert the commit on `main`
+  - create a corrective patch and revalidate
+
+Decision-making guardrails
+- Keep visual changes additive at render boundary first.
+- Do not alter combat math unless explicit gameplay request.
+- Any selector/API change must be paired with contract doc updates first.
+
+Acceptance standard for enterprise readiness
+- deterministic gameplay and mode progression are unchanged across patches
+- UI remains readable at common desktop and mobile breakpoints
+- deployment is repeatable and recoverable in one corrective commit
+- docs reflect actual architecture within one change cycle
+- unresolved risks in `CURRENT_GAPS.txt` are explicit and actionable
+
+Documentation obligations per change
+- Update `final_build/BUILD_MAP.txt` when boundaries move.
+- Update impacted `COMPONENT__*.txt` specs with ownership and edge cases.
+- Update `CURRENT_GAPS.txt` with status + exact next action.
+
+Suggested release cadence
+- Weekly:
+  - review `CURRENT_GAPS.txt`, close 1-2 items
+  - execute smoke path on main
+- Biweekly:
+  - run reduced-motion and portability checks
+- Monthly:
+  - revisit architecture decomposition roadmap and debt closure status

@@ -1,0 +1,77 @@
+Component Dependency DAG — NEWGAME
+
+Graph notation:
+- `A -> B` means A depends on or consumes B.
+
+1) Runtime graph
+- `index.html -> styles.css`
+- `index.html -> game.js`
+- `index.html -> assets/*` (for image references)
+- `game.js -> index.html` (DOM nodes and layout contract)
+- `game.js -> styles.css` (attribute/class contracts)
+- `game.js -> assets/*` (sprite reads)
+- `game.js -> render_game_to_text()`
+- `game.js -> advanceTime(ms)`
+
+2) UI graph
+- `styles.css -> index.html` (selector bindings)
+- `index.html -> styles.css` (presentation dependency)
+- `game.js -> #game-shell` (canvas + container)
+- `game.js -> #controls-*` (HUD sync targets)
+- `game.js -> #hud-*` (telemetry sync targets)
+
+3) Tooling graph
+- `web_game_playwright_client_local.js -> index.html`
+- `web_game_playwright_client_local.js -> game.js`
+- `web_game_playwright_client_local.js -> render_game_to_text()`
+- `web_game_playwright_client_local.js -> advanceTime(ms)`
+- `web_game_playwright_client_local.js -> Playwright runtime`
+
+4) Operations graph
+- `scripts/open-game.sh -> python3 -m http.server`
+- `scripts/open-game.sh -> index.html`
+- `scripts/open-game.sh -> PID file lock`
+- `scripts/stop-game.sh -> PID file`
+- `scripts/stop-game.sh -> local process table`
+- `scripts/generate-imagegen-assets.sh -> tmp/imagegen/*`
+- `scripts/generate-imagegen-assets.sh -> assets/*`
+
+5) Deployment graph
+- `.github/workflows/deploy-pages.yml -> index.html`
+- `.github/workflows/deploy-pages.yml -> game.js`
+- `.github/workflows/deploy-pages.yml -> styles.css`
+- `.github/workflows/deploy-pages.yml -> assets/*`
+- `.github/workflows/deploy-pages.yml -> output/web-game`
+- `output/web-game -> visual regression evidence`
+
+6) Documentation graph
+- `final_build/BUILD_MAP.txt -> COMPONENT__*.txt`
+- `final_build/BUILD_MAP.txt -> CURRENT_GAPS.txt`
+- `final_build/ARCHITECTURE_DATA_FLOW.txt -> final_build/BUILD_MAP.txt`
+- `COMPONENT_INDEX.txt -> final_build/BUILD_MAP.txt`
+- `CURRENT_GAPS.txt -> progress priority`
+
+7) Cross-component critical path
+- `index.html -> game.js -> game.js(update/render) -> styles.css`
+- `game.js(mode/visual state) -> DOM sync -> controls selectors`
+- `game.js(visual effect state) -> Visual post-process -> canvas frame`
+- `automation -> game.js API -> local loop -> screenshot capture`
+- `local launch -> index.html -> full runtime startup`
+- `CI -> deploy workflow -> pages artifact -> public URL`
+
+Cycle and coupling risks
+- bidirectional risk is present in:
+  - `game.js <-> styles.css` (contractual coupling through IDs/classes/variables)
+  - `game.js <-> index.html` (runtime writes to exact markup nodes)
+- these are intentional but must be tracked as high-stability coupling points.
+
+Decoupling opportunities (future)
+- Introduce explicit data adapter for HUD sync selectors.
+- Introduce UI constants file to replace magic IDs.
+- Extract rendering/effect modules from `game.js` while preserving API.
+
+Verification anchors
+- Any change to an edge in this DAG requires:
+  - matching file update in `final_build/BUILD_MAP.txt`
+  - relevant component doc update
+  - smoke-run check for selectors/API continuity

@@ -1,0 +1,106 @@
+Component: Perceptual Regression Metrics
+Purpose:
+Create a lightweight, repeatable process to prove visual changes are actually noticeable and that the interface has improved beyond tiny style tweaks.
+
+This component focuses on perceptual quality evidence for modern vs previous visuals without changing game behavior.
+
+Inputs:
+- Visual state captures:
+  - deterministic screenshot frames from title, hub, mission, battle, result modes
+  - same mode seeds for fair comparison
+  - multiple viewport samples (390x844, 1366x768)
+- Runtime metadata:
+  - `window.render_game_to_text()`
+  - selected profile (`state.visual.vfxPreset`)
+  - mode markers (`state.mode`)
+- Motion policy:
+  - normal vs reduced-motion preferences
+  - profile transitions (`V`, `P` toggles).
+
+Outputs:
+- A concise report showing whether the latest visuals are materially improved by:
+  - clarity
+  - readability
+  - control density
+  - contrast stability
+  - artifact reduction.
+- Candidate artifacts list for non-compliant scenes.
+- Baseline snapshots retained for comparison.
+
+State:
+- No gameplay state mutation.
+- Report metadata only:
+  - screenshot hash list
+  - scene mode tags
+  - profile label
+  - measured metrics and manual review outcomes.
+
+Visual evidence contract:
+- Capture points per run:
+  - title at boot
+  - hub arrival
+  - mission launch
+  - battle start
+  - impact moments
+  - result screen end.
+- Capture timing:
+  - static states and 1–2 high-motion frames.
+- Consistency:
+  - same input timeline and seeds per mode.
+
+Metrics:
+- Structural readability score (manual but standardized):
+  - ship/planet subject prominence
+  - HUD legibility
+  - action button clarity
+  - command rail hierarchy.
+- Artifact score:
+  - noise perception level
+  - grain/flicker count
+  - contrast wash impact.
+- Motion safety score:
+  - reduced-motion equivalence of static state.
+- Perceived modernization score:
+  - does it look materially more “premium” vs previous pass.
+
+Manual rubric (5-point each):
+- Readability
+- Clarity
+- Professional polish
+- Control scannability
+- Overall visual coherence
+
+Scoring rule:
+- Pass if all five metrics are ≥4 for at least two profiles and both critical viewports.
+- Fail if any critical metric ≤2 in modern mode.
+
+Failure modes:
+- No visible difference from previous theme despite config changes.
+- Subject readability lower despite fewer artifacts.
+- UI appears cluttered by over-strong shell chrome.
+- Modern preset no better than older versions in subjective score.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__QA_Harness_And_Runbook.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Visual_Dynamics.txt` (resolved by file-level visual strategy)
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Dead_Code_And_Noise_Strip_Audit.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Brand_Compliance_And_Palette_Governance.txt`
+
+Acceptance checks:
+- Perceptual delta documented as visible improvement vs prior checkpoint.
+- No false-positive visual quality regression in reduced-motion mode.
+- Any non-improved scene gets one explicit follow-up gap with actionable fix.
+- At least one screenshot artifact retained per mode for audit continuity.
+
+Verification flow:
+1) Run deterministic QA mode flow.
+2) Capture screenshots on required viewports.
+3) Apply scoring rubric.
+4) Record pass/fail per mode/profile.
+5) Promote to done only when modernization score and readability score are both improved.
+
+Non-goals:
+- Pixel-perfect computer vision similarity scoring.
+- Auto-ML judging of art direction.
+- Gameplay logic changes or deterministic simulation tuning.

@@ -1,0 +1,128 @@
+Component: QA Harness & Replay Runbook
+Purpose:
+Provide a deterministic, reproducible validation layer for all user-facing regressions, including visual, input, and API contract checks, without changing runtime behavior.
+
+This component defines the minimal set of checks required after each UI/visual or shell tweak.
+
+Scope:
+- No gameplay logic changes.
+- No API contract changes.
+- No asset regeneration or deployment side effects.
+
+Inputs:
+- Runtime entry and controls:
+  - `index.html`
+  - `game.js` exported methods:
+    - `window.render_game_to_text()`
+    - `window.advanceTime(ms)`
+- Visual/UI selectors:
+  - `#game-canvas`, `#game-shell`, `#controls-panel`, `#controls-bottom`
+  - `#controls-actions`, `#start-btn`
+  - `#hud-*` and shell wrapper markers
+- External profile toggles:
+  - V, P, H keys.
+- Playwright client scripts:
+  - `web_game_playwright_client_local.js` and smoke scripts.
+- Deployment smoke endpoints:
+  - root/site index and static assets.
+
+Outputs:
+- Reproducible validation results for:
+  - mode flow integrity
+  - deterministic action focus behavior
+  - API snapshot stability
+  - visual layout boundaries
+  - artifact and path integrity after publish.
+
+State:
+- No gameplay state.
+- Persistent artifacts include:
+  - command logs (seed, input timeline, screenshot hash)
+  - selector snapshots
+  - post-release smoke outputs.
+- Test state is ephemeral per run.
+
+Canonical flow:
+1. Start local server via `open-game` tooling.
+2. Run fixed-seed render and input traces via Playwright/`advanceTime`.
+3. Capture:
+  - frame/selector snapshots
+  - `render_game_to_text()` payloads
+  - console warnings/errors.
+4. Compare outputs against baseline invariants and threshold limits.
+5. Stop local server and clear temporary PID files.
+
+Test families:
+- Determinism:
+  - fixed seed / fixed input timeline replays
+  - identical payload snapshots and render cadence.
+- Keyboard navigation:
+  - left/right traversal in flat rails
+  - tab behavior and focus boundaries
+  - no duplicate confirm/cancel on key repeats.
+- Visual smoke:
+  - viewport captures for 390x844 and 1366x768
+  - artifact checks from modern/minimal presets.
+- API/contract:
+  - `render_game_to_text` and `advanceTime` shape stability
+  - required S0 selectors present.
+- Deployment verification:
+  - index/js/css and at least one known asset endpoint return 200
+  - route path consistency for root/subpath deployments.
+
+Failure handling:
+- Missing selectors:
+  - mark non-blocking for legacy mode; blocking for regression-critical selectors.
+- `advanceTime` mismatch:
+  - halt and require seed/log comparison.
+- Playwright run instability:
+  - retry once with same seed; then classify flaky vs deterministic.
+- Missing asset/endpoint:
+  - fail deploy gating and create root-cause checklist.
+
+Non-regression guarantees:
+- Runs are read-only with respect to source code state.
+- No hidden UI flags.
+- No external test dependencies injected into game runtime.
+
+Metrics and acceptance thresholds:
+- Input replay parity: identical `render_game_to_text()` for same seed and timeline.
+- Layout: no overflow and no missing primary control containers.
+- Visual pathing: no grain-heavy baseline in modern/minimal smoke.
+- API: stable schema for core payload nodes used by automation.
+- Deployment: no stale endpoint 404 on expected routes.
+
+Component boundaries:
+- Owns:
+  - what and how to verify.
+- Does not own:
+  - actual rendering and simulation implementation.
+  - gameplay balancing.
+  - external hosting infrastructure.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/BUILD_MAP.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/open-game.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/scripts/stop-game.sh`
+- `/Users/abelsanchez/CODEX/NEWGAME/web_game_playwright_client_local.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+
+Test execution order (recommended):
+1) `open-game.sh`
+2) `title→hub→mission→battle→result` deterministic smoke (reduced and normal motion)
+3) input-focused 100-frame replay
+4) visual capture suite
+5) API schema diff validation
+6) stop script and cleanup
+
+Roll-forward signal:
+- A pass is accepted when all in-band items clear and no hard-fail in logs.
+- Any hard-fail becomes a new `CURRENT_GAPS` entry and must be fixed before merging.
+
+Non-goals:
+- Full game balancing verification.
+- Cross-browser GPU benchmarking.
+- Automated fuzzing of all keyboard permutations.

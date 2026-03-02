@@ -1,0 +1,113 @@
+Component: Repository Interface Contracts
+Purpose:
+Own and preserve all external/runtime contracts (public JS APIs, DOM selectors, deployment artifact paths, and contract governance) that QA, tooling, and downstream integrations depend on.
+
+Scope:
+- Runtime contract (JS surface) from `game.js`.
+- UI contract (DOM + CSS hooks) from `index.html` and `styles.css`.
+- Deployment contract for artifact sets and runtime-path correctness.
+- Validation contract for smoke/replay tooling and automated audits.
+
+Inputs:
+- Runtime state:
+  - `state.mode`, `state.frame`, `state.seed`, `state.mission`, `state.battle`, `state.player`.
+  - `state.renderGameState` or equivalent snapshot path in `window.render_game_to_text()`.
+- Browser/runtime inputs:
+  - Keyboard events for control flow.
+  - DOM queries by automation or scripts (`querySelector`, `getElementById`).
+- Deployment/test environment:
+  - local host and `/NET_TOKENS_GAME/` subpath hosting.
+
+Outputs:
+- Stable API surface:
+  - `window.render_game_to_text(): object`
+  - `window.advanceTime(ms: number): void`
+- Synchronized HUD and control DOM content via `syncExternalControlsUI()`.
+- Correctly updated shell/body attributes:
+  - `data-game-mode`, `data-visual-preset`, `data-visual-tier`, `data-ui-tier`, `data-motion-state`.
+- Stable artifact resolution:
+  - `index.html`, `styles.css`, `game.js`, `favicon.ico`, `assets/*`.
+
+State model:
+- No new gameplay state fields required.
+- Contract state is descriptive metadata:
+  - Required selectors list, required payload keys, required asset keys.
+- Contract version and migration metadata (documented in `final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`) are governance signals, not game state.
+
+Core contract domains:
+1) Runtime API contract
+- `window.render_game_to_text()`
+  - Returns deterministic snapshot shape with required fields:
+    - `version`, `ts`, `mode`, `state`, `ui`, `assets`.
+  - No throws in normal mode transitions.
+- `window.advanceTime(ms)`
+  - Accepts finite non-negative number.
+  - Clamps pathological time increments safely.
+  - Keeps DOM contract stable and simulation deterministic.
+
+2) Keyboard/input contract
+- Supported key families include `F`, `V`, `P`, `H`, `Escape`, `Tab`, `Enter`, `Space`, arrow keys, and mapped action keys.
+- Confirm/cancel/traversal behavior is deterministic per mode.
+- Invalid keys are safe no-ops.
+
+3) DOM contract
+- Required IDs include:
+  - `#game-shell`, `#game-canvas`, `#game-container`.
+  - HUD: `#hud-mode-title`, `#hud-objective-title`, `#hud-objective-main`, `#hud-mode-status`, `#hud-missions`, `#hud-threat`, `#hud-intro`, `#hud-objective`, `#hud-console`.
+  - Controls: `#controls-panel`, `#controls-bottom`, `#controls-actions`, `#controls-objective`, `#controls-toggle`, `#start-btn`.
+- Deprecated nodes (`#controls-foot`, footer status strip) are non-contract and must remain removed unless a migration is approved.
+- DOM writes must always target existing selectors in all active modes.
+
+4) Visual presentation contract
+- Theme and profile data are read from body attributes and CSS variables.
+- `styles.css` token families drive profile behavior, with no hard-fail dependencies on transient visual IDs.
+- Reduced-motion profile remains readable and non-flickering.
+
+5) Deployment contract
+- Public route set must resolve:
+  - `/`, `/styles.css`, `/game.js`, `/assets/sprites/ship.png`, `/favicon.ico`.
+- No runtime secret leakage in bundled JS.
+- Assets must be available both from local root and deployment subpath.
+
+Edge cases:
+- Missing sprite or late asset load:
+  - game logic unchanged; HUD remains consistent using fallback.
+- Missing DOM nodes:
+  - warnings once, then non-blocking degraded sync where possible.
+- Contract mismatch after refactor:
+  - treat as `S0`/`S1` depending on scope and block merge pending migration note.
+- Invalid/time-skewed `advanceTime` values:
+- treat as clamped safe step, with optional warning.
+
+Error handling:
+- Contract exceptions are isolated:
+  - unknown selectors: soft-fail warning + safe skip for that write.
+  - malformed payload expectations: captured in logs and surfaced as contract gap.
+- Contract violations are recorded as structured audit notes and mirrored in `CURRENT_GAPS.txt`.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/REPOSITORY_INTERFACE_CONTRACTS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/CURRENT_GAPS.txt`
+- `/Users/abelsanchez/CODEX/NEWGAME/final_build/COMPONENT__Validation_And_Runbook.txt`
+
+Observability:
+- Contract checks emit:
+  - schema-validation pass/fail markers
+  - required-node presence assertions
+  - asset endpoint smoke coverage
+- Regressions are tracked with before/after payload snapshots and runbook IDs.
+
+Acceptance checks:
+- `render_game_to_text` returns full required schema for each mode.
+- `advanceTime` accepts normal and boundary values without crash.
+- Required selectors exist in all required modes and tests.
+- Required deployment endpoints return HTTP 200 in deploy smoke.
+- No S0 contract key removed without migration note and version bump in contract doc.
+
+Non-goals:
+- Gameplay balancing or combat formula changes.
+- Refactoring unrelated UI styling tokens without contract impact.
+- Introducing third-party API dependencies for runtime operation.

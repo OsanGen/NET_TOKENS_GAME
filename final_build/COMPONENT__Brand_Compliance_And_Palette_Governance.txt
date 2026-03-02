@@ -1,0 +1,97 @@
+Component: Brand Compliance and Palette Governance
+Purpose:
+Ensure all visual output remains within the OSAN CogSec pastel scope and that modern upgrades do not drift into off-brand effects.
+
+This component governs token ownership, contrast policy, and style approvals so design changes are fast but consistent.
+
+Inputs:
+- Branding reference scope:
+  - `/Volumes/data/Online/OSAN Visual System v2 — CogSec Pastel (46).txt` (or currently referenced version)
+- Visual state:
+  - `state.visual.vfxPreset`
+  - `state.visual.visualProfile`
+  - `state.visual.visualProfileAuto`
+  - `state.visual.modeTransition`
+- Tone/scene context:
+  - `tone` from mode resolver
+- Surface contracts:
+  - `styles.css` token definitions
+  - markup wrappers and control classes.
+
+Outputs:
+- Deterministic visual token budget by mode/profile.
+- Style compliance checks for color-family drift.
+- Reduced-noise modern baseline by default.
+- Stable visual hierarchy across shell, HUD, battlefield, and backdrop.
+
+State:
+- No gameplay state mutation.
+- Governance state is documentation/asset-level:
+  - active token profile
+  - active chrome intensity level
+  - active accent accentuation set.
+
+Governance contracts:
+- Primary palette classes:
+  - surface: `FOG`, `INK`, `WHITE`
+  - accents constrained to `COG_BLUE`, `COG_MINT`, `COG_YELLOW`, `COG_PINK`
+- Secondary effects:
+  - particle/impact and burst colors must derive from token hierarchy, never arbitrary hex sprawl.
+- Motion policy:
+  - tokenized speeds with strict cap for modern/minimal.
+- Contrast policy:
+  - readability over glow; text and core entities must remain first legible element.
+
+Decision flow:
+1) Resolve mode + profile in JS.
+2) Apply matching `data-visual-preset` attribute state on `<body>`.
+3) CSS consumes token set for shell, HUD, effects, and impact accents.
+4) Dynamic branches may intensify in cinematic mode only if contrast remains above baseline.
+
+Compliance checks:
+- Palette compliance:
+  - all major fill/stroke values belong to approved token family.
+- Motion compliance:
+  - modern preset keeps motion within minimal safe bands.
+- Readability compliance:
+  - entity + text contrast preserved in all top-level modes.
+- Brand consistency:
+  - no accidental neon-heavy theme in default flows.
+
+Failure modes:
+- Token drift:
+  - direct color values introduced in critical UI/effects paths.
+- Brand contradiction:
+  - contrast-focused HUD replaced by glow-heavy artifacts.
+- Scope creep:
+  - profile introduces cinematic effects globally instead of mode-scoped.
+
+Error handling:
+- Invalid token usage:
+  - fallback to nearest OSAN token at runtime.
+- Invalid visual profile:
+  - default to modern preset.
+- Unsupported CSS path:
+  - preserve base token set and avoid style break.
+
+Dependencies:
+- `/Users/abelsanchez/CODEX/NEWGAME/styles.css`
+- `/Users/abelsanchez/CODEX/NEWGAME/index.html`
+- `/Users/abelsanchez/CODEX/NEWGAME/game.js`
+- `/Volumes/data/Online/OSAN Visual System v2 — CogSec Pastel (46).txt`
+
+Acceptance checks:
+- The default modern preset is visibly controlled and not chaotic.
+- All top-level UI surfaces use OSAN tokens in primary fills and borders.
+- Battle, mission, and hub visuals stay within scope while still readable.
+- No off-brand hue intrusion in critical mode transitions.
+- Visual fallback remains stable when reduced-motion is requested.
+
+Audit artifacts:
+- Include this component in quarterly review under visual debt.
+- Track token violations and rejected color additions.
+
+Non-goals:
+- Enforcing marketing identity for external pages.
+- Creating a branding toolchain or external token service.
+- Modifying gameplay formulas or controls.

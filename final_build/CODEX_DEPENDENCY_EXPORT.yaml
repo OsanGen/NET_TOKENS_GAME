@@ -1,0 +1,121 @@
+project: NEWGAME
+generated_from: final_build
+nodes:
+  - id: index_html
+    file: /Users/abelsanchez/CODEX/NEWGAME/index.html
+    type: source
+    consumes: []
+    provides:
+      - shell_layout
+      - canvas_root
+      - controls_layout_nodes
+  - id: styles_css
+    file: /Users/abelsanchez/CODEX/NEWGAME/styles.css
+    type: source
+    consumes: [index_html]
+    provides:
+      - visual_tokens
+      - motion_profiles
+      - responsive_layout
+  - id: game_js
+    file: /Users/abelsanchez/CODEX/NEWGAME/game.js
+    type: core
+    consumes:
+      - index_html
+      - styles_css
+      - assets
+    provides:
+      - gameplay_update_loop
+      - mode_transitions
+      - render_pipeline
+      - render_game_to_text
+      - advanceTime
+      - dom_sync
+  - id: playwright_client
+    file: /Users/abelsanchez/CODEX/NEWGAME/web_game_playwright_client_local.js
+    type: validation
+    consumes:
+      - index_html
+      - game_js
+    provides:
+      - flow_smoke
+      - screenshot_artifacts
+  - id: deploy_workflow
+    file: /Users/abelsanchez/CODEX/NEWGAME/.github/workflows/deploy-pages.yml
+    type: ops
+    consumes:
+      - index_html
+      - styles_css
+      - game_js
+      - assets
+    provides:
+      - github_pages_publish
+  - id: scripts_open_game
+    file: /Users/abelsanchez/CODEX/NEWGAME/scripts/open-game.sh
+    type: ops
+    consumes: [index_html]
+    provides:
+      - local_server_start
+      - browser_open
+  - id: scripts_stop_game
+    file: /Users/abelsanchez/CODEX/NEWGAME/scripts/stop-game.sh
+    type: ops
+    consumes: [scripts_open_game]
+    provides:
+      - local_server_stop
+      - pid_cleanup
+  - id: assets_dir
+    file: /Users/abelsanchez/CODEX/NEWGAME/assets
+    type: assets
+    consumes: []
+    provides:
+      - sprite_textures
+      - mission_visuals
+  - id: generate_assets
+    file: /Users/abelsanchez/CODEX/NEWGAME/scripts/generate-imagegen-assets.sh
+    type: ops
+    consumes: [assets_dir]
+    provides:
+      - refreshed_artifacts
+  - id: final_build_docs
+    file: /Users/abelsanchez/CODEX/NEWGAME/final_build
+    type: documentation
+    consumes: []
+    provides:
+      - governance_maps
+      - risk_registers
+      - maintenance_guides
+edges:
+  - from: index_html
+    to: game_js
+    relation: bootstraps
+  - from: index_html
+    to: styles_css
+    relation: loads
+  - from: styles_css
+    to: game_js
+    relation: applies_variables
+  - from: game_js
+    to: playwright_client
+    relation: exposes_api
+  - from: scripts_open_game
+    to: index_html
+    relation: serves
+  - from: scripts_stop_game
+    to: scripts_open_game
+    relation: stops
+  - from: assets_dir
+    to: game_js
+    relation: consumed_by_renderer
+  - from: deploy_workflow
+    to: index_html
+    relation: publishes
+  - from: deploy_workflow
+    to: game_js
+    relation: publishes
+  - from: deploy_workflow
+    to: styles_css
+    relation: publishes
+  - from: final_build_docs
+    to: game_js
+    relation: governs
